@@ -14,8 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
-import { Loader2, Circle, AlertCircle } from 'lucide-react';
+import { Loader2, Circle, AlertCircle, BookOpen, Sparkles } from 'lucide-react';
 import ShareButton from '../components/ShareButton';
+import HexagramDisplay from '../components/HexagramDisplay';
+import MovingLinesSection from '../components/MovingLinesSection';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
