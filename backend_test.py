@@ -459,6 +459,301 @@ class IChingAPITester:
             return True
         return False
 
+    def test_create_consultation_1(self):
+        """Create first consultation for synthesis testing"""
+        if not self.token:
+            self.log_test("Create Consultation 1", False, "No auth token")
+            return False
+            
+        consultation_data = {
+            "question": "What should I focus on in my career?",
+            "coin_tosses": {
+                "line1": 7,  # Yang
+                "line2": 8,  # Yin
+                "line3": 9,  # Old Yang (moving)
+                "line4": 6,  # Old Yin (moving)
+                "line5": 7,  # Yang
+                "line6": 8   # Yin
+            }
+        }
+        
+        success, response = self.run_test(
+            "Create Consultation 1",
+            "POST",
+            "consultations",
+            200,
+            data=consultation_data
+        )
+        
+        if success and 'id' in response:
+            self.consultation_1_id = response['id']
+            print(f"   Created consultation 1: {response.get('hexagram_name', 'Unknown')}")
+            return True
+        return False
+
+    def test_create_consultation_2(self):
+        """Create second consultation for synthesis testing"""
+        if not self.token:
+            self.log_test("Create Consultation 2", False, "No auth token")
+            return False
+            
+        consultation_data = {
+            "question": "How can I improve my relationships?",
+            "coin_tosses": {
+                "line1": 6,  # Old Yin (moving)
+                "line2": 7,  # Yang
+                "line3": 8,  # Yin
+                "line4": 9,  # Old Yang (moving)
+                "line5": 6,  # Old Yin (moving)
+                "line6": 7   # Yang
+            }
+        }
+        
+        success, response = self.run_test(
+            "Create Consultation 2",
+            "POST",
+            "consultations",
+            200,
+            data=consultation_data
+        )
+        
+        if success and 'id' in response:
+            self.consultation_2_id = response['id']
+            print(f"   Created consultation 2: {response.get('hexagram_name', 'Unknown')}")
+            return True
+        return False
+
+    def test_create_consultation_3(self):
+        """Create third consultation for synthesis testing"""
+        if not self.token:
+            self.log_test("Create Consultation 3", False, "No auth token")
+            return False
+            
+        consultation_data = {
+            "question": "What is blocking my personal growth?",
+            "coin_tosses": {
+                "line1": 8,  # Yin
+                "line2": 9,  # Old Yang (moving)
+                "line3": 7,  # Yang
+                "line4": 8,  # Yin
+                "line5": 9,  # Old Yang (moving)
+                "line6": 6   # Old Yin (moving)
+            }
+        }
+        
+        success, response = self.run_test(
+            "Create Consultation 3",
+            "POST",
+            "consultations",
+            200,
+            data=consultation_data
+        )
+        
+        if success and 'id' in response:
+            self.consultation_3_id = response['id']
+            print(f"   Created consultation 3: {response.get('hexagram_name', 'Unknown')}")
+            return True
+        return False
+
+    def test_synthesis_with_one_consultation_should_fail(self):
+        """Test synthesis with only 1 consultation (should fail - minimum 2 required)"""
+        if not self.token or not hasattr(self, 'consultation_1_id'):
+            self.log_test("Synthesis with 1 Consultation (Should Fail)", False, "No auth token or consultation")
+            return False
+            
+        synthesis_data = {
+            "consultation_ids": [self.consultation_1_id],
+            "synthesis_type": "deepening"
+        }
+        
+        success, response = self.run_test(
+            "Synthesis with 1 Consultation (Should Fail)",
+            "POST",
+            "consultations/synthesis",
+            400,  # Should fail
+            data=synthesis_data
+        )
+        return success
+
+    def test_synthesis_with_nonexistent_consultation_should_fail(self):
+        """Test synthesis with non-existent consultation ID (should fail)"""
+        if not self.token or not hasattr(self, 'consultation_1_id'):
+            self.log_test("Synthesis with Non-existent ID (Should Fail)", False, "No auth token or consultation")
+            return False
+            
+        synthesis_data = {
+            "consultation_ids": [self.consultation_1_id, "non-existent-id-12345"],
+            "synthesis_type": "confirmation"
+        }
+        
+        success, response = self.run_test(
+            "Synthesis with Non-existent ID (Should Fail)",
+            "POST",
+            "consultations/synthesis",
+            404,  # Should fail
+            data=synthesis_data
+        )
+        return success
+
+    def test_synthesis_with_too_many_consultations_should_fail(self):
+        """Test synthesis with more than 5 consultations (should fail - maximum 5)"""
+        if not self.token or not hasattr(self, 'consultation_1_id'):
+            self.log_test("Synthesis with Too Many Consultations (Should Fail)", False, "No auth token or consultation")
+            return False
+            
+        # Create fake IDs to simulate having more than 5
+        fake_ids = [f"fake-id-{i}" for i in range(6)]
+        synthesis_data = {
+            "consultation_ids": fake_ids,
+            "synthesis_type": "clarification"
+        }
+        
+        success, response = self.run_test(
+            "Synthesis with Too Many Consultations (Should Fail)",
+            "POST",
+            "consultations/synthesis",
+            400,  # Should fail
+            data=synthesis_data
+        )
+        return success
+
+    def test_synthesis_confirmation_type(self):
+        """Test synthesis with confirmation type"""
+        if not self.token or not hasattr(self, 'consultation_1_id') or not hasattr(self, 'consultation_2_id'):
+            self.log_test("Synthesis Confirmation Type", False, "No auth token or consultations")
+            return False
+            
+        synthesis_data = {
+            "consultation_ids": [self.consultation_1_id, self.consultation_2_id],
+            "synthesis_type": "confirmation"
+        }
+        
+        success, response = self.run_test(
+            "Synthesis Confirmation Type",
+            "POST",
+            "consultations/synthesis",
+            200,
+            data=synthesis_data
+        )
+        
+        if success and 'id' in response:
+            # Verify synthesis fields
+            if (response.get('is_synthesis') == True and 
+                response.get('synthesis_type') == 'confirmation' and
+                response.get('linked_consultation_ids') == [self.consultation_1_id, self.consultation_2_id]):
+                print(f"   ✅ Synthesis created with correct fields")
+                print(f"   Question: {response.get('question', '')[:100]}...")
+                print(f"   Interpretation length: {len(response.get('interpretation', ''))}")
+                self.synthesis_confirmation_id = response['id']
+                return True
+            else:
+                self.log_test("Synthesis Confirmation Type", False, "Missing synthesis fields in response")
+                return False
+        return False
+
+    def test_synthesis_deepening_type(self):
+        """Test synthesis with deepening type"""
+        if not self.token or not hasattr(self, 'consultation_2_id') or not hasattr(self, 'consultation_3_id'):
+            self.log_test("Synthesis Deepening Type", False, "No auth token or consultations")
+            return False
+            
+        synthesis_data = {
+            "consultation_ids": [self.consultation_2_id, self.consultation_3_id],
+            "synthesis_type": "deepening"
+        }
+        
+        success, response = self.run_test(
+            "Synthesis Deepening Type",
+            "POST",
+            "consultations/synthesis",
+            200,
+            data=synthesis_data
+        )
+        
+        if success and 'id' in response:
+            # Verify synthesis fields
+            if (response.get('is_synthesis') == True and 
+                response.get('synthesis_type') == 'deepening' and
+                response.get('linked_consultation_ids') == [self.consultation_2_id, self.consultation_3_id]):
+                print(f"   ✅ Synthesis created with correct fields")
+                print(f"   Question: {response.get('question', '')[:100]}...")
+                print(f"   Interpretation length: {len(response.get('interpretation', ''))}")
+                self.synthesis_deepening_id = response['id']
+                return True
+            else:
+                self.log_test("Synthesis Deepening Type", False, "Missing synthesis fields in response")
+                return False
+        return False
+
+    def test_synthesis_clarification_type(self):
+        """Test synthesis with clarification type using all 3 consultations"""
+        if (not self.token or not hasattr(self, 'consultation_1_id') or 
+            not hasattr(self, 'consultation_2_id') or not hasattr(self, 'consultation_3_id')):
+            self.log_test("Synthesis Clarification Type", False, "No auth token or consultations")
+            return False
+            
+        synthesis_data = {
+            "consultation_ids": [self.consultation_1_id, self.consultation_2_id, self.consultation_3_id],
+            "synthesis_type": "clarification"
+        }
+        
+        success, response = self.run_test(
+            "Synthesis Clarification Type",
+            "POST",
+            "consultations/synthesis",
+            200,
+            data=synthesis_data
+        )
+        
+        if success and 'id' in response:
+            # Verify synthesis fields
+            expected_ids = [self.consultation_1_id, self.consultation_2_id, self.consultation_3_id]
+            if (response.get('is_synthesis') == True and 
+                response.get('synthesis_type') == 'clarification' and
+                response.get('linked_consultation_ids') == expected_ids):
+                print(f"   ✅ Synthesis created with correct fields")
+                print(f"   Question: {response.get('question', '')[:100]}...")
+                print(f"   Interpretation length: {len(response.get('interpretation', ''))}")
+                self.synthesis_clarification_id = response['id']
+                return True
+            else:
+                self.log_test("Synthesis Clarification Type", False, "Missing synthesis fields in response")
+                return False
+        return False
+
+    def test_consultation_history_with_synthesis(self):
+        """Test consultation history includes synthesis consultations with proper fields"""
+        if not self.token:
+            self.log_test("Consultation History with Synthesis", False, "No auth token")
+            return False
+            
+        success, response = self.run_test(
+            "Consultation History with Synthesis",
+            "GET",
+            "consultations",
+            200
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} total consultations")
+            
+            # Find synthesis consultations
+            synthesis_consultations = [c for c in response if c.get('is_synthesis', False)]
+            regular_consultations = [c for c in response if not c.get('is_synthesis', False)]
+            
+            print(f"   Regular consultations: {len(regular_consultations)}")
+            print(f"   Synthesis consultations: {len(synthesis_consultations)}")
+            
+            # Verify synthesis consultations have required fields
+            for synthesis in synthesis_consultations:
+                if not all(key in synthesis for key in ['is_synthesis', 'linked_consultation_ids', 'synthesis_type']):
+                    self.log_test("Consultation History with Synthesis", False, "Synthesis missing required fields")
+                    return False
+                print(f"   Synthesis type: {synthesis.get('synthesis_type')} with {len(synthesis.get('linked_consultation_ids', []))} linked consultations")
+            
+            return True
+        return False
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting I Ching API Tests")
