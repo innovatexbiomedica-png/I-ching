@@ -69,6 +69,16 @@ function AppRoutes() {
           <Layout><Register /></Layout>
         </PublicRoute>
       } />
+      <Route path="/forgot-password" element={
+        <PublicRoute>
+          <Layout><ForgotPassword /></Layout>
+        </PublicRoute>
+      } />
+      <Route path="/reset-password" element={
+        <PublicRoute>
+          <Layout><ResetPassword /></Layout>
+        </PublicRoute>
+      } />
       <Route path="/pricing" element={<Layout><Pricing /></Layout>} />
       <Route path="/shared/:shareToken" element={<SharedConsultation />} />
       
