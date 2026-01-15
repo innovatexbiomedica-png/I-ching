@@ -559,8 +559,12 @@ const History = () => {
                   <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
                     {!selectionMode && (
                       <button
-                        onClick={(e) => handleDelete(e, consultation.id)}
-                        className="p-2 text-[#D1CDC7] hover:text-[#C44D38] hover:bg-[#C44D38]/10 rounded transition-colors"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDelete(e, consultation.id);
+                        }}
+                        className="p-2 text-[#D1CDC7] hover:text-[#C44D38] hover:bg-[#C44D38]/10 rounded transition-colors z-10"
                         title={language === 'it' ? 'Elimina' : 'Delete'}
                         data-testid={`delete-${consultation.id}`}
                       >
