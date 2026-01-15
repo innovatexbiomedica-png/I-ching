@@ -779,6 +779,17 @@ class IChingAPITester:
             self.test_get_hexagrams,
             self.test_get_single_hexagram,
             self.test_consultation_history_empty,
+            # New synthesis consultation tests
+            self.test_create_consultation_1,
+            self.test_create_consultation_2,
+            self.test_create_consultation_3,
+            self.test_synthesis_with_one_consultation_should_fail,
+            self.test_synthesis_with_nonexistent_consultation_should_fail,
+            self.test_synthesis_with_too_many_consultations_should_fail,
+            self.test_synthesis_confirmation_type,
+            self.test_synthesis_deepening_type,
+            self.test_synthesis_clarification_type,
+            self.test_consultation_history_with_synthesis,
         ]
         
         for test in tests:
