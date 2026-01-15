@@ -82,24 +82,6 @@ const History = () => {
     });
   };
 
-  const renderHexagramLine = (isYang, isMoving) => {
-    return (
-      <div className="flex items-center justify-center">
-        <div className="relative w-16">
-          {isYang ? (
-            <div className={`h-1.5 ${isMoving ? 'bg-[#C44D38]' : 'bg-[#2C2C2C]'}`} />
-          ) : (
-            <div className="flex justify-between">
-              <div className={`w-6 h-1.5 ${isMoving ? 'bg-[#C44D38]' : 'bg-[#2C2C2C]'}`} />
-              <div className={`w-6 h-1.5 ${isMoving ? 'bg-[#C44D38]' : 'bg-[#2C2C2C]'}`} />
-            </div>
-          )}
-        </div>
-        {isMoving && <Circle className="w-2 h-2 ml-1 text-[#C44D38]" />}
-      </div>
-    );
-  };
-
   if (loading) {
     return (
       <div className="section-zen flex justify-center">
@@ -110,22 +92,29 @@ const History = () => {
 
   // Detail View
   if (selectedConsultation) {
-    const traditionalTitle = language === 'it' ? 'Lettura Tradizionale' : 'Traditional Reading';
     const aiTitle = language === 'it' ? 'Interpretazione I Ching del Benessere' : 'I Ching of Wellbeing Interpretation';
-    const sentenceTitle = language === 'it' ? 'La Sentenza' : 'The Judgment';
-    const imageTitle = language === 'it' ? 'L\'Immagine' : 'The Image';
 
     return (
       <div className="section-zen" data-testid="consultation-detail">
         <div className="container-zen max-w-4xl">
-          <button
-            onClick={() => setSelectedConsultation(null)}
-            className="flex items-center space-x-2 text-[#595959] hover:text-[#2C2C2C] mb-8 transition-colors"
-            data-testid="back-btn"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>{t.common.back}</span>
-          </button>
+          <div className="flex items-center justify-between mb-8">
+            <button
+              onClick={() => setSelectedConsultation(null)}
+              className="flex items-center space-x-2 text-[#595959] hover:text-[#2C2C2C] transition-colors"
+              data-testid="back-btn"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>{t.common.back}</span>
+            </button>
+            <button
+              onClick={(e) => handleDelete(e, selectedConsultation.id)}
+              className="flex items-center space-x-2 text-[#595959] hover:text-[#C44D38] transition-colors"
+              data-testid="delete-detail-btn"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>{language === 'it' ? 'Elimina' : 'Delete'}</span>
+            </button>
+          </div>
 
           <div className="animate-fade-in-up">
             {/* Date */}
