@@ -150,15 +150,39 @@ class ConsultationCreate(BaseModel):
     question: str
     coin_tosses: CoinToss
 
+class TrigramInfo(BaseModel):
+    symbol: str
+    name: str
+    name_local: str
+    element: str
+    quality: str
+    color: str
+
+class MovingLineText(BaseModel):
+    position: int
+    text: str
+    meaning: str
+
+class TraditionalData(BaseModel):
+    sentence: str
+    image: str
+    trigram_above: TrigramInfo
+    trigram_below: TrigramInfo
+    moving_lines_text: List[MovingLineText]
+
 class ConsultationResponse(BaseModel):
     id: str
     question: str
     hexagram_number: int
     hexagram_name: str
+    hexagram_chinese: str
     hexagram_symbol: str
     derived_hexagram_number: Optional[int] = None
     derived_hexagram_name: Optional[str] = None
+    derived_hexagram_chinese: Optional[str] = None
     moving_lines: List[int]
+    traditional_data: Optional[TraditionalData] = None
+    derived_traditional_data: Optional[TraditionalData] = None
     interpretation: str
     created_at: str
 
