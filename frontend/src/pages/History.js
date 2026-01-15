@@ -50,6 +50,31 @@ const History = () => {
     }
   };
 
+  const handleDelete = async (e, consultationId) => {
+    e.stopPropagation(); // Prevent opening the consultation
+    
+    const confirmMsg = language === 'it' 
+      ? 'Sei sicuro di voler eliminare questa consultazione?' 
+      : 'Are you sure you want to delete this consultation?';
+    
+    if (!window.confirm(confirmMsg)) return;
+    
+    try {
+      await axios.delete(`${API}/consultations/${consultationId}`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      
+      setConsultations(prev => prev.filter(c => c.id !== consultationId));
+      if (selectedConsultation?.id === consultationId) {
+        setSelectedConsultation(null);
+      }
+      
+      toast.success(language === 'it' ? 'Consultazione eliminata' : 'Consultation deleted');
+    } catch (error) {
+      toast.error(language === 'it' ? 'Errore nell\'eliminazione' : 'Error deleting');
+    }
+  };
+
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     return format(date, 'dd MMMM yyyy, HH:mm', { 
