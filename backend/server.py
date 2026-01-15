@@ -166,6 +166,7 @@ class MovingLineText(BaseModel):
 class TraditionalData(BaseModel):
     sentence: str
     image: str
+    commentary: str = ""
     trigram_above: TrigramInfo
     trigram_below: TrigramInfo
     moving_lines_text: List[MovingLineText]
