@@ -268,8 +268,16 @@ def get_moving_lines_text(hex_number: int, moving_lines: list, language: str = "
     data = HEXAGRAM_TRADITIONAL.get(hex_number, {})
     lines_data = data.get("lines", {})
     
-    # If not in HEXAGRAM_TRADITIONAL, try to import from iching_extended
-    if not lines_data:
+    # Check if lines_data has actual content (not just empty strings)
+    has_content = False
+    if lines_data:
+        for line_info in lines_data.values():
+            if line_info.get("moving", "").strip() or line_info.get("meaning", "").strip():
+                has_content = True
+                break
+    
+    # If not in HEXAGRAM_TRADITIONAL or no content, try to import from iching_extended
+    if not has_content:
         try:
             from iching_extended import ICHING_EXTENDED
             extended_data = ICHING_EXTENDED.get(hex_number, {})
