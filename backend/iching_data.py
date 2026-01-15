@@ -174,6 +174,40 @@ HEXAGRAM_TRADITIONAL = {
             6: {"moving": "Egli non serve né re né principi. Pone più in alto le sue mete.", "meaning": "Oltre le riparazioni terrene, aspirare a mete più elevate."},
         }
     },
+    17: {
+        "sentence_it": "Il Seguire ha sublime riuscita. Propizia è perseveranza. Nessuna macchia.",
+        "sentence_en": "Following has supreme success. Perseverance furthers. No blame.",
+        "image_it": "Nel mezzo del lago è il tuono: l'immagine del Seguire. Così il nobile al tempo del crepuscolo entra per riposare e ristorarsi.",
+        "image_en": "Thunder in the middle of the lake: the image of Following. Thus the superior man at nightfall goes indoors for rest and recuperation.",
+        "trigram_above": "☱",
+        "trigram_below": "☳",
+        "commentary_it": "Il Seguire significa adattarsi al tempo con gioia. Il Tuono sotto il Lago indica che il forte si pone sotto il debole per guidarlo con dolcezza. Come il tuono si ritira nel lago per l'inverno, così chi sa seguire il momento giusto raggiunge la meta senza sforzo. Nel Tao, seguire non significa perdere se stessi, ma trovare l'armonia tra la propria volontà e il flusso naturale delle cose.",
+        "lines": {
+            1: {"moving": "Il Rettore muta. Perseveranza reca salute. Uscir dalla porta per rapporti sociali reca opere.", "meaning": "I cambiamenti nelle relazioni portano nuove opportunità."},
+            2: {"moving": "Se ci si lega al ragazzino, si perde l'uomo forte.", "meaning": "Seguire il superficiale fa perdere ciò che è sostanziale."},
+            3: {"moving": "Se ci si lega all'uomo forte, si perde il ragazzino. Cercando si trova ciò che si desidera. Propizio è rimanere perseveranti.", "meaning": "Seguire ciò che è elevato richiede di lasciar andare ciò che è basso."},
+            4: {"moving": "Il seguire reca riuscita. Perseveranza reca sciagura. Percorrere la propria strada con sincerità reca chiarezza. Quale macchia vi sarebbe in questo?", "meaning": "Seguire per interesse porta sventura; seguire con sincerità porta chiarezza."},
+            5: {"moving": "Verace nel bene. Salute!", "meaning": "La sincerità verso ciò che è buono porta fortuna e benedizione."},
+            6: {"moving": "Egli trova legame e relazione e poi viene ancora legato. Il re lo presenta alla Montagna Occidentale.", "meaning": "Il legame profondo porta onori e riconoscimento."},
+        }
+    },
+    58: {
+        "sentence_it": "Il Sereno ha riuscita. Propizia è perseveranza.",
+        "sentence_en": "The Joyous has success. Perseverance is favorable.",
+        "image_it": "Laghi che riposano l'uno sull'altro: l'immagine del Sereno. Così il nobile si incontra con gli amici per discutere e per esercitarsi.",
+        "image_en": "Lakes resting one on the other: the image of the Joyous. Thus the superior man joins with his friends for discussion and practice.",
+        "trigram_above": "☱",
+        "trigram_below": "☱",
+        "commentary_it": "Il Sereno rappresenta la gioia che nasce dalla comunicazione sincera. Due laghi uniti simboleggiano lo scambio reciproco che arricchisce entrambi. Nel Tao, la vera gioia non deriva dal possesso ma dalla condivisione. Come l'acqua cerca il proprio livello, così le anime affini si ritrovano naturalmente quando si aprono con sincerità.",
+        "lines": {
+            1: {"moving": "Serenità contenta. Salute!", "meaning": "La gioia interiore che non dipende dall'esterno porta fortuna."},
+            2: {"moving": "Serenità sincera. Salute! Il pentimento svanisce.", "meaning": "La gioia basata sulla verità dissolve ogni rimpianto."},
+            3: {"moving": "Serenità che viene. Sciagura!", "meaning": "La gioia cercata all'esterno porta sventura."},
+            4: {"moving": "Serenità ponderata non è quieta. Dopo aver rimosso gli errori vi è gioia.", "meaning": "La vera pace viene dopo aver affrontato i propri errori."},
+            5: {"moving": "Veracità verso ciò che si dissolve è pericoloso.", "meaning": "Fidarsi di ciò che è destinato a svanire è rischioso."},
+            6: {"moving": "Serenità che seduce.", "meaning": "La gioia che attrae altri può essere una trappola."},
+        }
+    },
 }
 
 # Add more hexagrams with basic structure
