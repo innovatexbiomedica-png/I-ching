@@ -2401,6 +2401,11 @@ class IChingAPITester:
             self.test_consultation_type_saved_in_database,
             # Hexagram 14 traditional moving lines text test (specific request)
             self.test_hexagram_14_traditional_moving_lines_text,
+            # NEW TESTS: Extended hexagrams system (50-64) with moving lines
+            self.test_extended_hexagrams_availability,
+            self.test_hexagram_50_il_crogiolo,
+            self.test_hexagram_64_prima_del_compimento,
+            self.test_all_64_hexagrams_with_moving_lines,
             # DELETE consultation endpoint test
             self.test_delete_consultation_endpoint,
             # Synthesis consultation tests
