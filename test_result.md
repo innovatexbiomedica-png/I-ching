@@ -101,3 +101,110 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "I Ching del Benessere - App di divinazione con abbonamenti. Aggiunta sistema recupero password con telefono."
+
+backend:
+  - task: "Password reset request endpoint"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementato endpoint POST /api/auth/request-reset che genera codice 6 cifre e salva in DB"
+
+  - task: "Password reset verify endpoint"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementato endpoint POST /api/auth/verify-reset che verifica codice e cambia password"
+
+  - task: "User registration with phone field"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Aggiunto campo phone opzionale alla registrazione utente"
+
+frontend:
+  - task: "ForgotPassword page"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/ForgotPassword.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Creata pagina per richiedere reset con email e telefono"
+
+  - task: "ResetPassword page"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/ResetPassword.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Creata pagina per inserire codice e nuova password"
+
+  - task: "Register page with phone field"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/Register.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Aggiunto campo telefono opzionale nel form di registrazione"
+
+  - task: "Login page forgot password link"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/Login.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Aggiunto link Password dimenticata? nella pagina login"
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Password reset request endpoint"
+    - "Password reset verify endpoint"
+    - "User registration with phone field"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Implementato sistema completo di recupero password. Backend: 3 nuovi endpoint (request-reset, verify-reset, admin/reset-requests). Frontend: 2 nuove pagine (ForgotPassword, ResetPassword), aggiornato Register con campo telefono, aggiunto link in Login. Testare prima il backend."
