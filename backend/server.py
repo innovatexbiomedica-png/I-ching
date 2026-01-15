@@ -461,9 +461,38 @@ Judgment of derived hexagram: "{derived_giudizio}"
 Image: "{derived_immagine}"
 This indicates WHERE the situation is evolving and what to expect in the future."""
 
+    # Build conversation history context
+    conversation_context = ""
+    if conversation_history and len(conversation_history) > 0:
+        if language == "it":
+            conversation_context = "\n\n=== STORIA DELLA CONVERSAZIONE (Stese precedenti) ===\n"
+            conversation_context += "Il consultante ha già fatto le seguenti domande in questa sessione. TIENI CONTO di questa storia per creare CONTINUITÀ nella risposta:\n"
+            for i, prev in enumerate(conversation_history, 1):
+                conversation_context += f"\n--- Stesa {i} ---\n"
+                conversation_context += f"Domanda: \"{prev.get('question', '')}\"\n"
+                conversation_context += f"Esagramma: {prev.get('hexagram_number')}. {prev.get('hexagram_name', '')}\n"
+                if prev.get('derived_hexagram_number'):
+                    conversation_context += f"Evolve in: {prev.get('derived_hexagram_number')}. {prev.get('derived_hexagram_name', '')}\n"
+                # Include a summary of the previous interpretation (first 300 chars)
+                prev_interp = prev.get('interpretation', '')[:300]
+                conversation_context += f"Sintesi risposta: {prev_interp}...\n"
+            conversation_context += "\nIMPORTANTE: La risposta attuale deve COLLEGARSI alle stese precedenti, creando una NARRAZIONE COERENTE. Fai riferimento a ciò che è emerso prima.\n"
+        else:
+            conversation_context = "\n\n=== CONVERSATION HISTORY (Previous readings) ===\n"
+            conversation_context += "The querent has already asked the following questions in this session. TAKE THIS HISTORY INTO ACCOUNT to create CONTINUITY in your response:\n"
+            for i, prev in enumerate(conversation_history, 1):
+                conversation_context += f"\n--- Reading {i} ---\n"
+                conversation_context += f"Question: \"{prev.get('question', '')}\"\n"
+                conversation_context += f"Hexagram: {prev.get('hexagram_number')}. {prev.get('hexagram_name', '')}\n"
+                if prev.get('derived_hexagram_number'):
+                    conversation_context += f"Evolves into: {prev.get('derived_hexagram_number')}. {prev.get('derived_hexagram_name', '')}\n"
+                prev_interp = prev.get('interpretation', '')[:300]
+                conversation_context += f"Response summary: {prev_interp}...\n"
+            conversation_context += "\nIMPORTANT: The current response must CONNECT to previous readings, creating a COHERENT NARRATIVE. Reference what emerged before.\n"
+
     if language == "it":
         user_prompt = f"""La domanda del consultante è: "{question}"
-
+{conversation_context}
 === ESAGRAMMA PRINCIPALE ===
 Nome: {primary_chinese} - {primary_name}
 Numero: {hexagram_data["primary_hexagram"]}
@@ -489,11 +518,12 @@ Genera un'interpretazione RICCA, PROFONDA e DETTAGLIATA (600-900 parole) che:
 4. SE CI SONO LINEE MUTEVOLI: dedica un paragrafo COMPLETO a ciascuna, spiegando il testo tradizionale e il suo significato per la situazione del consultante
 5. SE C'È ESAGRAMMA DERIVATO: spiega la trasformazione e cosa indica per il futuro
 6. Concludi con saggezza pratica e un consiglio applicabile
+{"7. SE C'È STORIA DELLA CONVERSAZIONE: collega questa risposta alle stese precedenti, creando una narrazione fluida" if conversation_context else ""}
 
 Scrivi come un antico maestro taoista, con poesia, profondità e compassione."""
     else:
         user_prompt = f"""The querent's question is: "{question}"
-
+{conversation_context}
 === PRIMARY HEXAGRAM ===
 Name: {primary_chinese} - {primary_name}
 Number: {hexagram_data["primary_hexagram"]}
