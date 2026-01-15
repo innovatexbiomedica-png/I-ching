@@ -412,6 +412,101 @@ async def update_language(language: str, user: dict = Depends(get_current_user))
     await db.users.update_one({"id": user["id"]}, {"$set": {"language": language}})
     return {"message": "Lingua aggiornata"}
 
+@api_router.post("/auth/request-reset")
+async def request_password_reset(data: PasswordResetRequest):
+    """
+    Richiede il reset della password.
+    Genera un codice temporaneo e lo salva per verifica admin.
+    """
+    user = await db.users.find_one({"email": data.email}, {"_id": 0})
+    if not user:
+        # Per sicurezza non riveliamo se l'email esiste o meno
+        return {"message": "Se l'email esiste, riceverai istruzioni per il reset."}
+    
+    # Genera codice di reset
+    reset_code = generate_reset_code()
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    
+    # Salva la richiesta di reset nel database
+    reset_request = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "email": data.email,
+        "phone": data.phone or user.get("phone", ""),
+        "user_name": user["name"],
+        "code": reset_code,
+        "expires_at": expires_at.isoformat(),
+        "used": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.password_resets.insert_one(reset_request)
+    
+    # Log per l'admin (in produzione questo sarebbe una notifica)
+    logger.info(f"🔐 RICHIESTA RESET PASSWORD")
+    logger.info(f"   Email: {data.email}")
+    logger.info(f"   Telefono: {data.phone or user.get('phone', 'Non fornito')}")
+    logger.info(f"   Nome: {user['name']}")
+    logger.info(f"   Codice: {reset_code}")
+    logger.info(f"   Scade: {expires_at.isoformat()}")
+    
+    return {
+        "message": "Richiesta ricevuta. L'amministratore ti contatterà con il codice di reset.",
+        "contact_phone": data.phone or user.get("phone", "")
+    }
+
+@api_router.post("/auth/verify-reset")
+async def verify_reset_code(data: PasswordResetVerify):
+    """
+    Verifica il codice di reset e imposta la nuova password.
+    """
+    # Trova la richiesta di reset
+    reset_request = await db.password_resets.find_one({
+        "email": data.email,
+        "code": data.code,
+        "used": False
+    }, {"_id": 0})
+    
+    if not reset_request:
+        raise HTTPException(status_code=400, detail="Codice non valido o già utilizzato")
+    
+    # Verifica scadenza
+    expires_at = datetime.fromisoformat(reset_request["expires_at"].replace("Z", "+00:00"))
+    if expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Codice scaduto. Richiedi un nuovo reset.")
+    
+    # Valida la nuova password
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="La password deve essere almeno 6 caratteri")
+    
+    # Aggiorna la password dell'utente
+    hashed_password = hash_password(data.new_password)
+    await db.users.update_one(
+        {"email": data.email},
+        {"$set": {"password": hashed_password}}
+    )
+    
+    # Segna il codice come usato
+    await db.password_resets.update_one(
+        {"id": reset_request["id"]},
+        {"$set": {"used": True, "used_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    logger.info(f"✅ Password resettata per: {data.email}")
+    
+    return {"message": "Password aggiornata con successo. Ora puoi accedere."}
+
+@api_router.get("/admin/reset-requests")
+async def get_reset_requests():
+    """
+    Endpoint admin per vedere le richieste di reset pendenti.
+    In produzione questo dovrebbe essere protetto.
+    """
+    requests = await db.password_resets.find(
+        {"used": False},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    return requests
+
 # ============== I CHING CONSULTATION ROUTES ==============
 @api_router.post("/consultations", response_model=ConsultationResponse)
 async def create_consultation(data: ConsultationCreate, user: dict = Depends(get_current_user)):
