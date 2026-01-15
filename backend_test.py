@@ -983,6 +983,143 @@ class IChingAPITester:
         
         return False
 
+    def test_delete_consultation_endpoint(self):
+        """Test DELETE consultation endpoint functionality"""
+        if not self.token:
+            self.log_test("DELETE Consultation Endpoint", False, "No auth token")
+            return False
+        
+        print("\n🗑️  Testing DELETE Consultation Endpoint...")
+        
+        # Step 1: Create a test consultation to delete
+        consultation_data = {
+            "question": "Test consultation for deletion",
+            "coin_tosses": {
+                "line1": 7,  # Yang
+                "line2": 8,  # Yin
+                "line3": 7,  # Yang
+                "line4": 8,  # Yin
+                "line5": 7,  # Yang
+                "line6": 8   # Yin
+            }
+        }
+        
+        success, response = self.run_test(
+            "Create Consultation for Deletion Test",
+            "POST",
+            "consultations",
+            200,
+            data=consultation_data
+        )
+        
+        if not success or 'id' not in response:
+            self.log_test("DELETE Consultation Endpoint", False, "Failed to create test consultation")
+            return False
+        
+        consultation_id = response['id']
+        print(f"   Created test consultation with ID: {consultation_id}")
+        
+        # Step 2: Verify the consultation exists
+        success, response = self.run_test(
+            "Verify Consultation Exists Before Delete",
+            "GET",
+            "consultations",
+            200
+        )
+        
+        if not success:
+            self.log_test("DELETE Consultation Endpoint", False, "Failed to get consultations list")
+            return False
+        
+        # Check if our consultation is in the list
+        consultation_found = any(c.get('id') == consultation_id for c in response)
+        if not consultation_found:
+            self.log_test("DELETE Consultation Endpoint", False, "Test consultation not found in list")
+            return False
+        
+        print(f"   ✅ Consultation {consultation_id} exists in list")
+        
+        # Step 3: Delete the consultation
+        success, response = self.run_test(
+            "Delete Consultation",
+            "DELETE",
+            f"consultations/{consultation_id}",
+            200
+        )
+        
+        if not success:
+            self.log_test("DELETE Consultation Endpoint", False, "Failed to delete consultation")
+            return False
+        
+        print(f"   ✅ Consultation {consultation_id} deleted successfully")
+        
+        # Step 4: Verify the consultation no longer exists in the list
+        success, response = self.run_test(
+            "Verify Consultation Deleted from List",
+            "GET",
+            "consultations",
+            200
+        )
+        
+        if not success:
+            self.log_test("DELETE Consultation Endpoint", False, "Failed to get consultations list after delete")
+            return False
+        
+        # Check if our consultation is still in the list (it shouldn't be)
+        consultation_still_exists = any(c.get('id') == consultation_id for c in response)
+        if consultation_still_exists:
+            self.log_test("DELETE Consultation Endpoint", False, "Consultation still exists after deletion")
+            return False
+        
+        print(f"   ✅ Consultation {consultation_id} no longer exists in list")
+        
+        # Step 5: Try to get the specific consultation (should return 404)
+        success, response = self.run_test(
+            "Get Deleted Consultation (Should Fail)",
+            "GET",
+            f"consultations/{consultation_id}",
+            404
+        )
+        
+        if not success:
+            self.log_test("DELETE Consultation Endpoint", False, "Expected 404 when getting deleted consultation")
+            return False
+        
+        print(f"   ✅ Getting deleted consultation correctly returns 404")
+        
+        # Step 6: Test deleting non-existent consultation (should return 404)
+        fake_id = "non-existent-consultation-id-12345"
+        success, response = self.run_test(
+            "Delete Non-existent Consultation (Should Fail)",
+            "DELETE",
+            f"consultations/{fake_id}",
+            404
+        )
+        
+        if not success:
+            self.log_test("DELETE Consultation Endpoint", False, "Expected 404 when deleting non-existent consultation")
+            return False
+        
+        print(f"   ✅ Deleting non-existent consultation correctly returns 404")
+        
+        # Step 7: Test deleting with invalid ID format
+        invalid_id = "invalid-id-format"
+        success, response = self.run_test(
+            "Delete with Invalid ID Format (Should Fail)",
+            "DELETE",
+            f"consultations/{invalid_id}",
+            404
+        )
+        
+        if not success:
+            self.log_test("DELETE Consultation Endpoint", False, "Expected 404 when deleting with invalid ID")
+            return False
+        
+        print(f"   ✅ Deleting with invalid ID correctly returns 404")
+        
+        self.log_test("DELETE Consultation Endpoint", True, "All delete tests passed")
+        return True
+
     def test_consultation_response_structure(self):
         """Test that consultation response has all required fields for enhanced system"""
         if not self.token or not hasattr(self, 'italian_consultation_id'):
