@@ -362,16 +362,15 @@ async def update_language(language: str, user: dict = Depends(get_current_user))
 # ============== I CHING CONSULTATION ROUTES ==============
 @api_router.post("/consultations", response_model=ConsultationResponse)
 async def create_consultation(data: ConsultationCreate, user: dict = Depends(get_current_user)):
-    # Check subscription
-    if not user.get("subscription_active", False):
-        # Check if subscription_end is in the future
-        sub_end = user.get("subscription_end")
-        if sub_end:
-            end_date = datetime.fromisoformat(sub_end.replace("Z", "+00:00"))
-            if end_date < datetime.now(timezone.utc):
-                raise HTTPException(status_code=403, detail="Abbonamento non attivo. Sottoscrivi un piano per continuare.")
-        else:
-            raise HTTPException(status_code=403, detail="Abbonamento non attivo. Sottoscrivi un piano per continuare.")
+    # Subscription check disabled for now
+    # if not user.get("subscription_active", False):
+    #     sub_end = user.get("subscription_end")
+    #     if sub_end:
+    #         end_date = datetime.fromisoformat(sub_end.replace("Z", "+00:00"))
+    #         if end_date < datetime.now(timezone.utc):
+    #             raise HTTPException(status_code=403, detail="Abbonamento non attivo.")
+    #     else:
+    #         raise HTTPException(status_code=403, detail="Abbonamento non attivo.")
     
     # Calculate hexagram
     hex_data = calculate_hexagram(data.coin_tosses)
