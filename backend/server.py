@@ -124,6 +124,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     name: str
+    phone: str = ""
     language: str = "it"
 
 class UserLogin(BaseModel):
@@ -134,9 +135,19 @@ class UserResponse(BaseModel):
     id: str
     email: str
     name: str
+    phone: str = ""
     language: str
     subscription_active: bool = False
     subscription_end: Optional[str] = None
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+    phone: str = ""
+
+class PasswordResetVerify(BaseModel):
+    email: EmailStr
+    code: str
+    new_password: str
 
 class CoinToss(BaseModel):
     line1: int = Field(..., ge=6, le=9)
