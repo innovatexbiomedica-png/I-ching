@@ -747,8 +747,8 @@ async def generate_synthesis_interpretation(consultations: List[dict], synthesis
     try:
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
-            model="gemini-2.0-flash",
-            system_prompt="""Sei un maestro di I Ching con profonda saggezza taoista. 
+            session_id=f"synthesis-{uuid.uuid4()}",
+            system_message="""Sei un maestro di I Ching con profonda saggezza taoista. 
 Il tuo compito è analizzare MULTIPLE consultazioni fatte dallo stesso consultante e creare una SINTESI che:
 - Trova il filo conduttore tra le diverse stese
 - Identifica conferme, contraddizioni o approfondimenti
@@ -757,7 +757,7 @@ Il tuo compito è analizzare MULTIPLE consultazioni fatte dallo stesso consultan
 
 Non usare elenchi puntati. Scrivi in modo fluido e narrativo.
 Parla sempre in seconda persona al consultante."""
-        )
+        ).with_model("gemini", "gemini-2.0-flash")
         
         # Build the consultation summaries
         summaries = []
