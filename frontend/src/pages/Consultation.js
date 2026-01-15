@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
-import { Loader2, Circle, AlertCircle, BookOpen, Sparkles, Zap, Compass } from 'lucide-react';
+import { Loader2, Circle, AlertCircle, BookOpen, Sparkles, Zap, Compass, ArrowRight, MessageCircle } from 'lucide-react';
 import ShareButton from '../components/ShareButton';
 import HexagramDisplay from '../components/HexagramDisplay';
 import TraditionalReading from '../components/TraditionalReading';
