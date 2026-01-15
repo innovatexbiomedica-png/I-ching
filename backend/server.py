@@ -669,24 +669,26 @@ EXAMPLE TONE:
 
     if language == "it":
         user_prompt = f"""Domanda del consultante: "{question}"
-
+{conversation_context}
 ESAGRAMMA: {hexagram_data["primary_hexagram"]}. {primary_chinese} ({primary_name})
 Sentenza: "{giudizio}"
 {f"Linee mutevoli: {moving_lines_text}" if moving_lines_text else "Nessuna linea mutevole"}
 {derived_text}
 
 Genera un'interpretazione DIRETTA e D'IMPATTO (300-400 parole) che risponda chiaramente alla domanda.
-Vai dritto al punto. Di' al consultante quello che ha bisogno di sapere."""
+Vai dritto al punto. Di' al consultante quello che ha bisogno di sapere.
+{"Collega questa risposta alle domande precedenti nella conversazione." if conversation_context else ""}"""
     else:
         user_prompt = f"""Querent's question: "{question}"
-
+{conversation_context}
 HEXAGRAM: {hexagram_data["primary_hexagram"]}. {primary_chinese} ({primary_name})
 Judgment: "{giudizio}"
 {f"Moving lines: {moving_lines_text}" if moving_lines_text else "No moving lines"}
 {derived_text}
 
 Generate a DIRECT and IMPACTFUL interpretation (300-400 words) that clearly answers the question.
-Get straight to the point. Tell the querent what they need to know."""
+Get straight to the point. Tell the querent what they need to know.
+{"Connect this response to the previous questions in the conversation." if conversation_context else ""}"""
 
     try:
         chat = LlmChat(
