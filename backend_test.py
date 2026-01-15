@@ -1172,6 +1172,364 @@ class IChingAPITester:
         
         return False
 
+    def test_consultation_type_direct(self):
+        """Test consultation with consultation_type='direct' - should be shorter and more direct"""
+        if not self.token:
+            self.log_test("Consultation Type Direct", False, "No auth token")
+            return False
+            
+        consultation_data = {
+            "question": "Cosa succederà domani al lavoro?",
+            "coin_tosses": {
+                "line1": 7,  # Yang
+                "line2": 8,  # Yin
+                "line3": 9,  # Old Yang (moving)
+                "line4": 7,  # Yang
+                "line5": 6,  # Old Yin (moving)
+                "line6": 8   # Yin
+            },
+            "consultation_type": "direct"
+        }
+        
+        success, response = self.run_test(
+            "Consultation Type Direct",
+            "POST",
+            "consultations",
+            200,
+            data=consultation_data
+        )
+        
+        if success and 'interpretation' in response:
+            interpretation = response['interpretation']
+            word_count = len(interpretation.split())
+            
+            print(f"   ✅ Direct consultation created successfully")
+            print(f"   Hexagram: {response.get('hexagram_number')} - {response.get('hexagram_name')}")
+            print(f"   Moving lines: {response.get('moving_lines', [])}")
+            print(f"   Interpretation word count: {word_count}")
+            
+            # Store for comparison
+            self.direct_consultation = {
+                'id': response['id'],
+                'interpretation': interpretation,
+                'word_count': word_count,
+                'consultation_type': response.get('consultation_type', 'unknown')
+            }
+            
+            # Verify direct style characteristics
+            quality_checks = []
+            
+            # 1. Check word count (300-400 words for direct)
+            if 300 <= word_count <= 400:
+                quality_checks.append("✅ Word count in direct range (300-400)")
+            else:
+                quality_checks.append(f"❌ Word count {word_count} not in direct range (300-400)")
+            
+            # 2. Check for direct, simple language (less poetic)
+            direct_indicators = ["tu", "la tua", "questo è", "ecco", "devi", "puoi", "ora", "oggi", "domani"]
+            found_direct = [ind for ind in direct_indicators if ind.lower() in interpretation.lower()]
+            if len(found_direct) >= 3:
+                quality_checks.append(f"✅ Direct language style: {found_direct}")
+            else:
+                quality_checks.append(f"❌ Lacks direct language style: {found_direct}")
+            
+            # 3. Check consultation_type is saved
+            if response.get('consultation_type') == 'direct':
+                quality_checks.append("✅ Consultation type 'direct' saved correctly")
+            else:
+                quality_checks.append(f"❌ Consultation type not saved correctly: {response.get('consultation_type')}")
+            
+            # 4. Check for work-specific content
+            work_keywords = ["lavoro", "domani", "ufficio", "colleghi", "progetto", "attività"]
+            found_work = [kw for kw in work_keywords if kw.lower() in interpretation.lower()]
+            if len(found_work) >= 1:
+                quality_checks.append(f"✅ Work-specific content: {found_work}")
+            else:
+                quality_checks.append(f"❌ Not specific to work question: {found_work}")
+            
+            # Print quality assessment
+            print("   Direct Style Quality Assessment:")
+            for check in quality_checks:
+                print(f"     {check}")
+            
+            # Count passed checks
+            passed_checks = sum(1 for check in quality_checks if check.startswith("✅"))
+            total_checks = len(quality_checks)
+            
+            if passed_checks >= 3:  # At least 3 out of 4 checks should pass
+                print(f"   ✅ Direct style assessment: {passed_checks}/{total_checks} checks passed")
+                return True
+            else:
+                self.log_test("Consultation Type Direct", False, 
+                            f"Direct style assessment failed: {passed_checks}/{total_checks} checks passed")
+                return False
+        
+        return False
+
+    def test_consultation_type_deep(self):
+        """Test consultation with consultation_type='deep' - should be longer and more elaborate"""
+        if not self.token:
+            self.log_test("Consultation Type Deep", False, "No auth token")
+            return False
+            
+        # Use same question and coin tosses for comparison
+        consultation_data = {
+            "question": "Cosa succederà domani al lavoro?",
+            "coin_tosses": {
+                "line1": 7,  # Yang
+                "line2": 8,  # Yin
+                "line3": 9,  # Old Yang (moving)
+                "line4": 7,  # Yang
+                "line5": 6,  # Old Yin (moving)
+                "line6": 8   # Yin
+            },
+            "consultation_type": "deep"
+        }
+        
+        success, response = self.run_test(
+            "Consultation Type Deep",
+            "POST",
+            "consultations",
+            200,
+            data=consultation_data
+        )
+        
+        if success and 'interpretation' in response:
+            interpretation = response['interpretation']
+            word_count = len(interpretation.split())
+            
+            print(f"   ✅ Deep consultation created successfully")
+            print(f"   Hexagram: {response.get('hexagram_number')} - {response.get('hexagram_name')}")
+            print(f"   Moving lines: {response.get('moving_lines', [])}")
+            print(f"   Interpretation word count: {word_count}")
+            
+            # Store for comparison
+            self.deep_consultation = {
+                'id': response['id'],
+                'interpretation': interpretation,
+                'word_count': word_count,
+                'consultation_type': response.get('consultation_type', 'unknown')
+            }
+            
+            # Verify deep style characteristics
+            quality_checks = []
+            
+            # 1. Check word count (600-900 words for deep)
+            if 600 <= word_count <= 900:
+                quality_checks.append("✅ Word count in deep range (600-900)")
+            else:
+                quality_checks.append(f"❌ Word count {word_count} not in deep range (600-900)")
+            
+            # 2. Check for traditional I Ching references
+            traditional_keywords = ["giudizio", "immagine", "trigramma", "linea", "mutevole", "esagramma", "tao"]
+            found_traditional = [kw for kw in traditional_keywords if kw.lower() in interpretation.lower()]
+            if len(found_traditional) >= 3:
+                quality_checks.append(f"✅ Contains traditional references: {found_traditional}")
+            else:
+                quality_checks.append(f"❌ Insufficient traditional references: {found_traditional}")
+            
+            # 3. Check for poetic/contemplative language
+            poetic_indicators = ["drago", "acqua", "monte", "vento", "fuoco", "terra", "cielo", "natura", "energia", "flusso", "armonia"]
+            found_poetic = [ind for ind in poetic_indicators if ind.lower() in interpretation.lower()]
+            if len(found_poetic) >= 2:
+                quality_checks.append(f"✅ Poetic/contemplative style: {found_poetic}")
+            else:
+                quality_checks.append(f"❌ Lacks poetic/contemplative style: {found_poetic}")
+            
+            # 4. Check consultation_type is saved
+            if response.get('consultation_type') == 'deep':
+                quality_checks.append("✅ Consultation type 'deep' saved correctly")
+            else:
+                quality_checks.append(f"❌ Consultation type not saved correctly: {response.get('consultation_type')}")
+            
+            # Print quality assessment
+            print("   Deep Style Quality Assessment:")
+            for check in quality_checks:
+                print(f"     {check}")
+            
+            # Count passed checks
+            passed_checks = sum(1 for check in quality_checks if check.startswith("✅"))
+            total_checks = len(quality_checks)
+            
+            if passed_checks >= 3:  # At least 3 out of 4 checks should pass
+                print(f"   ✅ Deep style assessment: {passed_checks}/{total_checks} checks passed")
+                return True
+            else:
+                self.log_test("Consultation Type Deep", False, 
+                            f"Deep style assessment failed: {passed_checks}/{total_checks} checks passed")
+                return False
+        
+        return False
+
+    def test_consultation_types_comparison(self):
+        """Compare direct vs deep consultation types to ensure they are distinctly different"""
+        if not hasattr(self, 'direct_consultation') or not hasattr(self, 'deep_consultation'):
+            self.log_test("Consultation Types Comparison", False, "Both consultation types not available")
+            return False
+        
+        print("\n🔍 Comparing Direct vs Deep Consultation Types...")
+        
+        direct = self.direct_consultation
+        deep = self.deep_consultation
+        
+        print(f"   Direct consultation:")
+        print(f"     - Word count: {direct['word_count']}")
+        print(f"     - Type saved: {direct['consultation_type']}")
+        
+        print(f"   Deep consultation:")
+        print(f"     - Word count: {deep['word_count']}")
+        print(f"     - Type saved: {deep['consultation_type']}")
+        
+        comparison_checks = []
+        
+        # 1. Word count difference should be significant
+        word_diff = deep['word_count'] - direct['word_count']
+        if word_diff >= 200:  # Deep should be at least 200 words longer
+            comparison_checks.append(f"✅ Significant word count difference: {word_diff} words")
+        else:
+            comparison_checks.append(f"❌ Insufficient word count difference: {word_diff} words")
+        
+        # 2. Check that consultation types are saved correctly
+        if direct['consultation_type'] == 'direct' and deep['consultation_type'] == 'deep':
+            comparison_checks.append("✅ Consultation types saved correctly")
+        else:
+            comparison_checks.append(f"❌ Consultation types not saved correctly: direct={direct['consultation_type']}, deep={deep['consultation_type']}")
+        
+        # 3. Content style difference analysis
+        direct_text = direct['interpretation'].lower()
+        deep_text = deep['interpretation'].lower()
+        
+        # Count traditional references in each
+        traditional_words = ["giudizio", "immagine", "trigramma", "tao", "esagramma"]
+        direct_traditional_count = sum(1 for word in traditional_words if word in direct_text)
+        deep_traditional_count = sum(1 for word in traditional_words if word in deep_text)
+        
+        if deep_traditional_count > direct_traditional_count:
+            comparison_checks.append(f"✅ Deep has more traditional references: {deep_traditional_count} vs {direct_traditional_count}")
+        else:
+            comparison_checks.append(f"❌ Deep doesn't have more traditional references: {deep_traditional_count} vs {direct_traditional_count}")
+        
+        # 4. Check for different language complexity
+        # Deep should have more complex/poetic language
+        poetic_words = ["drago", "acqua", "monte", "vento", "energia", "flusso", "armonia", "natura"]
+        direct_poetic_count = sum(1 for word in poetic_words if word in direct_text)
+        deep_poetic_count = sum(1 for word in poetic_words if word in deep_text)
+        
+        if deep_poetic_count >= direct_poetic_count:
+            comparison_checks.append(f"✅ Deep has more poetic language: {deep_poetic_count} vs {direct_poetic_count}")
+        else:
+            comparison_checks.append(f"❌ Deep doesn't have more poetic language: {deep_poetic_count} vs {direct_poetic_count}")
+        
+        print("   Comparison Results:")
+        for check in comparison_checks:
+            print(f"     {check}")
+        
+        # Count passed checks
+        passed_checks = sum(1 for check in comparison_checks if check.startswith("✅"))
+        total_checks = len(comparison_checks)
+        
+        if passed_checks >= 3:  # At least 3 out of 4 checks should pass
+            print(f"   ✅ Consultation types are distinctly different: {passed_checks}/{total_checks} checks passed")
+            self.log_test("Consultation Types Comparison", True)
+            return True
+        else:
+            self.log_test("Consultation Types Comparison", False, 
+                        f"Consultation types not sufficiently different: {passed_checks}/{total_checks} checks passed")
+            return False
+
+    def test_consultation_type_saved_in_database(self):
+        """Verify consultation_type is properly saved and retrievable from database"""
+        if not self.token or not hasattr(self, 'direct_consultation') or not hasattr(self, 'deep_consultation'):
+            self.log_test("Consultation Type Saved in Database", False, "Consultations not available")
+            return False
+        
+        print("\n🗄️  Verifying consultation_type is saved in database...")
+        
+        # Test retrieving consultations list
+        success, response = self.run_test(
+            "Get Consultations List with Types",
+            "GET",
+            "consultations",
+            200
+        )
+        
+        if not success:
+            return False
+        
+        # Find our test consultations in the list
+        direct_found = None
+        deep_found = None
+        
+        for consultation in response:
+            if consultation.get('id') == self.direct_consultation['id']:
+                direct_found = consultation
+            elif consultation.get('id') == self.deep_consultation['id']:
+                deep_found = consultation
+        
+        verification_checks = []
+        
+        # Check direct consultation
+        if direct_found:
+            if direct_found.get('consultation_type') == 'direct':
+                verification_checks.append("✅ Direct consultation type found in list")
+            else:
+                verification_checks.append(f"❌ Direct consultation type incorrect in list: {direct_found.get('consultation_type')}")
+        else:
+            verification_checks.append("❌ Direct consultation not found in list")
+        
+        # Check deep consultation
+        if deep_found:
+            if deep_found.get('consultation_type') == 'deep':
+                verification_checks.append("✅ Deep consultation type found in list")
+            else:
+                verification_checks.append(f"❌ Deep consultation type incorrect in list: {deep_found.get('consultation_type')}")
+        else:
+            verification_checks.append("❌ Deep consultation not found in list")
+        
+        # Test individual consultation retrieval
+        if direct_found:
+            success, direct_detail = self.run_test(
+                "Get Direct Consultation Detail",
+                "GET",
+                f"consultations/{self.direct_consultation['id']}",
+                200
+            )
+            
+            if success and direct_detail.get('consultation_type') == 'direct':
+                verification_checks.append("✅ Direct consultation type in individual GET")
+            else:
+                verification_checks.append(f"❌ Direct consultation type incorrect in individual GET: {direct_detail.get('consultation_type') if success else 'Failed to retrieve'}")
+        
+        if deep_found:
+            success, deep_detail = self.run_test(
+                "Get Deep Consultation Detail",
+                "GET",
+                f"consultations/{self.deep_consultation['id']}",
+                200
+            )
+            
+            if success and deep_detail.get('consultation_type') == 'deep':
+                verification_checks.append("✅ Deep consultation type in individual GET")
+            else:
+                verification_checks.append(f"❌ Deep consultation type incorrect in individual GET: {deep_detail.get('consultation_type') if success else 'Failed to retrieve'}")
+        
+        print("   Database Verification Results:")
+        for check in verification_checks:
+            print(f"     {check}")
+        
+        # Count passed checks
+        passed_checks = sum(1 for check in verification_checks if check.startswith("✅"))
+        total_checks = len(verification_checks)
+        
+        if passed_checks == total_checks:
+            print(f"   ✅ All consultation types properly saved: {passed_checks}/{total_checks} checks passed")
+            self.log_test("Consultation Type Saved in Database", True)
+            return True
+        else:
+            self.log_test("Consultation Type Saved in Database", False, 
+                        f"Database verification failed: {passed_checks}/{total_checks} checks passed")
+            return False
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting I Ching API Tests")
