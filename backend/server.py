@@ -488,7 +488,13 @@ async def get_consultations(user: dict = Depends(get_current_user)):
         {"_id": 0}
     ).sort("created_at", -1).to_list(100)
     
-    return [ConsultationResponse(**c) for c in consultations]
+    lang = user.get("language", "it")
+    result = []
+    for c in consultations:
+        # Enrich old consultations with missing data
+        c = enrich_consultation_data(c, lang)
+        result.append(ConsultationResponse(**c))
+    return result
 
 @api_router.get("/consultations/{consultation_id}", response_model=ConsultationResponse)
 async def get_consultation(consultation_id: str, user: dict = Depends(get_current_user)):
@@ -498,7 +504,59 @@ async def get_consultation(consultation_id: str, user: dict = Depends(get_curren
     )
     if not consultation:
         raise HTTPException(status_code=404, detail="Consultazione non trovata")
+    
+    lang = user.get("language", "it")
+    consultation = enrich_consultation_data(consultation, lang)
     return ConsultationResponse(**consultation)
+
+def enrich_consultation_data(consultation: dict, language: str) -> dict:
+    """Add missing traditional data to old consultations"""
+    hex_num = consultation.get("hexagram_number")
+    derived_num = consultation.get("derived_hexagram_number")
+    moving_lines = consultation.get("moving_lines", [])
+    
+    # Add hexagram_chinese if missing
+    if not consultation.get("hexagram_chinese"):
+        primary = HEXAGRAMS.get(hex_num, {})
+        consultation["hexagram_chinese"] = primary.get("name", "")
+    
+    # Add derived_hexagram_chinese if missing
+    if derived_num and not consultation.get("derived_hexagram_chinese"):
+        derived = HEXAGRAMS.get(derived_num, {})
+        consultation["derived_hexagram_chinese"] = derived.get("name", "")
+    
+    # Add traditional_data if missing
+    if not consultation.get("traditional_data"):
+        trad_data = get_hexagram_traditional_data(hex_num, language)
+        trigram_above_info = get_trigram_info(trad_data.get("trigram_above", "☰"), language)
+        trigram_below_info = get_trigram_info(trad_data.get("trigram_below", "☷"), language)
+        moving_texts = get_moving_lines_text(hex_num, moving_lines, language)
+        
+        consultation["traditional_data"] = {
+            "sentence": trad_data.get("sentence", ""),
+            "image": trad_data.get("image", ""),
+            "commentary": trad_data.get("commentary", ""),
+            "trigram_above": trigram_above_info,
+            "trigram_below": trigram_below_info,
+            "moving_lines_text": moving_texts
+        }
+    
+    # Add derived_traditional_data if missing
+    if derived_num and not consultation.get("derived_traditional_data"):
+        derived_trad = get_hexagram_traditional_data(derived_num, language)
+        d_trigram_above = get_trigram_info(derived_trad.get("trigram_above", "☰"), language)
+        d_trigram_below = get_trigram_info(derived_trad.get("trigram_below", "☷"), language)
+        
+        consultation["derived_traditional_data"] = {
+            "sentence": derived_trad.get("sentence", ""),
+            "image": derived_trad.get("image", ""),
+            "commentary": derived_trad.get("commentary", ""),
+            "trigram_above": d_trigram_above,
+            "trigram_below": d_trigram_below,
+            "moving_lines_text": []
+        }
+    
+    return consultation
 
 # ============== SHARE CONSULTATION ==============
 @api_router.post("/consultations/{consultation_id}/share")
