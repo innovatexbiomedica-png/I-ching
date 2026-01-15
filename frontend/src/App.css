@@ -1,34 +1,189 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* I Ching del Benessere - App Styles */
+
+/* Container utilities */
+.container-zen {
+  @apply max-w-7xl mx-auto px-6 md:px-12;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Section spacing */
+.section-zen {
+  @apply py-24 md:py-32;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+/* Hero section */
+.hero-gradient {
+  background: linear-gradient(180deg, rgba(249, 247, 242, 0) 0%, rgba(249, 247, 242, 1) 100%);
 }
 
-.App-link {
-    color: #61dafb;
+/* Hexagram display */
+.hexagram-container {
+  @apply flex flex-col items-center justify-center p-8;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.hexagram-symbol {
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.2;
+  letter-spacing: 0.1em;
+}
+
+/* Chat interface */
+.chat-container {
+  @apply flex flex-col h-full;
+}
+
+.chat-message {
+  @apply p-6 rounded max-w-[85%];
+}
+
+.chat-message-user {
+  @apply bg-[#E5E0D8] ml-auto;
+}
+
+.chat-message-oracle {
+  @apply bg-white border border-[#D1CDC7] mr-auto;
+}
+
+/* Pricing card */
+.pricing-card {
+  @apply zen-card relative overflow-hidden;
+}
+
+.pricing-card-featured {
+  border-color: var(--cinnabar);
+}
+
+.pricing-card-featured::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--cinnabar);
+}
+
+/* Landing page decorative elements */
+.decoration-line {
+  @apply h-px bg-[#D1CDC7];
+}
+
+.decoration-dot {
+  @apply w-2 h-2 rounded-full bg-[#C44D38];
+}
+
+/* Consultation history card */
+.history-card {
+  @apply zen-card cursor-pointer;
+}
+
+.history-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 40px -10px rgba(44, 44, 44, 0.1);
+}
+
+/* Loading states */
+.loading-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .container-zen {
+    @apply px-4;
+  }
+  
+  .section-zen {
+    @apply py-16;
+  }
+}
+
+/* Coin toss table */
+.coin-toss-table {
+  @apply w-full border-collapse;
+}
+
+.coin-toss-table th,
+.coin-toss-table td {
+  @apply p-4 text-center border border-[#D1CDC7];
+}
+
+.coin-toss-table th {
+  @apply bg-[#E5E0D8] font-serif text-sm uppercase tracking-wider;
+}
+
+/* Language selector */
+.lang-btn {
+  @apply px-3 py-1 text-sm transition-all duration-200;
+}
+
+.lang-btn.active {
+  @apply text-[#C44D38] font-medium;
+}
+
+.lang-btn:not(.active) {
+  @apply text-[#595959] hover:text-[#2C2C2C];
+}
+
+/* Interpretation text */
+.interpretation-text {
+  @apply text-lg leading-relaxed;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+}
+
+.interpretation-text p {
+  @apply mb-6;
+}
+
+/* Dashboard stats */
+.stat-card {
+  @apply zen-card text-center;
+}
+
+.stat-number {
+  @apply text-4xl font-serif text-[#C44D38];
+}
+
+.stat-label {
+  @apply text-sm text-[#595959] mt-2;
+}
+
+/* Form styling */
+.form-group {
+  @apply mb-6;
+}
+
+.form-label {
+  @apply block text-sm font-medium mb-2 text-[#2C2C2C];
+}
+
+/* Auth pages */
+.auth-container {
+  @apply min-h-screen flex items-center justify-center py-12 px-4;
+}
+
+.auth-card {
+  @apply zen-card w-full max-w-md;
+}
+
+/* Subscription badge */
+.subscription-badge {
+  @apply inline-flex items-center px-3 py-1 text-xs font-medium rounded-full;
+}
+
+.subscription-badge-active {
+  @apply bg-[#8A9A5B]/20 text-[#6B7A40];
+}
+
+.subscription-badge-inactive {
+  @apply bg-[#E5E0D8] text-[#595959];
 }
