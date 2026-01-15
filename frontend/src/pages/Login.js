@@ -79,6 +79,15 @@ const Login = () => {
                 data-testid="password-input"
               />
             </div>
+            <div className="mt-2 text-right">
+              <Link 
+                to="/forgot-password" 
+                className="text-sm text-[#C44D38] hover:underline"
+                data-testid="forgot-password-link"
+              >
+                {t.auth.forgotPassword}
+              </Link>
+            </div>
           </div>
           
           <Button
