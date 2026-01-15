@@ -182,6 +182,22 @@ const Consultation = () => {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up stagger-4">
+            <ShareButton 
+              consultation={result}
+              shareToken={result.share_token}
+              onGenerateLink={async () => {
+                try {
+                  const response = await axios.post(`${API}/consultations/${result.id}/share`, {}, {
+                    headers: { Authorization: `Bearer ${getToken()}` }
+                  });
+                  return response.data.share_token;
+                } catch (err) {
+                  toast.error(language === 'it' ? 'Errore nella condivisione' : 'Share error');
+                  return null;
+                }
+              }}
+              language={language}
+            />
             <Button
               onClick={() => {
                 setResult(null);
