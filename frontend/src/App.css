@@ -148,7 +148,8 @@
 
 /* Dashboard stats */
 .stat-card {
-  @apply zen-card text-center;
+  @apply bg-white/60 backdrop-blur-sm border border-[#D1CDC7] p-8 transition-colors duration-300 text-center;
+  border-radius: 4px;
 }
 
 .stat-number {
