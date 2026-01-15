@@ -1165,6 +1165,10 @@ def enrich_consultation_data(consultation: dict, language: str) -> dict:
     if "synthesis_type" not in consultation:
         consultation["synthesis_type"] = None
     
+    # Add consultation_type if missing (for backward compatibility)
+    if "consultation_type" not in consultation:
+        consultation["consultation_type"] = "deep"  # Default to deep for old consultations
+    
     return consultation
 
 # ============== SHARE CONSULTATION ==============
