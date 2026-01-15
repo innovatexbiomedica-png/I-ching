@@ -1537,6 +1537,124 @@ class IChingAPITester:
         
         return False
 
+    def test_hexagram_14_traditional_texts(self):
+        """Test Hexagram 14 (Ta Yu / Il Possesso Grande) with correct traditional texts for moving lines 3, 4, 6"""
+        if not self.token:
+            self.log_test("Hexagram 14 Traditional Texts", False, "No auth token")
+            return False
+            
+        # Create consultation that produces Hexagram 14 with moving lines 3, 4, 6
+        consultation_data = {
+            "question": "Come sta lei in questo momento?",
+            "coin_tosses": {
+                "line1": 7,  # Yang
+                "line2": 7,  # Yang  
+                "line3": 9,  # Old Yang (moving)
+                "line4": 9,  # Old Yang (moving)
+                "line5": 8,  # Yin
+                "line6": 9   # Old Yang (moving)
+            },
+            "consultation_type": "direct"
+        }
+        
+        success, response = self.run_test(
+            "Hexagram 14 Traditional Texts",
+            "POST",
+            "consultations",
+            200,
+            data=consultation_data
+        )
+        
+        if success and 'interpretation' in response:
+            interpretation = response['interpretation']
+            
+            print(f"   ✅ Consultation created successfully")
+            print(f"   Hexagram: {response.get('hexagram_number')} - {response.get('hexagram_name')}")
+            print(f"   Moving lines: {response.get('moving_lines', [])}")
+            print(f"   Derived hexagram: {response.get('derived_hexagram_number')} - {response.get('derived_hexagram_name', 'None')}")
+            
+            # Verify hexagram structure
+            verification_checks = []
+            
+            # 1. Check hexagram number is 14
+            if response.get('hexagram_number') == 14:
+                verification_checks.append("✅ Hexagram number is 14")
+            else:
+                verification_checks.append(f"❌ Hexagram number is {response.get('hexagram_number')}, expected 14")
+            
+            # 2. Check hexagram name contains "Possesso Grande" or "Ta Yu"
+            hexagram_name = response.get('hexagram_name', '')
+            if "Possesso Grande" in hexagram_name or "Ta Yu" in hexagram_name:
+                verification_checks.append(f"✅ Hexagram name correct: {hexagram_name}")
+            else:
+                verification_checks.append(f"❌ Hexagram name incorrect: {hexagram_name}")
+            
+            # 3. Check moving lines are [3, 4, 6]
+            moving_lines = response.get('moving_lines', [])
+            if moving_lines == [3, 4, 6]:
+                verification_checks.append("✅ Moving lines correct: [3, 4, 6]")
+            else:
+                verification_checks.append(f"❌ Moving lines incorrect: {moving_lines}, expected [3, 4, 6]")
+            
+            # 4. Check derived hexagram is 19 (L'Avvicinamento)
+            derived_hex = response.get('derived_hexagram_number')
+            derived_name = response.get('derived_hexagram_name', '')
+            if derived_hex == 19:
+                verification_checks.append(f"✅ Derived hexagram correct: 19 - {derived_name}")
+            else:
+                verification_checks.append(f"❌ Derived hexagram incorrect: {derived_hex}, expected 19")
+            
+            # 5. Check traditional texts for moving lines in interpretation
+            traditional_text_checks = []
+            
+            # Line 3: "Un principe ne fa offerta al Figlio del Cielo"
+            if "principe" in interpretation.lower() and ("offerta" in interpretation.lower() or "figlio del cielo" in interpretation.lower()):
+                traditional_text_checks.append("✅ Line 3 traditional text found: 'principe offerta/Figlio del Cielo'")
+            else:
+                traditional_text_checks.append("❌ Line 3 traditional text missing: 'Un principe ne fa offerta al Figlio del Cielo'")
+            
+            # Line 4: "Fa una distinzione tra sé e il suo prossimo"
+            if "distinzione" in interpretation.lower() and ("prossimo" in interpretation.lower() or "vicino" in interpretation.lower()):
+                traditional_text_checks.append("✅ Line 4 traditional text found: 'distinzione prossimo'")
+            else:
+                traditional_text_checks.append("❌ Line 4 traditional text missing: 'Fa una distinzione tra sé e il suo prossimo'")
+            
+            # Line 6: "Dal cielo egli viene benedetto" or "protezione divina"
+            if ("cielo" in interpretation.lower() and "benedetto" in interpretation.lower()) or "protezione divina" in interpretation.lower():
+                traditional_text_checks.append("✅ Line 6 traditional text found: 'cielo benedetto/protezione divina'")
+            else:
+                traditional_text_checks.append("❌ Line 6 traditional text missing: 'Dal cielo egli viene benedetto'")
+            
+            # Print all verification results
+            print("   Hexagram Structure Verification:")
+            for check in verification_checks:
+                print(f"     {check}")
+            
+            print("   Traditional Text Verification:")
+            for check in traditional_text_checks:
+                print(f"     {check}")
+            
+            # Count passed checks
+            structure_passed = sum(1 for check in verification_checks if check.startswith("✅"))
+            text_passed = sum(1 for check in traditional_text_checks if check.startswith("✅"))
+            
+            total_structure = len(verification_checks)
+            total_text = len(traditional_text_checks)
+            
+            print(f"   Structure checks: {structure_passed}/{total_structure}")
+            print(f"   Traditional text checks: {text_passed}/{total_text}")
+            
+            # Test passes if all structure checks pass and at least 2 out of 3 traditional text checks pass
+            if structure_passed == total_structure and text_passed >= 2:
+                print(f"   ✅ Hexagram 14 traditional texts verification PASSED")
+                return True
+            else:
+                self.log_test("Hexagram 14 Traditional Texts", False, 
+                            f"Verification failed: structure {structure_passed}/{total_structure}, texts {text_passed}/{total_text}")
+                return False
+        
+        return False
+
     def test_consultation_type_deep(self):
         """Test consultation with consultation_type='deep' - should be longer and more elaborate"""
         if not self.token:
