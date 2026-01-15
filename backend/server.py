@@ -504,6 +504,127 @@ Write as an ancient Taoist master, with poetry, depth, and compassion."""
         logger.error(f"Error generating interpretation: {e}")
         return f"L'interpretazione non è disponibile al momento. Il tuo esagramma è {primary.get(name_key, primary['name'])}."
 
+async def generate_direct_interpretation(hexagram_data: dict, question: str, language: str, 
+                                          primary: dict, derived: dict, 
+                                          primary_extended: dict, derived_extended: dict,
+                                          name_key: str) -> str:
+    """Generate a direct, impactful interpretation - simple and to the point"""
+    
+    primary_name = primary.get(name_key, primary.get("name", ""))
+    primary_chinese = primary.get("name", "")
+    giudizio = primary_extended.get("giudizio", "")
+    
+    # Build moving lines summary
+    moving_lines_text = ""
+    if hexagram_data['moving_lines']:
+        for line_pos in hexagram_data['moving_lines']:
+            line_data = get_moving_line_extended(hexagram_data["primary_hexagram"], line_pos, language)
+            testo = line_data.get("testo", "")
+            if language == "it":
+                moving_lines_text += f"\n• Linea {line_pos}: \"{testo}\""
+            else:
+                moving_lines_text += f"\n• Line {line_pos}: \"{testo}\""
+    
+    # Derived hexagram text
+    derived_text = ""
+    if derived:
+        derived_name = derived.get(name_key, derived.get("name", ""))
+        if language == "it":
+            derived_text = f"\n\nLa situazione evolve verso: {derived_name}"
+        else:
+            derived_text = f"\n\nThe situation evolves towards: {derived_name}"
+    
+    if language == "it":
+        system_prompt = """Sei un consulente I Ching che parla in modo DIRETTO, CHIARO e D'IMPATTO.
+
+STILE:
+- Vai dritto al punto, senza giri di parole
+- Usa un linguaggio semplice e comprensibile
+- Parla SEMPRE in seconda persona ("tu", "la tua situazione")
+- Sii empatico ma sincero - di' quello che il consultante ha bisogno di sentire
+- Fornisci risposte pratiche e applicabili
+
+STRUTTURA (300-400 parole):
+1. Apertura diretta che conferma/risponde alla domanda (1-2 frasi d'impatto)
+2. L'esagramma in sintesi: cosa significa per la situazione specifica
+3. Se ci sono linee mutevoli: il messaggio chiave di ciascuna (una frase per linea)
+4. Se c'è esagramma derivato: dove sta andando la situazione
+5. Conclusione con consiglio pratico chiaro
+
+NON FARE:
+- Non usare linguaggio troppo poetico o elaborato
+- Non fare lunghe citazioni
+- Non essere vago o generico
+- Non usare liste puntate (scrivi in paragrafi fluidi)
+
+ESEMPIO DI TONO:
+"La tua percezione è esatta. Quello che senti non è solo immaginazione - è reale. L'esagramma conferma che..."
+"Ecco la verità sulla tua situazione: ..."
+"Questo è il momento di..."
+"""
+    else:
+        system_prompt = """You are an I Ching consultant who speaks in a DIRECT, CLEAR and IMPACTFUL way.
+
+STYLE:
+- Get straight to the point, no beating around the bush
+- Use simple and understandable language
+- ALWAYS speak in second person ("you", "your situation")
+- Be empathetic but honest - say what the querent needs to hear
+- Provide practical and applicable answers
+
+STRUCTURE (300-400 words):
+1. Direct opening that confirms/answers the question (1-2 impactful sentences)
+2. The hexagram in summary: what it means for the specific situation
+3. If there are moving lines: the key message of each (one sentence per line)
+4. If there is a derived hexagram: where the situation is heading
+5. Conclusion with clear practical advice
+
+DO NOT:
+- Do not use overly poetic or elaborate language
+- Do not make long quotes
+- Do not be vague or generic
+- Do not use bullet lists (write in flowing paragraphs)
+
+EXAMPLE TONE:
+"Your perception is accurate. What you feel is not just imagination - it's real. The hexagram confirms that..."
+"Here's the truth about your situation: ..."
+"This is the time to..."
+"""
+
+    if language == "it":
+        user_prompt = f"""Domanda del consultante: "{question}"
+
+ESAGRAMMA: {hexagram_data["primary_hexagram"]}. {primary_chinese} ({primary_name})
+Sentenza: "{giudizio}"
+{f"Linee mutevoli: {moving_lines_text}" if moving_lines_text else "Nessuna linea mutevole"}
+{derived_text}
+
+Genera un'interpretazione DIRETTA e D'IMPATTO (300-400 parole) che risponda chiaramente alla domanda.
+Vai dritto al punto. Di' al consultante quello che ha bisogno di sapere."""
+    else:
+        user_prompt = f"""Querent's question: "{question}"
+
+HEXAGRAM: {hexagram_data["primary_hexagram"]}. {primary_chinese} ({primary_name})
+Judgment: "{giudizio}"
+{f"Moving lines: {moving_lines_text}" if moving_lines_text else "No moving lines"}
+{derived_text}
+
+Generate a DIRECT and IMPACTFUL interpretation (300-400 words) that clearly answers the question.
+Get straight to the point. Tell the querent what they need to know."""
+
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"iching-direct-{uuid.uuid4()}",
+            system_message=system_prompt
+        ).with_model("gemini", "gemini-2.0-flash")
+        
+        response = await chat.send_message(UserMessage(text=user_prompt))
+        return response
+    except Exception as e:
+        logger.error(f"Error generating direct interpretation: {e}")
+        return f"L'interpretazione non è disponibile al momento. Il tuo esagramma è {primary.get(name_key, primary['name'])}."
+
 # ============== AUTH ROUTES ==============
 @api_router.post("/auth/register", response_model=UserResponse)
 async def register(user_data: UserCreate):
