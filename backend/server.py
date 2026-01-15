@@ -304,8 +304,8 @@ def get_hexagram_symbol(lines: List[int]) -> str:
             symbols.append("━━ ━━" if line == 8 else "━━×━━")
     return "\n".join(reversed(symbols))
 
-async def generate_interpretation(hexagram_data: dict, question: str, language: str) -> str:
-    """Generate rich, detailed AI interpretation using Gemini with full I Ching wisdom"""
+async def generate_interpretation(hexagram_data: dict, question: str, language: str, consultation_type: str = "deep") -> str:
+    """Generate AI interpretation using Gemini - either direct or deep style"""
     primary = HEXAGRAMS.get(hexagram_data["primary_hexagram"], {})
     derived = HEXAGRAMS.get(hexagram_data["derived_hexagram"], {}) if hexagram_data["derived_hexagram"] else None
     
@@ -314,6 +314,15 @@ async def generate_interpretation(hexagram_data: dict, question: str, language: 
     derived_extended = get_extended_hexagram_data(hexagram_data["derived_hexagram"], language) if hexagram_data["derived_hexagram"] else None
     
     name_key = "name_it" if language == "it" else "name_en"
+    
+    # DIRECT STYLE - Simple, impactful, to the point
+    if consultation_type == "direct":
+        return await generate_direct_interpretation(
+            hexagram_data, question, language, primary, derived, 
+            primary_extended, derived_extended, name_key
+        )
+    
+    # DEEP STYLE - Full traditional interpretation with Book of Changes quotes
     
     if language == "it":
         system_prompt = """Sei un venerabile Maestro dell'I Ching, custode della saggezza millenaria del Libro dei Mutamenti.
