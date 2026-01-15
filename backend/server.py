@@ -201,7 +201,10 @@ class ConsultationResponse(BaseModel):
     interpretation: str
     created_at: str
     consultation_type: str = "deep"  # "direct" or "deep"
-    # New fields for linked consultations
+    # Fields for conversation/continuation
+    parent_consultation_id: Optional[str] = None
+    conversation_depth: int = 0  # How many consultations deep in the conversation
+    # Fields for linked consultations (synthesis)
     is_synthesis: bool = False
     linked_consultation_ids: List[str] = []
     synthesis_type: Optional[str] = None  # "confirmation", "deepening", "clarification"
