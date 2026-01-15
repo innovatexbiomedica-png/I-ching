@@ -557,6 +557,277 @@ class IChingAPITester:
             return True
         return False
 
+    def test_conversation_continuation_parent(self):
+        """Test creating first consultation (parent) for conversation continuation"""
+        if not self.token:
+            self.log_test("Conversation Continuation - Parent", False, "No auth token")
+            return False
+            
+        consultation_data = {
+            "question": "Come andrà il mio lavoro questa settimana?",
+            "coin_tosses": {
+                "line1": 7,  # Yang
+                "line2": 8,  # Yin
+                "line3": 9,  # Old Yang (moving)
+                "line4": 7,  # Yang
+                "line5": 6,  # Old Yin (moving)
+                "line6": 8   # Yin
+            },
+            "consultation_type": "direct"
+        }
+        
+        success, response = self.run_test(
+            "Conversation Continuation - Parent",
+            "POST",
+            "consultations",
+            200,
+            data=consultation_data
+        )
+        
+        if success and 'id' in response:
+            self.parent_consultation_id = response['id']
+            
+            # Verify parent consultation fields
+            verification_checks = []
+            
+            if response.get('parent_consultation_id') is None:
+                verification_checks.append("✅ Parent consultation has no parent_consultation_id")
+            else:
+                verification_checks.append(f"❌ Parent consultation has unexpected parent_consultation_id: {response.get('parent_consultation_id')}")
+            
+            if response.get('conversation_depth') == 0:
+                verification_checks.append("✅ Parent consultation has conversation_depth = 0")
+            else:
+                verification_checks.append(f"❌ Parent consultation has incorrect conversation_depth: {response.get('conversation_depth')}")
+            
+            print(f"   Created parent consultation: {response.get('hexagram_name', 'Unknown')}")
+            print(f"   Parent consultation ID: {self.parent_consultation_id}")
+            
+            for check in verification_checks:
+                print(f"     {check}")
+            
+            passed_checks = sum(1 for check in verification_checks if check.startswith("✅"))
+            if passed_checks == len(verification_checks):
+                return True
+            else:
+                self.log_test("Conversation Continuation - Parent", False, "Parent consultation verification failed")
+                return False
+        
+        return False
+
+    def test_conversation_continuation_child(self):
+        """Test creating continuation consultation (child) with parent_consultation_id"""
+        if not self.token or not hasattr(self, 'parent_consultation_id'):
+            self.log_test("Conversation Continuation - Child", False, "No auth token or parent consultation")
+            return False
+            
+        consultation_data = {
+            "question": "Come posso migliorare la situazione lavorativa?",
+            "coin_tosses": {
+                "line1": 8,  # Yin
+                "line2": 7,  # Yang
+                "line3": 7,  # Yang
+                "line4": 9,  # Old Yang (moving)
+                "line5": 8,  # Yin
+                "line6": 7   # Yang
+            },
+            "consultation_type": "direct",
+            "parent_consultation_id": self.parent_consultation_id
+        }
+        
+        success, response = self.run_test(
+            "Conversation Continuation - Child",
+            "POST",
+            "consultations",
+            200,
+            data=consultation_data
+        )
+        
+        if success and 'id' in response:
+            self.child_consultation_id = response['id']
+            
+            # Verify child consultation fields
+            verification_checks = []
+            
+            if response.get('parent_consultation_id') == self.parent_consultation_id:
+                verification_checks.append("✅ Child consultation has correct parent_consultation_id")
+            else:
+                verification_checks.append(f"❌ Child consultation has incorrect parent_consultation_id: {response.get('parent_consultation_id')}")
+            
+            if response.get('conversation_depth') == 1:
+                verification_checks.append("✅ Child consultation has conversation_depth = 1")
+            else:
+                verification_checks.append(f"❌ Child consultation has incorrect conversation_depth: {response.get('conversation_depth')}")
+            
+            # Check if interpretation references previous consultation
+            interpretation = response.get('interpretation', '')
+            if any(keyword in interpretation.lower() for keyword in ['precedente', 'prima', 'stesa', 'domanda', 'conversazione']):
+                verification_checks.append("✅ Child interpretation references previous consultation")
+            else:
+                verification_checks.append("❌ Child interpretation doesn't reference previous consultation")
+            
+            print(f"   Created child consultation: {response.get('hexagram_name', 'Unknown')}")
+            print(f"   Child consultation ID: {self.child_consultation_id}")
+            print(f"   Parent ID: {response.get('parent_consultation_id')}")
+            print(f"   Conversation depth: {response.get('conversation_depth')}")
+            
+            for check in verification_checks:
+                print(f"     {check}")
+            
+            passed_checks = sum(1 for check in verification_checks if check.startswith("✅"))
+            if passed_checks >= 2:  # At least 2 out of 3 checks should pass
+                return True
+            else:
+                self.log_test("Conversation Continuation - Child", False, "Child consultation verification failed")
+                return False
+        
+        return False
+
+    def test_conversation_continuation_grandchild(self):
+        """Test creating second continuation (grandchild) with conversation_depth = 2"""
+        if not self.token or not hasattr(self, 'child_consultation_id'):
+            self.log_test("Conversation Continuation - Grandchild", False, "No auth token or child consultation")
+            return False
+            
+        consultation_data = {
+            "question": "Cosa devo fare concretamente domani?",
+            "coin_tosses": {
+                "line1": 6,  # Old Yin (moving)
+                "line2": 9,  # Old Yang (moving)
+                "line3": 8,  # Yin
+                "line4": 7,  # Yang
+                "line5": 7,  # Yang
+                "line6": 9   # Old Yang (moving)
+            },
+            "consultation_type": "direct",
+            "parent_consultation_id": self.child_consultation_id
+        }
+        
+        success, response = self.run_test(
+            "Conversation Continuation - Grandchild",
+            "POST",
+            "consultations",
+            200,
+            data=consultation_data
+        )
+        
+        if success and 'id' in response:
+            self.grandchild_consultation_id = response['id']
+            
+            # Verify grandchild consultation fields
+            verification_checks = []
+            
+            if response.get('parent_consultation_id') == self.child_consultation_id:
+                verification_checks.append("✅ Grandchild consultation has correct parent_consultation_id")
+            else:
+                verification_checks.append(f"❌ Grandchild consultation has incorrect parent_consultation_id: {response.get('parent_consultation_id')}")
+            
+            if response.get('conversation_depth') == 2:
+                verification_checks.append("✅ Grandchild consultation has conversation_depth = 2")
+            else:
+                verification_checks.append(f"❌ Grandchild consultation has incorrect conversation_depth: {response.get('conversation_depth')}")
+            
+            # Check if interpretation references conversation history
+            interpretation = response.get('interpretation', '')
+            if any(keyword in interpretation.lower() for keyword in ['storia', 'conversazione', 'precedenti', 'stese', 'domande']):
+                verification_checks.append("✅ Grandchild interpretation references conversation history")
+            else:
+                verification_checks.append("❌ Grandchild interpretation doesn't reference conversation history")
+            
+            print(f"   Created grandchild consultation: {response.get('hexagram_name', 'Unknown')}")
+            print(f"   Grandchild consultation ID: {self.grandchild_consultation_id}")
+            print(f"   Parent ID: {response.get('parent_consultation_id')}")
+            print(f"   Conversation depth: {response.get('conversation_depth')}")
+            
+            for check in verification_checks:
+                print(f"     {check}")
+            
+            passed_checks = sum(1 for check in verification_checks if check.startswith("✅"))
+            if passed_checks >= 2:  # At least 2 out of 3 checks should pass
+                return True
+            else:
+                self.log_test("Conversation Continuation - Grandchild", False, "Grandchild consultation verification failed")
+                return False
+        
+        return False
+
+    def test_conversation_history_in_get_consultations(self):
+        """Test that GET /api/consultations returns parent_consultation_id and conversation_depth"""
+        if not self.token:
+            self.log_test("Conversation History in GET Consultations", False, "No auth token")
+            return False
+        
+        success, response = self.run_test(
+            "Conversation History in GET Consultations",
+            "GET",
+            "consultations",
+            200
+        )
+        
+        if success and isinstance(response, list):
+            verification_checks = []
+            
+            # Find our conversation consultations
+            parent_found = None
+            child_found = None
+            grandchild_found = None
+            
+            for consultation in response:
+                if hasattr(self, 'parent_consultation_id') and consultation.get('id') == self.parent_consultation_id:
+                    parent_found = consultation
+                elif hasattr(self, 'child_consultation_id') and consultation.get('id') == self.child_consultation_id:
+                    child_found = consultation
+                elif hasattr(self, 'grandchild_consultation_id') and consultation.get('id') == self.grandchild_consultation_id:
+                    grandchild_found = consultation
+            
+            # Verify parent consultation in list
+            if parent_found:
+                if (parent_found.get('parent_consultation_id') is None and 
+                    parent_found.get('conversation_depth') == 0):
+                    verification_checks.append("✅ Parent consultation fields correct in list")
+                else:
+                    verification_checks.append(f"❌ Parent consultation fields incorrect in list: parent_id={parent_found.get('parent_consultation_id')}, depth={parent_found.get('conversation_depth')}")
+            else:
+                verification_checks.append("❌ Parent consultation not found in list")
+            
+            # Verify child consultation in list
+            if child_found:
+                if (child_found.get('parent_consultation_id') == self.parent_consultation_id and 
+                    child_found.get('conversation_depth') == 1):
+                    verification_checks.append("✅ Child consultation fields correct in list")
+                else:
+                    verification_checks.append(f"❌ Child consultation fields incorrect in list: parent_id={child_found.get('parent_consultation_id')}, depth={child_found.get('conversation_depth')}")
+            else:
+                verification_checks.append("❌ Child consultation not found in list")
+            
+            # Verify grandchild consultation in list
+            if grandchild_found:
+                if (grandchild_found.get('parent_consultation_id') == self.child_consultation_id and 
+                    grandchild_found.get('conversation_depth') == 2):
+                    verification_checks.append("✅ Grandchild consultation fields correct in list")
+                else:
+                    verification_checks.append(f"❌ Grandchild consultation fields incorrect in list: parent_id={grandchild_found.get('parent_consultation_id')}, depth={grandchild_found.get('conversation_depth')}")
+            else:
+                verification_checks.append("❌ Grandchild consultation not found in list")
+            
+            print(f"   Found {len(response)} total consultations")
+            print("   Conversation History Verification:")
+            for check in verification_checks:
+                print(f"     {check}")
+            
+            passed_checks = sum(1 for check in verification_checks if check.startswith("✅"))
+            total_checks = len(verification_checks)
+            
+            if passed_checks >= total_checks - 1:  # Allow 1 failure
+                print(f"   ✅ Conversation history verification: {passed_checks}/{total_checks} checks passed")
+                return True
+            else:
+                self.log_test("Conversation History in GET Consultations", False, 
+                            f"Conversation history verification failed: {passed_checks}/{total_checks} checks passed")
+                return False
+        
+        return False
+
     def test_synthesis_with_one_consultation_should_fail(self):
         """Test synthesis with only 1 consultation (should fail - minimum 2 required)"""
         if not self.token or not hasattr(self, 'consultation_1_id'):
