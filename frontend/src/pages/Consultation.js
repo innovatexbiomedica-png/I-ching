@@ -187,8 +187,45 @@ const Consultation = () => {
             </div>
           </div>
 
+          {/* Continue Consultation Button */}
+          <div className="zen-card mb-8 animate-fade-in-up stagger-4 border-2 border-dashed border-[#D1CDC7] hover:border-[#C44D38] transition-colors">
+            <button
+              onClick={() => {
+                // Save current result as parent and reset for continuation
+                setParentConsultation(result);
+                setQuestion('');
+                setLines({ line1: '', line2: '', line3: '', line4: '', line5: '', line6: '' });
+                setResult(null);
+                setContinuationMode(true);
+              }}
+              className="w-full p-6 text-center group"
+              data-testid="continue-consultation-btn"
+            >
+              <div className="flex items-center justify-center space-x-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-[#E5E0D8] group-hover:bg-[#C44D38] flex items-center justify-center transition-colors">
+                  <ArrowRight className="w-5 h-5 text-[#595959] group-hover:text-white transition-colors" />
+                </div>
+                <h4 className="font-serif text-lg text-[#2C2C2C] group-hover:text-[#C44D38] transition-colors">
+                  {language === 'it' ? 'Continua la Consultazione' : 'Continue Consultation'}
+                </h4>
+              </div>
+              <p className="text-sm text-[#595959]">
+                {language === 'it' 
+                  ? 'Fai un\'altra domanda collegata a questa stesa per approfondire la comprensione. L\'oracolo terrà conto del contesto precedente.'
+                  : 'Ask another question linked to this reading to deepen understanding. The oracle will consider the previous context.'}
+              </p>
+              {result.conversation_depth > 0 && (
+                <p className="text-xs text-[#C44D38] mt-2">
+                  {language === 'it' 
+                    ? `Questa è già la stesa n° ${result.conversation_depth + 1} della conversazione`
+                    : `This is already reading #${result.conversation_depth + 1} in the conversation`}
+                </p>
+              )}
+            </button>
+          </div>
+
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up stagger-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up stagger-5">
             <ShareButton 
               consultation={result}
               shareToken={result.share_token}
@@ -210,6 +247,8 @@ const Consultation = () => {
                 setResult(null);
                 setQuestion('');
                 setLines({ line1: '', line2: '', line3: '', line4: '', line5: '', line6: '' });
+                setParentConsultation(null);
+                setContinuationMode(false);
               }}
               className="btn-primary"
               data-testid="new-consultation-btn"
