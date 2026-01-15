@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
-import { Loader2, Circle, AlertCircle, BookOpen, Sparkles } from 'lucide-react';
+import { Loader2, Circle, AlertCircle, BookOpen, Sparkles, Zap, Compass } from 'lucide-react';
 import ShareButton from '../components/ShareButton';
 import HexagramDisplay from '../components/HexagramDisplay';
 import TraditionalReading from '../components/TraditionalReading';
@@ -26,6 +26,7 @@ const Consultation = () => {
   const t = useTranslation(language);
   const navigate = useNavigate();
   
+  const [consultationType, setConsultationType] = useState(null); // 'direct' or 'deep'
   const [question, setQuestion] = useState('');
   const [lines, setLines] = useState({
     line1: '',
@@ -71,7 +72,8 @@ const Consultation = () => {
           line4: parseInt(lines.line4),
           line5: parseInt(lines.line5),
           line6: parseInt(lines.line6)
-        }
+        },
+        consultation_type: consultationType || 'deep'
       }, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
