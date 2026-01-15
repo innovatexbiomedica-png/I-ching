@@ -263,11 +263,29 @@ def get_trigram_info(symbol: str, language: str = "it") -> dict:
     }
 
 def get_moving_lines_text(hex_number: int, moving_lines: list, language: str = "it") -> list:
-    """Get text for moving lines"""
+    """Get text for moving lines - uses extended data if available"""
+    # First try HEXAGRAM_TRADITIONAL
     data = HEXAGRAM_TRADITIONAL.get(hex_number, {})
     lines_data = data.get("lines", {})
-    result = []
     
+    # If not in HEXAGRAM_TRADITIONAL, try to import from iching_extended
+    if not lines_data:
+        try:
+            from iching_extended import ICHING_EXTENDED
+            extended_data = ICHING_EXTENDED.get(hex_number, {})
+            extended_lines = extended_data.get("linee", {})
+            if extended_lines:
+                # Convert extended format to traditional format
+                lines_data = {}
+                for line_num, line_info in extended_lines.items():
+                    lines_data[line_num] = {
+                        "moving": line_info.get("testo", ""),
+                        "meaning": line_info.get("significato", "")
+                    }
+        except ImportError:
+            pass
+    
+    result = []
     for line_num in moving_lines:
         line_info = lines_data.get(line_num, {})
         result.append({
