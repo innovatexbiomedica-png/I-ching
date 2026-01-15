@@ -1359,7 +1359,7 @@ async def create_checkout(data: CheckoutRequest, request: Request, user: dict = 
 
 @api_router.get("/payments/status/{session_id}")
 async def get_payment_status(session_id: str, user: dict = Depends(get_current_user)):
-    host_url = "https://error-zapper-3.preview.emergentagent.com"
+    host_url = "https://iching-collection.preview.emergentagent.com"
     webhook_url = f"{host_url}/api/webhook/stripe"
     
     stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
