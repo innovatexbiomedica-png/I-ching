@@ -161,6 +161,7 @@ class CoinToss(BaseModel):
 class ConsultationCreate(BaseModel):
     question: str
     coin_tosses: CoinToss
+    consultation_type: str = "deep"  # "direct" or "deep"
 
 class TrigramInfo(BaseModel):
     symbol: str
