@@ -107,39 +107,60 @@ user_problem_statement: "I Ching del Benessere - App di divinazione con abboname
 backend:
   - task: "Password reset request endpoint"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementato endpoint POST /api/auth/request-reset che genera codice 6 cifre e salva in DB"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: POST /api/auth/request-reset works correctly. Generates 6-digit code, saves to DB, logs admin info. Tested with valid/invalid emails. Security message returned for non-existent emails."
 
   - task: "Password reset verify endpoint"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementato endpoint POST /api/auth/verify-reset che verifica codice e cambia password"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: POST /api/auth/verify-reset works correctly. Validates reset code, checks expiration, enforces password length (min 6 chars), updates password hash, marks code as used. Login with new password successful, old password properly invalidated."
 
   - task: "User registration with phone field"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Aggiunto campo phone opzionale alla registrazione utente"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: POST /api/auth/register with phone field works correctly. Phone field is optional, properly stored and returned in response. Registration successful with phone: +39 123 456 7890"
+
+  - task: "Admin reset requests endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: GET /api/admin/reset-requests works correctly. Returns list of pending reset requests with all required fields (email, phone, name, code, expiration). Found 1 pending request during testing."
 
 frontend:
   - task: "ForgotPassword page"
