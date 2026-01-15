@@ -644,6 +644,197 @@ async def delete_consultation(consultation_id: str, user: dict = Depends(get_cur
         raise HTTPException(status_code=404, detail="Consultazione non trovata")
     return {"message": "Consultazione eliminata"}
 
+@api_router.post("/consultations/synthesis", response_model=ConsultationResponse)
+async def create_synthesis_consultation(data: SynthesisRequest, user: dict = Depends(get_current_user)):
+    """
+    Create a synthesis consultation from multiple existing consultations.
+    This generates a new interpretation that combines and analyzes the selected readings.
+    """
+    if len(data.consultation_ids) < 2:
+        raise HTTPException(status_code=400, detail="Seleziona almeno 2 consultazioni")
+    
+    if len(data.consultation_ids) > 5:
+        raise HTTPException(status_code=400, detail="Massimo 5 consultazioni per sintesi")
+    
+    # Fetch all selected consultations
+    consultations = []
+    for cid in data.consultation_ids:
+        c = await db.consultations.find_one(
+            {"id": cid, "user_id": user["id"]},
+            {"_id": 0}
+        )
+        if not c:
+            raise HTTPException(status_code=404, detail=f"Consultazione {cid} non trovata")
+        consultations.append(c)
+    
+    # Sort by creation date
+    consultations.sort(key=lambda x: x.get("created_at", ""))
+    
+    lang = user.get("language", "it")
+    
+    # Build synthesis prompt
+    synthesis_type_labels = {
+        "confirmation": "conferma o smentita" if lang == "it" else "confirmation or denial",
+        "deepening": "approfondimento" if lang == "it" else "deepening",
+        "clarification": "chiarimento" if lang == "it" else "clarification"
+    }
+    synthesis_label = synthesis_type_labels.get(data.synthesis_type, synthesis_type_labels["deepening"])
+    
+    # Generate synthesis interpretation
+    synthesis_interpretation = await generate_synthesis_interpretation(
+        consultations, 
+        data.synthesis_type, 
+        lang
+    )
+    
+    # Create combined question
+    questions = [c.get("question", "") for c in consultations]
+    combined_question = f"[SINTESI - {synthesis_label.upper()}]\n" + "\n→ ".join(questions)
+    
+    # Use the most recent hexagram as the "primary" for the synthesis
+    latest = consultations[-1]
+    
+    # Create synthesis consultation record
+    consultation_id = str(uuid.uuid4())
+    consultation_doc = {
+        "id": consultation_id,
+        "user_id": user["id"],
+        "question": combined_question,
+        "hexagram_number": latest.get("hexagram_number", 1),
+        "hexagram_name": latest.get("hexagram_name", ""),
+        "hexagram_chinese": latest.get("hexagram_chinese", ""),
+        "hexagram_symbol": latest.get("hexagram_symbol", ""),
+        "derived_hexagram_number": latest.get("derived_hexagram_number"),
+        "derived_hexagram_name": latest.get("derived_hexagram_name"),
+        "derived_hexagram_chinese": latest.get("derived_hexagram_chinese"),
+        "moving_lines": latest.get("moving_lines", []),
+        "traditional_data": latest.get("traditional_data"),
+        "derived_traditional_data": latest.get("derived_traditional_data"),
+        "interpretation": synthesis_interpretation,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "is_synthesis": True,
+        "linked_consultation_ids": data.consultation_ids,
+        "synthesis_type": data.synthesis_type
+    }
+    
+    await db.consultations.insert_one(consultation_doc)
+    
+    return ConsultationResponse(
+        id=consultation_id,
+        question=combined_question,
+        hexagram_number=latest.get("hexagram_number", 1),
+        hexagram_name=latest.get("hexagram_name", ""),
+        hexagram_chinese=latest.get("hexagram_chinese", ""),
+        hexagram_symbol=latest.get("hexagram_symbol", ""),
+        derived_hexagram_number=latest.get("derived_hexagram_number"),
+        derived_hexagram_name=latest.get("derived_hexagram_name"),
+        derived_hexagram_chinese=latest.get("derived_hexagram_chinese"),
+        moving_lines=latest.get("moving_lines", []),
+        traditional_data=TraditionalData(**latest["traditional_data"]) if latest.get("traditional_data") else None,
+        derived_traditional_data=TraditionalData(**latest["derived_traditional_data"]) if latest.get("derived_traditional_data") else None,
+        interpretation=synthesis_interpretation,
+        created_at=consultation_doc["created_at"],
+        is_synthesis=True,
+        linked_consultation_ids=data.consultation_ids,
+        synthesis_type=data.synthesis_type
+    )
+
+async def generate_synthesis_interpretation(consultations: List[dict], synthesis_type: str, language: str) -> str:
+    """Generate AI interpretation that synthesizes multiple consultations"""
+    if not EMERGENT_LLM_KEY:
+        return "Interpretazione di sintesi non disponibile."
+    
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            model="gemini-2.0-flash",
+            system_prompt="""Sei un maestro di I Ching con profonda saggezza taoista. 
+Il tuo compito è analizzare MULTIPLE consultazioni fatte dallo stesso consultante e creare una SINTESI che:
+- Trova il filo conduttore tra le diverse stese
+- Identifica conferme, contraddizioni o approfondimenti
+- Offre una visione d'insieme illuminante
+- Mantiene un tono rispettoso, profondo ma accessibile
+
+Non usare elenchi puntati. Scrivi in modo fluido e narrativo.
+Parla sempre in seconda persona al consultante."""
+        )
+        
+        # Build the consultation summaries
+        summaries = []
+        for i, c in enumerate(consultations, 1):
+            hex_name = c.get("hexagram_name", "")
+            hex_num = c.get("hexagram_number", 0)
+            question = c.get("question", "")
+            interpretation = c.get("interpretation", "")[:500]  # Limit length
+            derived = c.get("derived_hexagram_name", "")
+            moving = c.get("moving_lines", [])
+            
+            summary = f"""
+STESA {i}:
+- Domanda: {question}
+- Esagramma: {hex_num}. {hex_name}
+- Linee mutevoli: {moving if moving else 'Nessuna'}
+- Esagramma derivato: {derived if derived else 'Nessuno'}
+- Interpretazione originale (estratto): {interpretation}...
+"""
+            summaries.append(summary)
+        
+        synthesis_instructions = {
+            "confirmation": {
+                "it": "Analizza se le stese successive CONFERMANO o SMENTISCONO il messaggio della prima. Cerca coerenza o contraddizioni.",
+                "en": "Analyze whether the subsequent readings CONFIRM or DENY the message of the first. Look for coherence or contradictions."
+            },
+            "deepening": {
+                "it": "Approfondisci il significato complessivo, trovando connessioni nascoste tra le stese. Offri una comprensione più profonda.",
+                "en": "Deepen the overall meaning, finding hidden connections between the readings. Offer a deeper understanding."
+            },
+            "clarification": {
+                "it": "Chiarisci eventuali ambiguità, offrendo una lettura definitiva che risolva dubbi o incertezze emerse.",
+                "en": "Clarify any ambiguities, offering a definitive reading that resolves doubts or uncertainties."
+            }
+        }
+        
+        instruction = synthesis_instructions.get(synthesis_type, synthesis_instructions["deepening"])
+        instruction_text = instruction.get(language, instruction["it"])
+        
+        if language == "it":
+            prompt = f"""Ecco le consultazioni I Ching da sintetizzare:
+
+{"".join(summaries)}
+
+ISTRUZIONI: {instruction_text}
+
+Scrivi una SINTESI DIVINATORIA (300-500 parole) che:
+1. Identifica il tema comune o l'evoluzione tra le stese
+2. Analizza come gli esagrammi dialogano tra loro
+3. Offre una conclusione illuminante per il consultante
+4. Se ci sono linee mutevoli, considera la direzione del cambiamento
+
+Concludi con un consiglio pratico basato sulla sintesi."""
+        else:
+            prompt = f"""Here are the I Ching consultations to synthesize:
+
+{"".join(summaries)}
+
+INSTRUCTIONS: {instruction_text}
+
+Write a DIVINATORY SYNTHESIS (300-500 words) that:
+1. Identifies the common theme or evolution between readings
+2. Analyzes how the hexagrams dialogue with each other
+3. Offers an illuminating conclusion for the querent
+4. If there are moving lines, consider the direction of change
+
+Conclude with practical advice based on the synthesis."""
+        
+        response = await chat.send_message(UserMessage(text=prompt))
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error generating synthesis: {e}")
+        if language == "it":
+            return "La sintesi delle tue consultazioni rivela un percorso di crescita. Gli esagrammi che hai ricevuto dialogano tra loro, suggerendo un'evoluzione del tuo cammino. Medita su come i messaggi si collegano nella tua situazione attuale."
+        return "The synthesis of your consultations reveals a path of growth. The hexagrams you received dialogue with each other, suggesting an evolution of your journey. Meditate on how the messages connect in your current situation."
+
 def enrich_consultation_data(consultation: dict, language: str) -> dict:
     """Add missing traditional data to old consultations"""
     hex_num = consultation.get("hexagram_number")
