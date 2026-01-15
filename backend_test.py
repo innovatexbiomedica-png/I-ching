@@ -1554,7 +1554,7 @@ class IChingAPITester:
                 "line5": 8,  # Yin
                 "line6": 9   # Old Yang (moving)
             },
-            "consultation_type": "direct"
+            "consultation_type": "deep"
         }
         
         success, response = self.run_test(
