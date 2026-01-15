@@ -5,10 +5,11 @@ import { useTranslation } from '../lib/translations';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { it, enUS } from 'date-fns/locale';
-import { Calendar, ArrowRight, ArrowLeft, Loader2, Circle, BookOpen, Sparkles } from 'lucide-react';
+import { Calendar, ArrowRight, ArrowLeft, Loader2, BookOpen, Sparkles, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import { toast } from 'sonner';
 import HexagramDisplay from '../components/HexagramDisplay';
-import MovingLinesSection from '../components/MovingLinesSection';
+import TraditionalReading from '../components/TraditionalReading';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
