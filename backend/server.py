@@ -309,7 +309,32 @@ def get_hexagram_symbol(lines: List[int]) -> str:
             symbols.append("━━ ━━" if line == 8 else "━━×━━")
     return "\n".join(reversed(symbols))
 
-async def generate_interpretation(hexagram_data: dict, question: str, language: str, consultation_type: str = "deep") -> str:
+async def get_conversation_history(parent_id: str, user_id: str, max_depth: int = 5) -> list:
+    """Retrieve the conversation history by following parent_consultation_id chain"""
+    history = []
+    current_id = parent_id
+    depth = 0
+    
+    while current_id and depth < max_depth:
+        consultation = await db.consultations.find_one(
+            {"id": current_id, "user_id": user_id},
+            {"_id": 0, "question": 1, "hexagram_number": 1, "hexagram_name": 1, 
+             "interpretation": 1, "parent_consultation_id": 1, "moving_lines": 1,
+             "derived_hexagram_number": 1, "derived_hexagram_name": 1}
+        )
+        
+        if not consultation:
+            break
+            
+        history.insert(0, consultation)  # Insert at beginning to maintain chronological order
+        current_id = consultation.get("parent_consultation_id")
+        depth += 1
+    
+    return history
+
+async def generate_interpretation(hexagram_data: dict, question: str, language: str, 
+                                   consultation_type: str = "deep", 
+                                   conversation_history: list = None) -> str:
     """Generate AI interpretation using Gemini - either direct or deep style"""
     primary = HEXAGRAMS.get(hexagram_data["primary_hexagram"], {})
     derived = HEXAGRAMS.get(hexagram_data["derived_hexagram"], {}) if hexagram_data["derived_hexagram"] else None
@@ -324,7 +349,8 @@ async def generate_interpretation(hexagram_data: dict, question: str, language: 
     if consultation_type == "direct":
         return await generate_direct_interpretation(
             hexagram_data, question, language, primary, derived, 
-            primary_extended, derived_extended, name_key
+            primary_extended, derived_extended, name_key,
+            conversation_history=conversation_history
         )
     
     # DEEP STYLE - Full traditional interpretation with Book of Changes quotes
