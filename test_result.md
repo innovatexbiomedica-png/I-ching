@@ -213,6 +213,18 @@ backend:
         agent: "testing"
         comment: "✅ TESTED: Enhanced I Ching interpretation system fully functional. POST /api/consultations with moving lines works perfectly in both Italian and English. Italian test: Hexagram 63→18, 935 words, contains traditional references (giudizio, immagine, trigramma, linea, esagramma, tao), moving lines explained, derived hexagram transformation explained, poetic style with nature metaphors, career-specific content. English test: Hexagram 64→17, 906 words, contains traditional references (judgment, image, line, moving, hexagram, changing), moving lines explained, derived hexagram transformation explained, poetic contemplative style, career-specific content. Response structure includes all required fields: hexagram_number, hexagram_name, hexagram_chinese, moving_lines, derived_hexagram_number, derived_hexagram_name, interpretation. Quality assessment: 6/6 checks passed for both languages. System generates rich 600-900 word interpretations with traditional I Ching texts, detailed moving line explanations, derived hexagram meanings, poetic Taoist master style, and question-specific guidance."
 
+  - task: "Moving lines traditional text in API response"
+    implemented: true
+    working: true
+    file: "backend/server.py, backend/iching_data.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Moving lines traditional text functionality fully working. POST /api/consultations with Hexagram 14 and moving lines [3, 4, 6] correctly returns traditional_data.moving_lines_text with expected texts: Line 3 'Un principe ne fa offerta al Figlio del Cielo', Line 4 'Fa una distinzione tra sé e il suo prossimo', Line 6 'Dal cielo egli viene benedetto'. Fixed issue in get_moving_lines_text function where empty traditional data was preventing fallback to extended data. Function now properly checks for content and uses iching_extended.py data when traditional data is empty. All moving line positions, texts, and meanings correctly populated in API response."
+
 frontend:
   - task: "ForgotPassword page"
     implemented: true
