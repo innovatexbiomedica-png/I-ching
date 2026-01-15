@@ -97,6 +97,208 @@ class IChingAPITester:
             return True
         return False
 
+    def test_user_registration_with_phone(self):
+        """Test user registration with phone field"""
+        timestamp = datetime.now().strftime('%H%M%S')
+        test_user = {
+            "email": f"phone_user_{timestamp}@test.com",
+            "password": "TestPass123!",
+            "name": f"Phone User {timestamp}",
+            "phone": "+39 123 456 7890",
+            "language": "it"
+        }
+        
+        success, response = self.run_test(
+            "User Registration with Phone",
+            "POST",
+            "auth/register",
+            200,
+            data=test_user
+        )
+        
+        if success and 'id' in response and 'phone' in response:
+            print(f"   Phone field returned: {response.get('phone', 'Not found')}")
+            self.phone_user_email = test_user['email']
+            self.phone_user_password = test_user['password']
+            self.phone_user_phone = test_user['phone']
+            return True
+        return False
+
+    def test_password_reset_request(self):
+        """Test password reset request"""
+        if not hasattr(self, 'phone_user_email'):
+            self.log_test("Password Reset Request", False, "No phone user created")
+            return False
+            
+        reset_data = {
+            "email": self.phone_user_email,
+            "phone": self.phone_user_phone
+        }
+        
+        success, response = self.run_test(
+            "Password Reset Request",
+            "POST",
+            "auth/request-reset",
+            200,
+            data=reset_data
+        )
+        
+        if success and 'message' in response:
+            print(f"   Reset message: {response.get('message', '')}")
+            return True
+        return False
+
+    def test_password_reset_request_invalid_email(self):
+        """Test password reset request with invalid email"""
+        reset_data = {
+            "email": "nonexistent@test.com",
+            "phone": "+39 999 999 9999"
+        }
+        
+        success, response = self.run_test(
+            "Password Reset Request (Invalid Email)",
+            "POST",
+            "auth/request-reset",
+            200,  # Should still return 200 for security
+            data=reset_data
+        )
+        
+        if success and 'message' in response:
+            print(f"   Security message: {response.get('message', '')}")
+            return True
+        return False
+
+    def test_admin_reset_requests(self):
+        """Test admin endpoint for reset requests"""
+        success, response = self.run_test(
+            "Admin Reset Requests",
+            "GET",
+            "admin/reset-requests",
+            200
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} pending reset requests")
+            if len(response) > 0:
+                # Store the reset code for verification test
+                self.reset_code = response[0].get('code')
+                self.reset_email = response[0].get('email')
+                print(f"   Latest reset code: {self.reset_code}")
+            return True
+        return False
+
+    def test_password_reset_verify_invalid_code(self):
+        """Test password reset verification with invalid code"""
+        if not hasattr(self, 'phone_user_email'):
+            self.log_test("Password Reset Verify (Invalid Code)", False, "No phone user created")
+            return False
+            
+        verify_data = {
+            "email": self.phone_user_email,
+            "code": "999999",  # Invalid code
+            "new_password": "NewPassword123!"
+        }
+        
+        success, response = self.run_test(
+            "Password Reset Verify (Invalid Code)",
+            "POST",
+            "auth/verify-reset",
+            400,  # Should fail
+            data=verify_data
+        )
+        return success
+
+    def test_password_reset_verify_short_password(self):
+        """Test password reset verification with short password"""
+        if not hasattr(self, 'reset_code') or not hasattr(self, 'reset_email'):
+            self.log_test("Password Reset Verify (Short Password)", False, "No reset code available")
+            return False
+            
+        verify_data = {
+            "email": self.reset_email,
+            "code": self.reset_code,
+            "new_password": "123"  # Too short
+        }
+        
+        success, response = self.run_test(
+            "Password Reset Verify (Short Password)",
+            "POST",
+            "auth/verify-reset",
+            400,  # Should fail
+            data=verify_data
+        )
+        return success
+
+    def test_password_reset_verify_valid(self):
+        """Test password reset verification with valid code"""
+        if not hasattr(self, 'reset_code') or not hasattr(self, 'reset_email'):
+            self.log_test("Password Reset Verify (Valid)", False, "No reset code available")
+            return False
+            
+        verify_data = {
+            "email": self.reset_email,
+            "code": self.reset_code,
+            "new_password": "NewPassword123!"
+        }
+        
+        success, response = self.run_test(
+            "Password Reset Verify (Valid)",
+            "POST",
+            "auth/verify-reset",
+            200,
+            data=verify_data
+        )
+        
+        if success:
+            self.new_password = verify_data['new_password']
+            print(f"   Password reset successful")
+            return True
+        return False
+
+    def test_login_with_new_password(self):
+        """Test login with new password after reset"""
+        if not hasattr(self, 'reset_email') or not hasattr(self, 'new_password'):
+            self.log_test("Login with New Password", False, "No password reset completed")
+            return False
+            
+        login_data = {
+            "email": self.reset_email,
+            "password": self.new_password
+        }
+        
+        success, response = self.run_test(
+            "Login with New Password",
+            "POST",
+            "auth/login",
+            200,
+            data=login_data
+        )
+        
+        if success and 'token' in response:
+            print(f"   Login successful with new password")
+            return True
+        return False
+
+    def test_login_with_old_password_should_fail(self):
+        """Test login with old password should fail after reset"""
+        if not hasattr(self, 'phone_user_email') or not hasattr(self, 'phone_user_password'):
+            self.log_test("Login with Old Password (Should Fail)", False, "No original password available")
+            return False
+            
+        login_data = {
+            "email": self.phone_user_email,
+            "password": self.phone_user_password  # Old password
+        }
+        
+        success, response = self.run_test(
+            "Login with Old Password (Should Fail)",
+            "POST",
+            "auth/login",
+            401,  # Should fail
+            data=login_data
+        )
+        return success
+
     def test_user_login(self):
         """Test user login"""
         if not hasattr(self, 'test_email'):
