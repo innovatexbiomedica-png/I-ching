@@ -137,83 +137,53 @@ const History = () => {
                 {/* Hexagram Visual */}
                 <div className="flex justify-center">
                   <HexagramDisplay
-                    hexagramNumber={selectedConsultation.hexagram_number}
-                    hexagramName={selectedConsultation.hexagram_name}
-                    hexagramChinese={selectedConsultation.hexagram_chinese || selectedConsultation.hexagram_name}
-                    trigramAbove={selectedConsultation.traditional_data?.trigram_above}
-                    trigramBelow={selectedConsultation.traditional_data?.trigram_below}
-                    movingLines={selectedConsultation.moving_lines}
-                    size="medium"
-                  />
+            {/* SECTION 1: Traditional Reading */}
+            <div className="mb-12">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="w-12 h-12 rounded-full bg-[#2C2C2C] flex items-center justify-center">
+                  <span className="text-white font-serif text-xl">1</span>
                 </div>
-
-                {/* Traditional Sentence & Image */}
-                <div className="space-y-6">
-                  {selectedConsultation.traditional_data?.sentence && (
-                    <div>
-                      <h4 className="text-sm text-[#C44D38] tracking-wider uppercase mb-2">
-                        {sentenceTitle}
-                      </h4>
-                      <p className="font-serif text-lg text-[#2C2C2C] italic">
-                        "{selectedConsultation.traditional_data.sentence}"
-                      </p>
-                    </div>
-                  )}
-                  
-                  {selectedConsultation.traditional_data?.image && (
-                    <div>
-                      <h4 className="text-sm text-[#C44D38] tracking-wider uppercase mb-2">
-                        {imageTitle}
-                      </h4>
-                      <p className="text-[#595959]">
-                        {selectedConsultation.traditional_data.image}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Derived Hexagram */}
-              {selectedConsultation.derived_hexagram_number && (
-                <div className="mt-8 pt-8 border-t border-[#D1CDC7] text-center">
-                  <p className="text-sm text-[#595959] mb-2">{t.consultation.result.derivedHexagram}</p>
-                  <p className="font-serif text-2xl text-[#C44D38]">
-                    {selectedConsultation.derived_hexagram_number}. {selectedConsultation.derived_hexagram_name}
+                <div>
+                  <h2 className="text-2xl font-serif text-[#2C2C2C]">
+                    {language === 'it' ? 'Lettura dal Libro dei Mutamenti' : 'Reading from the Book of Changes'}
+                  </h2>
+                  <p className="text-sm text-[#595959]">
+                    {language === 'it' ? 'I testi tradizionali e la saggezza taoista' : 'Traditional texts and Taoist wisdom'}
                   </p>
                 </div>
-              )}
-            </div>
-
-            {/* SECTION 1: Traditional Reading */}
-            {selectedConsultation.traditional_data?.moving_lines_text && 
-             selectedConsultation.traditional_data.moving_lines_text.length > 0 && (
-              <div className="mb-8">
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="w-10 h-10 rounded-full bg-[#2C2C2C] flex items-center justify-center">
-                    <span className="text-white font-serif">1</span>
-                  </div>
-                  <h2 className="text-2xl font-serif text-[#2C2C2C]">{traditionalTitle}</h2>
-                </div>
-                <MovingLinesSection 
-                  movingLines={selectedConsultation.traditional_data.moving_lines_text}
-                  language={language}
-                />
               </div>
-            )}
+              
+              <TraditionalReading
+                hexagramNumber={selectedConsultation.hexagram_number}
+                hexagramName={selectedConsultation.hexagram_name}
+                hexagramChinese={selectedConsultation.hexagram_chinese || selectedConsultation.hexagram_name}
+                traditionalData={selectedConsultation.traditional_data}
+                derivedHexagramNumber={selectedConsultation.derived_hexagram_number}
+                derivedHexagramName={selectedConsultation.derived_hexagram_name}
+                derivedTraditionalData={selectedConsultation.derived_traditional_data}
+                movingLines={selectedConsultation.moving_lines}
+                language={language}
+              />
+            </div>
 
             {/* SECTION 2: AI Interpretation */}
             <div className="mb-8">
               <div className="flex items-center space-x-3 mb-6">
-                <div className="w-10 h-10 rounded-full bg-[#C44D38] flex items-center justify-center">
-                  <span className="text-white font-serif">2</span>
+                <div className="w-12 h-12 rounded-full bg-[#C44D38] flex items-center justify-center">
+                  <span className="text-white font-serif text-xl">2</span>
                 </div>
-                <h2 className="text-2xl font-serif text-[#2C2C2C] flex items-center space-x-2">
-                  <span>{aiTitle}</span>
-                  <Sparkles className="w-5 h-5 text-[#C44D38]" />
-                </h2>
+                <div>
+                  <h2 className="text-2xl font-serif text-[#2C2C2C] flex items-center space-x-2">
+                    <span>{aiTitle}</span>
+                    <Sparkles className="w-5 h-5 text-[#C44D38]" />
+                  </h2>
+                  <p className="text-sm text-[#595959]">
+                    {language === 'it' ? 'L\'oracolo interpreta la tua domanda' : 'The oracle interprets your question'}
+                  </p>
+                </div>
               </div>
-              <div className="zen-card">
-                <div className="interpretation-text text-[#2C2C2C] whitespace-pre-wrap">
+              <div className="zen-card border-l-4 border-[#C44D38]">
+                <div className="interpretation-text text-[#2C2C2C] whitespace-pre-wrap leading-relaxed">
                   {selectedConsultation.interpretation}
                 </div>
               </div>
