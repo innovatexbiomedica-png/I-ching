@@ -403,10 +403,32 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
     primary = HEXAGRAMS.get(hex_data["primary_hexagram"], {})
     derived = HEXAGRAMS.get(hex_data["derived_hexagram"], {}) if hex_data["derived_hexagram"] else None
     
-    name_key = "name_it" if user.get("language", "it") == "it" else "name_en"
+    lang = user.get("language", "it")
+    name_key = "name_it" if lang == "it" else "name_en"
+    
+    # Get traditional data
+    primary_traditional = get_hexagram_traditional_data(hex_data["primary_hexagram"], lang)
+    derived_traditional = get_hexagram_traditional_data(hex_data["derived_hexagram"], lang) if hex_data["derived_hexagram"] else None
+    
+    # Build traditional data response
+    def build_traditional_response(trad_data, moving_lines, hex_num):
+        trigram_above_info = get_trigram_info(trad_data.get("trigram_above", "☰"), lang)
+        trigram_below_info = get_trigram_info(trad_data.get("trigram_below", "☷"), lang)
+        moving_texts = get_moving_lines_text(hex_num, moving_lines, lang)
+        
+        return TraditionalData(
+            sentence=trad_data.get("sentence", ""),
+            image=trad_data.get("image", ""),
+            trigram_above=TrigramInfo(**trigram_above_info),
+            trigram_below=TrigramInfo(**trigram_below_info),
+            moving_lines_text=[MovingLineText(**m) for m in moving_texts]
+        )
+    
+    primary_trad_response = build_traditional_response(primary_traditional, hex_data["moving_lines"], hex_data["primary_hexagram"])
+    derived_trad_response = build_traditional_response(derived_traditional, [], hex_data["derived_hexagram"]) if derived_traditional else None
     
     # Generate interpretation
-    interpretation = await generate_interpretation(hex_data, data.question, user.get("language", "it"))
+    interpretation = await generate_interpretation(hex_data, data.question, lang)
     
     # Create consultation record
     consultation_id = str(uuid.uuid4())
@@ -417,10 +439,14 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
         "coin_tosses": data.coin_tosses.model_dump(),
         "hexagram_number": hex_data["primary_hexagram"],
         "hexagram_name": primary.get(name_key, primary.get("name", "")),
+        "hexagram_chinese": primary.get("name", ""),
         "hexagram_symbol": get_hexagram_symbol(hex_data["lines"]),
         "derived_hexagram_number": hex_data["derived_hexagram"],
         "derived_hexagram_name": derived.get(name_key, derived.get("name", "")) if derived else None,
+        "derived_hexagram_chinese": derived.get("name", "") if derived else None,
         "moving_lines": hex_data["moving_lines"],
+        "traditional_data": primary_trad_response.model_dump() if primary_trad_response else None,
+        "derived_traditional_data": derived_trad_response.model_dump() if derived_trad_response else None,
         "interpretation": interpretation,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
@@ -432,10 +458,14 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
         question=data.question,
         hexagram_number=hex_data["primary_hexagram"],
         hexagram_name=primary.get(name_key, primary.get("name", "")),
+        hexagram_chinese=primary.get("name", ""),
         hexagram_symbol=get_hexagram_symbol(hex_data["lines"]),
         derived_hexagram_number=hex_data["derived_hexagram"],
         derived_hexagram_name=derived.get(name_key, derived.get("name", "")) if derived else None,
+        derived_hexagram_chinese=derived.get("name", "") if derived else None,
         moving_lines=hex_data["moving_lines"],
+        traditional_data=primary_trad_response,
+        derived_traditional_data=derived_trad_response,
         interpretation=interpretation,
         created_at=consultation_doc["created_at"]
     )
