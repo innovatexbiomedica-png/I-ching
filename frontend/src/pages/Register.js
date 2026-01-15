@@ -90,6 +90,24 @@ const Register = () => {
               />
             </div>
           </div>
+
+          <div className="form-group">
+            <Label htmlFor="phone" className="form-label">
+              {currentLang === 'it' ? 'Telefono (per recupero password)' : 'Phone (for password recovery)'}
+            </Label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#595959]" />
+              <Input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="pl-10 bg-[#EBE8E1] border-[#D1CDC7] focus:border-[#C44D38] focus:ring-[#C44D38]"
+                placeholder="+39 123 456 7890"
+                data-testid="phone-input"
+              />
+            </div>
+          </div>
           
           <div className="form-group">
             <Label htmlFor="password" className="form-label">
