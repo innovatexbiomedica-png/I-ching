@@ -1201,6 +1201,8 @@ class IChingAPITester:
             self.test_enhanced_interpretation_italian_with_moving_lines,
             self.test_enhanced_interpretation_english_with_moving_lines,
             self.test_consultation_response_structure,
+            # DELETE consultation endpoint test
+            self.test_delete_consultation_endpoint,
             # Synthesis consultation tests
             self.test_create_consultation_1,
             self.test_create_consultation_2,
