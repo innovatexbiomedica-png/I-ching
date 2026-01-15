@@ -119,9 +119,15 @@ const Consultation = () => {
       parseInt(lines.line4), parseInt(lines.line5), parseInt(lines.line6)
     ];
 
+    const traditionalTitle = language === 'it' ? 'Lettura Tradizionale' : 'Traditional Reading';
+    const aiTitle = language === 'it' ? 'Interpretazione I Ching del Benessere' : 'I Ching of Wellbeing Interpretation';
+    const sentenceTitle = language === 'it' ? 'La Sentenza' : 'The Judgment';
+    const imageTitle = language === 'it' ? 'L\'Immagine' : 'The Image';
+    const readingGuideTitle = language === 'it' ? 'Guida alla Lettura' : 'Reading Guide';
+
     return (
       <div className="section-zen" data-testid="consultation-result">
-        <div className="container-zen max-w-3xl">
+        <div className="container-zen max-w-4xl">
           <div className="animate-fade-in-up">
             <h1 className="text-3xl md:text-4xl font-serif text-[#2C2C2C] mb-4 text-center">
               {t.consultation.result.title}
@@ -132,59 +138,133 @@ const Consultation = () => {
           {/* Question */}
           <div className="zen-card mb-8 animate-fade-in-up stagger-1" data-testid="result-question">
             <p className="text-sm text-[#595959] mb-2">{t.consultation.question}</p>
-            <p className="font-serif text-lg text-[#2C2C2C] italic">"{result.question}"</p>
+            <p className="font-serif text-xl text-[#2C2C2C] italic">"{result.question}"</p>
           </div>
 
-          {/* Hexagram Display */}
+          {/* Main Hexagram with Trigrams */}
           <div className="zen-card mb-8 animate-fade-in-up stagger-2" data-testid="result-hexagram">
-            <div className="text-center mb-6">
-              <p className="text-sm text-[#595959] mb-2">{t.consultation.result.hexagram}</p>
-              <h2 className="text-2xl font-serif text-[#2C2C2C]">
-                {result.hexagram_number}. {result.hexagram_name}
-              </h2>
-            </div>
-            
-            {/* Hexagram Lines */}
-            <div className="flex justify-center py-6">
-              <div className="space-y-2">
-                {lineValues.slice().reverse().map((value, index) => 
-                  renderHexagramLine(value, index, result.moving_lines.includes(6 - index))
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Hexagram Visual */}
+              <div className="flex justify-center">
+                <HexagramDisplay
+                  hexagramNumber={result.hexagram_number}
+                  hexagramName={result.hexagram_name}
+                  hexagramChinese={result.hexagram_chinese || result.hexagram_name}
+                  trigramAbove={result.traditional_data?.trigram_above}
+                  trigramBelow={result.traditional_data?.trigram_below}
+                  movingLines={result.moving_lines}
+                  lines={lineValues}
+                  size="medium"
+                />
+              </div>
+
+              {/* Traditional Sentence & Image */}
+              <div className="space-y-6">
+                {result.traditional_data?.sentence && (
+                  <div>
+                    <h4 className="text-sm text-[#C44D38] tracking-wider uppercase mb-2">
+                      {sentenceTitle}
+                    </h4>
+                    <p className="font-serif text-lg text-[#2C2C2C] italic">
+                      "{result.traditional_data.sentence}"
+                    </p>
+                  </div>
+                )}
+                
+                {result.traditional_data?.image && (
+                  <div>
+                    <h4 className="text-sm text-[#C44D38] tracking-wider uppercase mb-2">
+                      {imageTitle}
+                    </h4>
+                    <p className="text-[#595959]">
+                      {result.traditional_data.image}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
 
-            {/* Moving Lines */}
-            {result.moving_lines.length > 0 && (
-              <div className="text-center mt-4 pt-4 border-t border-[#D1CDC7]">
-                <p className="text-sm text-[#595959]">
-                  {t.consultation.result.movingLines}: {result.moving_lines.join(', ')}
-                </p>
-              </div>
-            )}
-
             {/* Derived Hexagram */}
             {result.derived_hexagram_number && (
-              <div className="text-center mt-4 pt-4 border-t border-[#D1CDC7]">
-                <p className="text-sm text-[#595959] mb-1">{t.consultation.result.derivedHexagram}</p>
-                <p className="font-serif text-[#C44D38]">
-                  {result.derived_hexagram_number}. {result.derived_hexagram_name}
-                </p>
+              <div className="mt-8 pt-8 border-t border-[#D1CDC7]">
+                <div className="text-center">
+                  <p className="text-sm text-[#595959] mb-2">{t.consultation.result.derivedHexagram}</p>
+                  <p className="font-serif text-2xl text-[#C44D38]">
+                    {result.derived_hexagram_number}. {result.derived_hexagram_name}
+                  </p>
+                  {result.derived_hexagram_chinese && (
+                    <p className="text-[#595959] mt-1">{result.derived_hexagram_chinese}</p>
+                  )}
+                </div>
               </div>
             )}
           </div>
 
-          {/* Interpretation */}
-          <div className="zen-card mb-8 animate-fade-in-up stagger-3" data-testid="result-interpretation">
-            <h3 className="font-serif text-xl text-[#2C2C2C] mb-4">
-              {t.consultation.result.interpretation}
+          {/* Reading Guide */}
+          <div className="zen-card mb-8 animate-fade-in-up stagger-3 bg-[#E5E0D8]/30" data-testid="reading-guide">
+            <h3 className="font-serif text-lg text-[#2C2C2C] mb-4 flex items-center space-x-2">
+              <BookOpen className="w-5 h-5 text-[#C44D38]" />
+              <span>{readingGuideTitle}</span>
             </h3>
-            <div className="interpretation-text text-[#2C2C2C] whitespace-pre-wrap">
-              {result.interpretation}
+            <div className="text-sm text-[#595959] space-y-2">
+              <p>
+                {language === 'it' 
+                  ? `• L'esagramma ${result.hexagram_number} rappresenta la situazione attuale attraverso i due trigrammi sovrapposti.`
+                  : `• Hexagram ${result.hexagram_number} represents the current situation through two stacked trigrams.`}
+              </p>
+              {result.moving_lines.length > 0 && (
+                <p>
+                  {language === 'it'
+                    ? `• Le linee mutevoli (${result.moving_lines.join(', ')}) indicano gli aspetti della situazione in trasformazione.`
+                    : `• The moving lines (${result.moving_lines.join(', ')}) indicate aspects of the situation undergoing transformation.`}
+                </p>
+              )}
+              {result.derived_hexagram_number && (
+                <p>
+                  {language === 'it'
+                    ? `• L'esagramma derivato (${result.derived_hexagram_number}) mostra la direzione verso cui evolverà la situazione.`
+                    : `• The derived hexagram (${result.derived_hexagram_number}) shows the direction the situation will evolve toward.`}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* SECTION 1: Traditional Reading - Moving Lines */}
+          {result.traditional_data?.moving_lines_text && result.traditional_data.moving_lines_text.length > 0 && (
+            <div className="animate-fade-in-up stagger-3 mb-8">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="w-10 h-10 rounded-full bg-[#2C2C2C] flex items-center justify-center">
+                  <span className="text-white font-serif">1</span>
+                </div>
+                <h2 className="text-2xl font-serif text-[#2C2C2C]">{traditionalTitle}</h2>
+              </div>
+              <MovingLinesSection 
+                movingLines={result.traditional_data.moving_lines_text}
+                language={language}
+              />
+            </div>
+          )}
+
+          {/* SECTION 2: AI Interpretation */}
+          <div className="animate-fade-in-up stagger-4 mb-8">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-10 h-10 rounded-full bg-[#C44D38] flex items-center justify-center">
+                <span className="text-white font-serif">2</span>
+              </div>
+              <h2 className="text-2xl font-serif text-[#2C2C2C] flex items-center space-x-2">
+                <span>{aiTitle}</span>
+                <Sparkles className="w-5 h-5 text-[#C44D38]" />
+              </h2>
+            </div>
+            <div className="zen-card" data-testid="result-interpretation">
+              <div className="interpretation-text text-[#2C2C2C] whitespace-pre-wrap">
+                {result.interpretation}
+              </div>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up stagger-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up stagger-5">
             <ShareButton 
               consultation={result}
               shareToken={result.share_token}
