@@ -834,8 +834,9 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
     primary_trad_response = build_traditional_response(primary_traditional, hex_data["moving_lines"], hex_data["primary_hexagram"])
     derived_trad_response = build_traditional_response(derived_traditional, [], hex_data["derived_hexagram"]) if derived_traditional else None
     
-    # Generate interpretation
-    interpretation = await generate_interpretation(hex_data, data.question, lang)
+    # Generate interpretation based on consultation type
+    consultation_type = data.consultation_type if hasattr(data, 'consultation_type') else "deep"
+    interpretation = await generate_interpretation(hex_data, data.question, lang, consultation_type)
     
     # Create consultation record
     consultation_id = str(uuid.uuid4())
@@ -844,6 +845,7 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
         "user_id": user["id"],
         "question": data.question,
         "coin_tosses": data.coin_tosses.model_dump(),
+        "consultation_type": consultation_type,
         "hexagram_number": hex_data["primary_hexagram"],
         "hexagram_name": primary.get(name_key, primary.get("name", "")),
         "hexagram_chinese": primary.get("name", ""),
