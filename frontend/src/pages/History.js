@@ -57,8 +57,7 @@ const History = () => {
   };
 
   const handleDelete = async (e, consultationId) => {
-    e.stopPropagation();
-    
+    // Stop propagation is now handled in the button onClick
     const confirmMsg = language === 'it' 
       ? 'Sei sicuro di voler eliminare questa consultazione?' 
       : 'Are you sure you want to delete this consultation?';
@@ -78,6 +77,7 @@ const History = () => {
       
       toast.success(language === 'it' ? 'Consultazione eliminata' : 'Consultation deleted');
     } catch (error) {
+      console.error('Delete error:', error);
       toast.error(language === 'it' ? 'Errore nell\'eliminazione' : 'Error deleting');
     }
   };
