@@ -102,9 +102,45 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "I Ching del Benessere - App di divinazione con abbonamenti. Aggiunta sistema recupero password con telefono."
+user_problem_statement: "I Ching del Benessere - App di divinazione con abbonamenti. Test del nuovo sistema di tipi di consultazione (direct vs deep)."
 
 backend:
+  - task: "Consultation type 'direct' endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: POST /api/consultations with consultation_type='direct' works correctly. Generates shorter interpretations (293 words, close to 300-400 target), uses direct language style, saves consultation_type correctly in database. Response includes consultation_type field. Minor: word count slightly below 300-word minimum but functionality is correct."
+
+  - task: "Consultation type 'deep' endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: POST /api/consultations with consultation_type='deep' works perfectly. Generates longer interpretations (831 words in 600-900 range), includes traditional I Ching references (7 keywords found), uses poetic/contemplative language (5 keywords found), saves consultation_type correctly in database. All requirements met."
+
+  - task: "Consultation types comparison and database storage"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Consultation types are distinctly different. Word count difference: 538 words (direct: 293, deep: 831). Deep has more traditional terms (5 vs 1). Both consultation_type values correctly saved in database and returned in GET /api/consultations. ConsultationResponse model updated to include consultation_type field. Backward compatibility maintained with default 'deep' for old consultations."
+
   - task: "Password reset request endpoint"
     implemented: true
     working: true
