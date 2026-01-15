@@ -296,6 +296,46 @@ const Consultation = () => {
           <div className="w-16 h-px bg-[#C44D38] mx-auto" />
         </div>
 
+        {/* Continuation Mode Banner */}
+        {continuationMode && parentConsultation && (
+          <div className="animate-fade-in-up mb-6">
+            <div className="zen-card border-l-4 border-[#C44D38] bg-[#C44D38]/5">
+              <div className="flex items-start space-x-3">
+                <MessageCircle className="w-5 h-5 text-[#C44D38] mt-1 flex-shrink-0" />
+                <div className="flex-1">
+                  <h4 className="font-serif text-lg text-[#2C2C2C] mb-1">
+                    {language === 'it' ? 'Continuazione della Consultazione' : 'Consultation Continuation'}
+                  </h4>
+                  <p className="text-sm text-[#595959] mb-2">
+                    {language === 'it' 
+                      ? 'Stai continuando la conversazione. L\'oracolo terrà conto della tua domanda precedente:'
+                      : 'You are continuing the conversation. The oracle will consider your previous question:'}
+                  </p>
+                  <p className="text-sm text-[#2C2C2C] italic border-l-2 border-[#D1CDC7] pl-3">
+                    "{parentConsultation.question}"
+                  </p>
+                  <p className="text-xs text-[#595959] mt-2">
+                    {language === 'it' 
+                      ? `Esagramma precedente: ${parentConsultation.hexagram_number}. ${parentConsultation.hexagram_name}`
+                      : `Previous hexagram: ${parentConsultation.hexagram_number}. ${parentConsultation.hexagram_name}`}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setParentConsultation(null);
+                      setContinuationMode(false);
+                      setConsultationType(null);
+                    }}
+                    className="text-xs text-[#C44D38] underline mt-2 hover:no-underline"
+                  >
+                    {language === 'it' ? 'Inizia una nuova consultazione' : 'Start a new consultation'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Consultation Type Selection */}
         {!consultationType && (
           <div className="animate-fade-in-up mb-8" data-testid="consultation-type-selection">
