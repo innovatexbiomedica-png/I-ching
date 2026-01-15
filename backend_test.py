@@ -754,6 +754,285 @@ class IChingAPITester:
             return True
         return False
 
+    def test_enhanced_interpretation_italian_with_moving_lines(self):
+        """Test enhanced I Ching interpretation system with moving lines in Italian"""
+        if not self.token:
+            self.log_test("Enhanced Interpretation (Italian with Moving Lines)", False, "No auth token")
+            return False
+            
+        # Create consultation with moving lines as specified in the review request
+        consultation_data = {
+            "question": "Cosa mi aspetta nel prossimo anno riguardo alla mia carriera?",
+            "coin_tosses": {
+                "line1": 9,  # Old Yang (moving)
+                "line2": 6,  # Old Yin (moving)
+                "line3": 7,  # Young Yang
+                "line4": 8,  # Young Yin
+                "line5": 9,  # Old Yang (moving)
+                "line6": 6   # Old Yin (moving)
+            }
+        }
+        
+        success, response = self.run_test(
+            "Enhanced Interpretation (Italian with Moving Lines)",
+            "POST",
+            "consultations",
+            200,
+            data=consultation_data
+        )
+        
+        if success and 'interpretation' in response:
+            interpretation = response['interpretation']
+            word_count = len(interpretation.split())
+            
+            print(f"   ✅ Consultation created successfully")
+            print(f"   Hexagram: {response.get('hexagram_number')} - {response.get('hexagram_name')}")
+            print(f"   Moving lines: {response.get('moving_lines', [])}")
+            print(f"   Derived hexagram: {response.get('derived_hexagram_number')} - {response.get('derived_hexagram_name', 'None')}")
+            print(f"   Interpretation word count: {word_count}")
+            
+            # Verify interpretation quality requirements
+            quality_checks = []
+            
+            # 1. Check word count (600-900 words)
+            if 600 <= word_count <= 900:
+                quality_checks.append("✅ Word count in range (600-900)")
+            else:
+                quality_checks.append(f"❌ Word count {word_count} not in range (600-900)")
+            
+            # 2. Check for traditional I Ching references
+            traditional_keywords = ["giudizio", "immagine", "trigramma", "linea", "mutevole", "esagramma"]
+            found_traditional = [kw for kw in traditional_keywords if kw.lower() in interpretation.lower()]
+            if len(found_traditional) >= 3:
+                quality_checks.append(f"✅ Contains traditional references: {found_traditional}")
+            else:
+                quality_checks.append(f"❌ Insufficient traditional references found: {found_traditional}")
+            
+            # 3. Check for moving lines explanation
+            moving_lines = response.get('moving_lines', [])
+            if moving_lines:
+                moving_explained = any(f"linea {line}" in interpretation.lower() for line in moving_lines)
+                if moving_explained:
+                    quality_checks.append("✅ Moving lines explained in detail")
+                else:
+                    quality_checks.append("❌ Moving lines not properly explained")
+            
+            # 4. Check for derived hexagram explanation
+            if response.get('derived_hexagram_number'):
+                derived_explained = "trasform" in interpretation.lower() or "derivato" in interpretation.lower()
+                if derived_explained:
+                    quality_checks.append("✅ Derived hexagram transformation explained")
+                else:
+                    quality_checks.append("❌ Derived hexagram transformation not explained")
+            
+            # 5. Check for poetic/contemplative style
+            poetic_indicators = ["tao", "drago", "acqua", "monte", "vento", "fuoco", "terra", "cielo", "natura"]
+            found_poetic = [ind for ind in poetic_indicators if ind.lower() in interpretation.lower()]
+            if len(found_poetic) >= 2:
+                quality_checks.append(f"✅ Poetic/contemplative style: {found_poetic}")
+            else:
+                quality_checks.append(f"❌ Lacks poetic/contemplative style: {found_poetic}")
+            
+            # 6. Check for question specificity
+            career_keywords = ["carriera", "lavoro", "professione", "anno", "futuro"]
+            found_career = [kw for kw in career_keywords if kw.lower() in interpretation.lower()]
+            if len(found_career) >= 2:
+                quality_checks.append(f"✅ Specific to career question: {found_career}")
+            else:
+                quality_checks.append(f"❌ Not specific to career question: {found_career}")
+            
+            # Print quality assessment
+            print("   Quality Assessment:")
+            for check in quality_checks:
+                print(f"     {check}")
+            
+            # Store for English test
+            self.italian_consultation_id = response['id']
+            
+            # Count passed checks
+            passed_checks = sum(1 for check in quality_checks if check.startswith("✅"))
+            total_checks = len(quality_checks)
+            
+            if passed_checks >= 4:  # At least 4 out of 6 checks should pass
+                print(f"   ✅ Quality assessment: {passed_checks}/{total_checks} checks passed")
+                return True
+            else:
+                self.log_test("Enhanced Interpretation (Italian with Moving Lines)", False, 
+                            f"Quality assessment failed: {passed_checks}/{total_checks} checks passed")
+                return False
+        
+        return False
+
+    def test_enhanced_interpretation_english_with_moving_lines(self):
+        """Test enhanced I Ching interpretation system with moving lines in English"""
+        if not self.token:
+            self.log_test("Enhanced Interpretation (English with Moving Lines)", False, "No auth token")
+            return False
+        
+        # First update language to English
+        lang_success, _ = self.run_test(
+            "Update Language to English",
+            "PUT",
+            "auth/language?language=en",
+            200
+        )
+        
+        if not lang_success:
+            self.log_test("Enhanced Interpretation (English with Moving Lines)", False, "Failed to update language")
+            return False
+            
+        # Create consultation with moving lines in English
+        consultation_data = {
+            "question": "What opportunities await me in my career development over the next year?",
+            "coin_tosses": {
+                "line1": 6,  # Old Yin (moving)
+                "line2": 9,  # Old Yang (moving)
+                "line3": 8,  # Young Yin
+                "line4": 7,  # Young Yang
+                "line5": 6,  # Old Yin (moving)
+                "line6": 9   # Old Yang (moving)
+            }
+        }
+        
+        success, response = self.run_test(
+            "Enhanced Interpretation (English with Moving Lines)",
+            "POST",
+            "consultations",
+            200,
+            data=consultation_data
+        )
+        
+        if success and 'interpretation' in response:
+            interpretation = response['interpretation']
+            word_count = len(interpretation.split())
+            
+            print(f"   ✅ English consultation created successfully")
+            print(f"   Hexagram: {response.get('hexagram_number')} - {response.get('hexagram_name')}")
+            print(f"   Moving lines: {response.get('moving_lines', [])}")
+            print(f"   Derived hexagram: {response.get('derived_hexagram_number')} - {response.get('derived_hexagram_name', 'None')}")
+            print(f"   Interpretation word count: {word_count}")
+            
+            # Verify interpretation quality requirements for English
+            quality_checks = []
+            
+            # 1. Check word count (600-900 words)
+            if 600 <= word_count <= 900:
+                quality_checks.append("✅ Word count in range (600-900)")
+            else:
+                quality_checks.append(f"❌ Word count {word_count} not in range (600-900)")
+            
+            # 2. Check for traditional I Ching references in English
+            traditional_keywords = ["judgment", "image", "trigram", "line", "moving", "hexagram", "changing"]
+            found_traditional = [kw for kw in traditional_keywords if kw.lower() in interpretation.lower()]
+            if len(found_traditional) >= 3:
+                quality_checks.append(f"✅ Contains traditional references: {found_traditional}")
+            else:
+                quality_checks.append(f"❌ Insufficient traditional references found: {found_traditional}")
+            
+            # 3. Check for moving lines explanation
+            moving_lines = response.get('moving_lines', [])
+            if moving_lines:
+                moving_explained = any(f"line {line}" in interpretation.lower() or "moving line" in interpretation.lower() for line in moving_lines)
+                if moving_explained:
+                    quality_checks.append("✅ Moving lines explained in detail")
+                else:
+                    quality_checks.append("❌ Moving lines not properly explained")
+            
+            # 4. Check for derived hexagram explanation
+            if response.get('derived_hexagram_number'):
+                derived_explained = "transform" in interpretation.lower() or "derived" in interpretation.lower() or "becomes" in interpretation.lower()
+                if derived_explained:
+                    quality_checks.append("✅ Derived hexagram transformation explained")
+                else:
+                    quality_checks.append("❌ Derived hexagram transformation not explained")
+            
+            # 5. Check for poetic/contemplative style in English
+            poetic_indicators = ["tao", "dragon", "water", "mountain", "wind", "fire", "earth", "heaven", "nature", "ancient", "sage"]
+            found_poetic = [ind for ind in poetic_indicators if ind.lower() in interpretation.lower()]
+            if len(found_poetic) >= 2:
+                quality_checks.append(f"✅ Poetic/contemplative style: {found_poetic}")
+            else:
+                quality_checks.append(f"❌ Lacks poetic/contemplative style: {found_poetic}")
+            
+            # 6. Check for question specificity
+            career_keywords = ["career", "work", "profession", "year", "future", "opportunities", "development"]
+            found_career = [kw for kw in career_keywords if kw.lower() in interpretation.lower()]
+            if len(found_career) >= 2:
+                quality_checks.append(f"✅ Specific to career question: {found_career}")
+            else:
+                quality_checks.append(f"❌ Not specific to career question: {found_career}")
+            
+            # Print quality assessment
+            print("   Quality Assessment:")
+            for check in quality_checks:
+                print(f"     {check}")
+            
+            # Count passed checks
+            passed_checks = sum(1 for check in quality_checks if check.startswith("✅"))
+            total_checks = len(quality_checks)
+            
+            if passed_checks >= 4:  # At least 4 out of 6 checks should pass
+                print(f"   ✅ Quality assessment: {passed_checks}/{total_checks} checks passed")
+                return True
+            else:
+                self.log_test("Enhanced Interpretation (English with Moving Lines)", False, 
+                            f"Quality assessment failed: {passed_checks}/{total_checks} checks passed")
+                return False
+        
+        return False
+
+    def test_consultation_response_structure(self):
+        """Test that consultation response has all required fields for enhanced system"""
+        if not self.token or not hasattr(self, 'italian_consultation_id'):
+            self.log_test("Consultation Response Structure", False, "No consultation available")
+            return False
+            
+        success, response = self.run_test(
+            "Get Consultation Response Structure",
+            "GET",
+            f"consultations/{self.italian_consultation_id}",
+            200
+        )
+        
+        if success:
+            required_fields = [
+                'id', 'question', 'hexagram_number', 'hexagram_name', 'hexagram_chinese',
+                'moving_lines', 'interpretation', 'created_at'
+            ]
+            
+            optional_fields = [
+                'derived_hexagram_number', 'derived_hexagram_name', 'derived_hexagram_chinese',
+                'traditional_data', 'derived_traditional_data', 'hexagram_symbol'
+            ]
+            
+            missing_required = [field for field in required_fields if field not in response]
+            present_optional = [field for field in optional_fields if field in response and response[field] is not None]
+            
+            print(f"   Required fields present: {len(required_fields) - len(missing_required)}/{len(required_fields)}")
+            print(f"   Optional fields present: {len(present_optional)}/{len(optional_fields)}")
+            
+            if missing_required:
+                print(f"   ❌ Missing required fields: {missing_required}")
+                self.log_test("Consultation Response Structure", False, f"Missing required fields: {missing_required}")
+                return False
+            
+            # Check if moving lines are present and derived hexagram exists
+            moving_lines = response.get('moving_lines', [])
+            derived_hex = response.get('derived_hexagram_number')
+            
+            if moving_lines and not derived_hex:
+                print(f"   ❌ Has moving lines {moving_lines} but no derived hexagram")
+                self.log_test("Consultation Response Structure", False, "Moving lines present but no derived hexagram")
+                return False
+            
+            if moving_lines and derived_hex:
+                print(f"   ✅ Moving lines {moving_lines} correctly generate derived hexagram {derived_hex}")
+            
+            print(f"   ✅ All required fields present, structure valid")
+            return True
+        
+        return False
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting I Ching API Tests")
