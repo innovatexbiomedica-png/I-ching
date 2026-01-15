@@ -304,50 +304,189 @@ def get_hexagram_symbol(lines: List[int]) -> str:
     return "\n".join(reversed(symbols))
 
 async def generate_interpretation(hexagram_data: dict, question: str, language: str) -> str:
-    """Generate AI interpretation using Gemini"""
+    """Generate rich, detailed AI interpretation using Gemini with full I Ching wisdom"""
     primary = HEXAGRAMS.get(hexagram_data["primary_hexagram"], {})
     derived = HEXAGRAMS.get(hexagram_data["derived_hexagram"], {}) if hexagram_data["derived_hexagram"] else None
     
+    # Get extended data from the Book of Changes
+    primary_extended = get_extended_hexagram_data(hexagram_data["primary_hexagram"], language)
+    derived_extended = get_extended_hexagram_data(hexagram_data["derived_hexagram"], language) if hexagram_data["derived_hexagram"] else None
+    
     name_key = "name_it" if language == "it" else "name_en"
     
-    lang_instruction = "Rispondi in italiano." if language == "it" else "Reply in English."
+    if language == "it":
+        system_prompt = """Sei un venerabile Maestro dell'I Ching, custode della saggezza millenaria del Libro dei Mutamenti.
+La tua voce è quella di un antico saggio taoista che parla con profondità, poesia e compassione.
+
+STILE DI SCRITTURA:
+- Scrivi in modo contemplativo, evocativo e profondamente spirituale
+- Usa metafore dalla natura: acqua che scorre, montagne, vento, stagioni, draghi, tigri
+- Parla SEMPRE in seconda persona al consultante ("tu", "il tuo cammino", "la tua domanda")
+- Mai elenchi puntati o strutture meccaniche - solo prosa fluida e narrativa
+- Evoca immagini visive e sensoriali
+- La risposta deve suonare come se fosse pronunciata da un maestro millenario
+
+STRUTTURA DELL'INTERPRETAZIONE (senza titoli espliciti, tutto fluido):
+1. Apertura poetica che connette il consultante al flusso del Tao
+2. Spiegazione profonda dell'esagramma principale con i suoi trigrammi
+3. Il Giudizio e l'Immagine tradizionali spiegati in relazione alla domanda
+4. Se ci sono LINEE MUTEVOLI: spiegazione DETTAGLIATA di OGNI linea che muta, con il testo tradizionale e il suo significato profondo applicato alla situazione
+5. Se c'è esagramma DERIVATO: spiegazione della trasformazione e del suo significato
+6. Conclusione con consiglio pratico e saggezza applicabile
+
+IMPORTANTE:
+- Ogni interpretazione deve essere UNICA e SPECIFICA per la domanda posta
+- Cita i testi tradizionali quando appropriato (il Giudizio, l'Immagine)
+- Le linee mutevoli sono CRUCIALI - dedica almeno un paragrafo a ciascuna
+- L'esagramma derivato indica DOVE si sta andando - spiegalo chiaramente
+- Lunghezza: 600-900 parole per un'interpretazione completa e soddisfacente"""
+    else:
+        system_prompt = """You are a venerable Master of the I Ching, guardian of the ancient wisdom of the Book of Changes.
+Your voice is that of an ancient Taoist sage who speaks with depth, poetry, and compassion.
+
+WRITING STYLE:
+- Write contemplatively, evocatively, and deeply spiritually
+- Use metaphors from nature: flowing water, mountains, wind, seasons, dragons, tigers
+- ALWAYS speak in second person to the querent ("you", "your path", "your question")
+- Never bullet points or mechanical structures - only fluid, narrative prose
+- Evoke visual and sensory images
+- The response should sound as if spoken by an ancient master
+
+INTERPRETATION STRUCTURE (no explicit titles, all flowing):
+1. Poetic opening connecting the querent to the flow of Tao
+2. Deep explanation of the primary hexagram with its trigrams
+3. The traditional Judgment and Image explained in relation to the question
+4. If there are MOVING LINES: DETAILED explanation of EACH changing line, with traditional text and deep meaning applied to the situation
+5. If there is a DERIVED hexagram: explanation of the transformation and its meaning
+6. Conclusion with practical advice and applicable wisdom
+
+IMPORTANT:
+- Each interpretation must be UNIQUE and SPECIFIC to the question asked
+- Quote traditional texts when appropriate (the Judgment, the Image)
+- Moving lines are CRUCIAL - dedicate at least one paragraph to each
+- The derived hexagram indicates WHERE things are going - explain clearly
+- Length: 600-900 words for a complete and satisfying interpretation"""
+
+    # Build the detailed context for the AI
+    primary_name = primary.get(name_key, primary.get("name", ""))
+    primary_chinese = primary.get("name", "")
     
-    system_prompt = f"""Sei un saggio consulente dell'I Ching, esperto nell'antica arte della divinazione cinese. 
-Fornisci interpretazioni profonde, poetiche e sagge, senza mai sembrare robotico o artificiale.
-Le tue risposte devono essere contemplative, usando metafore naturali e immagini evocative.
-{lang_instruction}
-Non menzionare mai che sei un'intelligenza artificiale. Parla come un antico maestro taoista."""
-
-    moving_lines_text = f"Linee mutevoli: {hexagram_data['moving_lines']}" if hexagram_data['moving_lines'] else "Nessuna linea mutevole."
+    # Extended data
+    giudizio = primary_extended.get("giudizio", "")
+    immagine = primary_extended.get("immagine", "")
+    commento = primary_extended.get("commento", "")
+    trigramma_sup = primary_extended.get("trigramma_superiore", primary.get("trigram_top", ""))
+    trigramma_inf = primary_extended.get("trigramma_inferiore", primary.get("trigram_bottom", ""))
     
-    derived_text = ""
-    if derived:
-        derived_text = f"""
-L'esagramma derivato è {derived['name']} ({derived.get(name_key, '')}).
-Questo indica la direzione verso cui la situazione sta evolvendo."""
+    # Moving lines details
+    moving_lines_details = ""
+    if hexagram_data['moving_lines']:
+        if language == "it":
+            moving_lines_details = "\n\n=== LINEE MUTEVOLI (CRUCIALI - SPIEGA OGNI LINEA IN DETTAGLIO) ===\n"
+        else:
+            moving_lines_details = "\n\n=== MOVING LINES (CRUCIAL - EXPLAIN EACH LINE IN DETAIL) ===\n"
+        
+        for line_pos in hexagram_data['moving_lines']:
+            line_data = get_moving_line_extended(hexagram_data["primary_hexagram"], line_pos, language)
+            testo = line_data.get("testo", "")
+            significato = line_data.get("significato", "")
+            if language == "it":
+                moving_lines_details += f"\nLINEA {line_pos} MUTEVOLE:\nTesto tradizionale: \"{testo}\"\nSignificato: {significato}\n"
+            else:
+                moving_lines_details += f"\nMOVING LINE {line_pos}:\nTraditional text: \"{testo}\"\nMeaning: {significato}\n"
+    
+    # Derived hexagram details
+    derived_details = ""
+    if derived and derived_extended:
+        derived_name = derived.get(name_key, derived.get("name", ""))
+        derived_chinese = derived.get("name", "")
+        derived_giudizio = derived_extended.get("giudizio", "")
+        derived_immagine = derived_extended.get("immagine", "")
+        
+        if language == "it":
+            derived_details = f"""
 
-    user_prompt = f"""La domanda posta è: "{question}"
+=== ESAGRAMMA DERIVATO (INDICA LA DIREZIONE FUTURA) ===
+L'esagramma si trasforma in: {derived_chinese} - {derived_name}
+Giudizio dell'esagramma derivato: "{derived_giudizio}"
+Immagine: "{derived_immagine}"
+Questo indica DOVE la situazione sta evolvendo e cosa aspettarsi nel futuro."""
+        else:
+            derived_details = f"""
 
-L'esagramma principale ottenuto è {primary['name']} ({primary.get(name_key, '')}).
-Trigramma superiore: {primary.get('trigram_top', '')}
-Trigramma inferiore: {primary.get('trigram_bottom', '')}
-{moving_lines_text}
-{derived_text}
+=== DERIVED HEXAGRAM (INDICATES FUTURE DIRECTION) ===
+The hexagram transforms into: {derived_chinese} - {derived_name}
+Judgment of derived hexagram: "{derived_giudizio}"
+Image: "{derived_immagine}"
+This indicates WHERE the situation is evolving and what to expect in the future."""
 
-Fornisci un'interpretazione profonda e personale di questo responso dell'I Ching in relazione alla domanda.
-La risposta deve essere:
-- Lunga circa 300-400 parole
-- Poetica e evocativa
-- Pratica e applicabile alla vita quotidiana
-- Mai generica o superficiale
-- Strutturata in paragrafi fluidi"""
+    if language == "it":
+        user_prompt = f"""La domanda del consultante è: "{question}"
+
+=== ESAGRAMMA PRINCIPALE ===
+Nome: {primary_chinese} - {primary_name}
+Numero: {hexagram_data["primary_hexagram"]}
+
+TRIGRAMMA SUPERIORE: {trigramma_sup}
+TRIGRAMMA INFERIORE: {trigramma_inf}
+
+IL GIUDIZIO (SENTENZA TRADIZIONALE):
+"{giudizio}"
+
+L'IMMAGINE:
+"{immagine}"
+
+COMMENTO TRADIZIONALE:
+{commento}
+{moving_lines_details}{derived_details}
+
+ISTRUZIONI:
+Genera un'interpretazione RICCA, PROFONDA e DETTAGLIATA (600-900 parole) che:
+1. Apra con una connessione poetica tra la domanda e il flusso del Tao
+2. Spieghi in dettaglio il significato dell'esagramma e dei suoi trigrammi
+3. Citi e spieghi il Giudizio e l'Immagine in relazione alla domanda specifica
+4. SE CI SONO LINEE MUTEVOLI: dedica un paragrafo COMPLETO a ciascuna, spiegando il testo tradizionale e il suo significato per la situazione del consultante
+5. SE C'È ESAGRAMMA DERIVATO: spiega la trasformazione e cosa indica per il futuro
+6. Concludi con saggezza pratica e un consiglio applicabile
+
+Scrivi come un antico maestro taoista, con poesia, profondità e compassione."""
+    else:
+        user_prompt = f"""The querent's question is: "{question}"
+
+=== PRIMARY HEXAGRAM ===
+Name: {primary_chinese} - {primary_name}
+Number: {hexagram_data["primary_hexagram"]}
+
+UPPER TRIGRAM: {trigramma_sup}
+LOWER TRIGRAM: {trigramma_inf}
+
+THE JUDGMENT (TRADITIONAL SENTENCE):
+"{giudizio}"
+
+THE IMAGE:
+"{immagine}"
+
+TRADITIONAL COMMENTARY:
+{commento}
+{moving_lines_details}{derived_details}
+
+INSTRUCTIONS:
+Generate a RICH, PROFOUND and DETAILED interpretation (600-900 words) that:
+1. Opens with a poetic connection between the question and the flow of Tao
+2. Explains in detail the meaning of the hexagram and its trigrams
+3. Quotes and explains the Judgment and Image in relation to the specific question
+4. IF THERE ARE MOVING LINES: dedicate a COMPLETE paragraph to each, explaining the traditional text and its meaning for the querent's situation
+5. IF THERE IS A DERIVED HEXAGRAM: explain the transformation and what it indicates for the future
+6. Conclude with practical wisdom and applicable advice
+
+Write as an ancient Taoist master, with poetry, depth, and compassion."""
 
     try:
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"iching-{uuid.uuid4()}",
             system_message=system_prompt
-        ).with_model("gemini", "gemini-3-flash-preview")
+        ).with_model("gemini", "gemini-2.0-flash")
         
         response = await chat.send_message(UserMessage(text=user_prompt))
         return response
