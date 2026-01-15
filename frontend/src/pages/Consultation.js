@@ -38,6 +38,10 @@ const Consultation = () => {
   });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  
+  // Conversation continuation states
+  const [parentConsultation, setParentConsultation] = useState(null);
+  const [continuationMode, setContinuationMode] = useState(false);
 
   const handleLineChange = (lineNum, value) => {
     setLines(prev => ({ ...prev, [lineNum]: value }));
