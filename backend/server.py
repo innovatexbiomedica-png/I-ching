@@ -223,29 +223,38 @@ async def get_current_user(request: Request) -> dict:
 
 # ============== I CHING LOGIC ==============
 def calculate_hexagram(coin_tosses: CoinToss) -> dict:
+    # Lines in order: line1 (bottom) to line6 (top)
     lines = [coin_tosses.line1, coin_tosses.line2, coin_tosses.line3, 
              coin_tosses.line4, coin_tosses.line5, coin_tosses.line6]
     
-    # Convert to binary (6=old yin->0, 7=young yang->1, 8=young yin->0, 9=old yang->1)
+    # Convert to binary - IMPORTANT: The binary string must be built from LINE 6 (top) to LINE 1 (bottom)
+    # because the BINARY_TO_HEX mapping expects: first char = line 6 (top), last char = line 1 (bottom)
     primary_binary = ""
     derived_binary = ""
     moving_lines = []
     
-    for i, line in enumerate(lines):
-        if line == 6:  # Old Yin (mutevole)
+    # Process lines in REVERSE order (from line 6 down to line 1) to build correct binary string
+    for i in range(5, -1, -1):  # 5, 4, 3, 2, 1, 0 -> line 6, 5, 4, 3, 2, 1
+        line = lines[i]
+        line_position = i + 1  # 1-based position
+        
+        if line == 6:  # Old Yin (mutevole) - transforms to Yang
             primary_binary += "0"
-            derived_binary += "1"  # Transforms to Yang
-            moving_lines.append(i + 1)
+            derived_binary += "1"
+            moving_lines.append(line_position)
         elif line == 7:  # Young Yang
             primary_binary += "1"
             derived_binary += "1"
         elif line == 8:  # Young Yin
             primary_binary += "0"
             derived_binary += "0"
-        elif line == 9:  # Old Yang (mutevole)
+        elif line == 9:  # Old Yang (mutevole) - transforms to Yin
             primary_binary += "1"
-            derived_binary += "0"  # Transforms to Yin
-            moving_lines.append(i + 1)
+            derived_binary += "0"
+            moving_lines.append(line_position)
+    
+    # Sort moving lines in ascending order (1 to 6)
+    moving_lines.sort()
     
     primary_hex = BINARY_TO_HEX.get(primary_binary, 1)
     derived_hex = BINARY_TO_HEX.get(derived_binary, None) if moving_lines else None
