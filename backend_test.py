@@ -1559,6 +1559,11 @@ class IChingAPITester:
             self.test_enhanced_interpretation_italian_with_moving_lines,
             self.test_enhanced_interpretation_english_with_moving_lines,
             self.test_consultation_response_structure,
+            # NEW: Consultation type tests (direct vs deep)
+            self.test_consultation_type_direct,
+            self.test_consultation_type_deep,
+            self.test_consultation_types_comparison,
+            self.test_consultation_type_saved_in_database,
             # DELETE consultation endpoint test
             self.test_delete_consultation_endpoint,
             # Synthesis consultation tests
