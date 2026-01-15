@@ -46,6 +46,22 @@ HEXAGRAM_TRADITIONAL = {
             6: {"moving": "Draghi combattono nel prato. Il loro sangue è nero e giallo.", "meaning": "Conflitto tra forze opposte."},
         }
     },
+    29: {
+        "sentence_it": "L'Abissale ripetuto. Se sei verace, hai riuscita nel cuore. Ciò che fai ha riuscita.",
+        "sentence_en": "The Abysmal repeated. If you are sincere, you have success in your heart. Whatever you do succeeds.",
+        "image_it": "L'acqua scorre ininterrotta e raggiunge la meta. Così il nobile cammina in costante virtù.",
+        "image_en": "Water flows on without pause. Thus the superior man walks in lasting virtue.",
+        "trigram_above": "☵",
+        "trigram_below": "☵",
+        "lines": {
+            1: {"moving": "Ripetizione dell'Abissale. Nell'abisso si cade in una fossa. Sciagura.", "meaning": "Il pericolo si è fatto abitudine."},
+            2: {"moving": "L'abisso ha pericoli. Cercare di ottenere solo piccole cose.", "meaning": "Agire con prudenza in tempi difficili."},
+            3: {"moving": "Avanti e indietro, abisso su abisso. In pericolo così grande fermati prima.", "meaning": "Ogni movimento conduce a nuovo pericolo."},
+            4: {"moving": "Una brocca di vino, una scodella di riso, vasi di creta. Nessuna macchia.", "meaning": "In tempi difficili la semplicità basta."},
+            5: {"moving": "L'abisso non è pieno traboccante. Solo fino all'orlo. Nessuna macchia.", "meaning": "Il pericolo non durerà per sempre."},
+            6: {"moving": "Legato con corde e funi, rinchiuso tra muri spinosi. Per tre anni non si trova. Sciagura.", "meaning": "Prigionia fisica o spirituale."},
+        }
+    },
     39: {
         "sentence_it": "L'Impedimento. Propizio è il Sud-Ovest. Non propizio è il Nord-Est. Propizio è vedere il grande uomo. Perseveranza reca salute.",
         "sentence_en": "Obstruction. The southwest furthers. The northeast does not further. It furthers one to see the great man. Perseverance brings good fortune.",
@@ -59,7 +75,23 @@ HEXAGRAM_TRADITIONAL = {
             3: {"moving": "Andare conduce a impedimenti, perciò egli viene.", "meaning": "Chi sa tornare indietro trova la via."},
             4: {"moving": "Andare conduce a impedimenti, venire conduce all'unione.", "meaning": "Attendendo si troveranno alleati."},
             5: {"moving": "In mezzo ai più grandi impedimenti vengono amici.", "meaning": "Nel momento più difficile arriva l'aiuto."},
-            6: {"moving": "Andare conduce ad impedimenti, venire conduce a grande salute.", "meaning": "Il saggio che aiuta appare."},
+            6: {"moving": "Andare conduce ad impedimenti, venire conduce a grande salute. Propizio è vedere il grande uomo.", "meaning": "Il saggio che aiuta appare."},
+        }
+    },
+    40: {
+        "sentence_it": "La Liberazione. Propizio è il Sud-Ovest. Se non vi è più nulla cui andare, il ritorno reca salute.",
+        "sentence_en": "Deliverance. The southwest furthers. If there is no longer anything to go to, return brings good fortune.",
+        "image_it": "Tuono e pioggia si levano: l'immagine della Liberazione. Così il nobile perdona gli errori e condona le colpe.",
+        "image_en": "Thunder and rain set in: the image of Deliverance. Thus the superior man pardons mistakes and forgives misdeeds.",
+        "trigram_above": "☳",
+        "trigram_below": "☵",
+        "lines": {
+            1: {"moving": "Senza macchia.", "meaning": "L'inizio della liberazione, nessun errore."},
+            2: {"moving": "Nel campo si uccidono tre volpi e si ottiene una freccia gialla. Perseveranza reca salute.", "meaning": "Eliminare le influenze negative porta fortuna."},
+            3: {"moving": "Portando sulla schiena e anche viaggiando in carrozza si attirano i briganti. Perseveranza reca umiliazione.", "meaning": "L'ostentazione attira i guai."},
+            4: {"moving": "Liberati dal tuo alluce. Allora viene il compagno, e puoi fidarti di lui.", "meaning": "Liberarsi dalle cattive compagnie porta veri amici."},
+            5: {"moving": "Il nobile si libera. Salute. Così dimostra agli inferiori di essere sincero.", "meaning": "La liberazione interiore convince gli altri."},
+            6: {"moving": "Il principe scocca un falco da un alto muro. Lo cattura. Tutto è propizio.", "meaning": "L'ostacolo finale viene superato con successo."},
         }
     },
     55: {
@@ -71,11 +103,43 @@ HEXAGRAM_TRADITIONAL = {
         "trigram_below": "☲",
         "lines": {
             1: {"moving": "Incontrando il suo signore come pari. Anche dieci giorni nessuna macchia. Andare trova riconoscimento.", "meaning": "L'incontro tra uguali porta fortuna."},
-            2: {"moving": "Il velario è così folto che a mezzogiorno si vedono le stelle polari.", "meaning": "Momento di oscuramento temporaneo."},
-            3: {"moving": "Il sottobosco è così folto che a mezzogiorno si vedono le piccole stelle.", "meaning": "L'oscurità aumenta ma non durerà."},
-            4: {"moving": "Il velario è così folto che a mezzogiorno si vedono le stelle polari.", "meaning": "Attraverso l'oscurità si intravede la luce."},
+            2: {"moving": "Il velario è così folto che a mezzogiorno si vedono le stelle polari. Andando si incontra sfiducia e odio. Smuovere con verità reca salute.", "meaning": "Oscuramento temporaneo, la verità prevale."},
+            3: {"moving": "Il sottobosco è così folto che a mezzogiorno si vedono le piccole stelle. Egli si rompe il braccio destro. Nessuna macchia.", "meaning": "Impedimento fisico ma non morale."},
+            4: {"moving": "Il velario è così folto che a mezzogiorno si vedono le stelle polari. Egli incontra il suo signore di pari rango. Salute.", "meaning": "Attraverso l'oscurità si trova un alleato."},
             5: {"moving": "Vengono linee. Benedizione e fama si avvicinano. Salute.", "meaning": "L'abbondanza si manifesta pienamente."},
-            6: {"moving": "La sua casa è piena d'abbondanza. Egli protegge la sua famiglia. Spiando attraverso il portone non vede nessuno.", "meaning": "L'isolamento nella ricchezza."},
+            6: {"moving": "La sua casa è piena d'abbondanza. Egli protegge la sua famiglia. Spiando attraverso il portone non vede nessuno. Per tre anni non vede nulla. Sciagura.", "meaning": "L'isolamento nella ricchezza porta sfortuna."},
+        }
+    },
+    63: {
+        "sentence_it": "Dopo il Compimento. Riuscita nelle piccole cose. Propizia è perseveranza. All'inizio salute, alla fine disordine.",
+        "sentence_en": "After Completion. Success in small matters. Perseverance furthers. At the beginning good fortune, at the end disorder.",
+        "image_it": "Acqua sopra il fuoco: l'immagine del Dopo il Compimento. Così il nobile medita sulla sventura e si premunisce.",
+        "image_en": "Water over fire: the image of After Completion. Thus the superior man takes thought of misfortune and arms himself against it.",
+        "trigram_above": "☵",
+        "trigram_below": "☲",
+        "lines": {
+            1: {"moving": "Egli frena le sue ruote. Si bagna la coda. Nessuna macchia.", "meaning": "Prudenza all'inizio del successo."},
+            2: {"moving": "La donna perde la cortina della sua carrozza. Non correrle dietro. Entro sette giorni l'otterrai.", "meaning": "Pazienza nella perdita temporanea."},
+            3: {"moving": "L'Alto Antenato punisce il paese dei demoni. Dopo tre anni lo conquista. Non usare gente bassa.", "meaning": "Grandi imprese richiedono tempo e nobiltà."},
+            4: {"moving": "Le più belle vesti diventano stracci. Sii cauto tutto il giorno.", "meaning": "Anche nel successo resta vigile."},
+            5: {"moving": "Il vicino all'Est che macella un bue non ottiene tanta reale felicità quanto il vicino all'Ovest col suo piccolo sacrificio.", "meaning": "La sincerità vale più della pompa."},
+            6: {"moving": "Egli si bagna la testa. Pericolo.", "meaning": "Andare troppo oltre porta pericolo."},
+        }
+    },
+    64: {
+        "sentence_it": "Prima del Compimento. Riuscita. Ma se la piccola volpe, quasi compiuto il guado, si bagna la coda, non v'è nulla che sia propizio.",
+        "sentence_en": "Before Completion. Success. But if the little fox, after nearly completing the crossing, gets his tail in the water, there is nothing that would further.",
+        "image_it": "Fuoco sopra l'acqua: l'immagine del Prima del Compimento. Così il nobile è cauto nel distinguere le cose per metterle al loro posto.",
+        "image_en": "Fire over water: the image of Before Completion. Thus the superior man is careful in differentiating things in order to put each in its place.",
+        "trigram_above": "☲",
+        "trigram_below": "☵",
+        "lines": {
+            1: {"moving": "Egli si bagna la coda. Umiliante.", "meaning": "Tentativo prematuro porta vergogna."},
+            2: {"moving": "Egli frena le sue ruote. Perseveranza reca salute.", "meaning": "Attendere il momento giusto."},
+            3: {"moving": "Prima del compimento, attacco reca sciagura. Propizio è attraversare la grande acqua.", "meaning": "Non attaccare, ma avanzare con coraggio."},
+            4: {"moving": "Perseveranza reca salute. Il pentimento scompare. Scossa usata per punire il paese dei demoni. Per tre anni grandi regni sono ricompensati.", "meaning": "La determinazione porta grandi risultati."},
+            5: {"moving": "Perseveranza reca salute. Nessun pentimento. La luce del nobile è verace. Salute.", "meaning": "La virtù interiore brilla."},
+            6: {"moving": "Bere vino in sincerità. Nessuna macchia. Ma se ci si bagna la testa si perde questa verità.", "meaning": "Celebra con moderazione o perderai tutto."},
         }
     },
 }
