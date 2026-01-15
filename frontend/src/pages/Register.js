@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
-import { Loader2, Mail, Lock, User, Globe } from 'lucide-react';
+import { Loader2, Mail, Lock, User, Globe, Phone } from 'lucide-react';
 
 const Register = () => {
   const { register, language: currentLang } = useAuth();
@@ -22,6 +22,7 @@ const Register = () => {
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [language, setLanguage] = useState(currentLang);
   const [loading, setLoading] = useState(false);
@@ -31,7 +32,7 @@ const Register = () => {
     setLoading(true);
     
     try {
-      await register(email, password, name, language);
+      await register(email, password, name, language, phone);
       toast.success(t.auth.registerSuccess);
       navigate('/login');
     } catch (error) {
