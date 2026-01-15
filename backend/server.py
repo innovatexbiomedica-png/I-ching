@@ -199,6 +199,7 @@ class ConsultationResponse(BaseModel):
     derived_traditional_data: Optional[TraditionalData] = None
     interpretation: str
     created_at: str
+    consultation_type: str = "deep"  # "direct" or "deep"
     # New fields for linked consultations
     is_synthesis: bool = False
     linked_consultation_ids: List[str] = []
