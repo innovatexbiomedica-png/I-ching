@@ -1953,6 +1953,8 @@ class IChingAPITester:
             self.test_consultation_type_deep,
             self.test_consultation_types_comparison,
             self.test_consultation_type_saved_in_database,
+            # Hexagram 14 traditional texts test
+            self.test_hexagram_14_traditional_texts,
             # DELETE consultation endpoint test
             self.test_delete_consultation_endpoint,
             # Synthesis consultation tests
