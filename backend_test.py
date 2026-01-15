@@ -1841,6 +1841,11 @@ class IChingAPITester:
             self.test_create_consultation_1,
             self.test_create_consultation_2,
             self.test_create_consultation_3,
+            # Conversation continuation tests
+            self.test_conversation_continuation_parent,
+            self.test_conversation_continuation_child,
+            self.test_conversation_continuation_grandchild,
+            self.test_conversation_history_in_get_consultations,
             self.test_synthesis_with_one_consultation_should_fail,
             self.test_synthesis_with_nonexistent_consultation_should_fail,
             self.test_synthesis_with_too_many_consultations_should_fail,
