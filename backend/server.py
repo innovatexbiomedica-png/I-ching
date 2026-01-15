@@ -877,7 +877,8 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
         traditional_data=primary_trad_response,
         derived_traditional_data=derived_trad_response,
         interpretation=interpretation,
-        created_at=consultation_doc["created_at"]
+        created_at=consultation_doc["created_at"],
+        consultation_type=consultation_type
     )
 
 @api_router.get("/consultations", response_model=List[ConsultationResponse])
