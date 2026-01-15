@@ -45,11 +45,12 @@ const Consultation = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!hasSubscription) {
-      toast.error(t.consultation.requiresSubscription);
-      navigate('/pricing');
-      return;
-    }
+    // Subscription check disabled for now
+    // if (!hasSubscription) {
+    //   toast.error(t.consultation.requiresSubscription);
+    //   navigate('/pricing');
+    //   return;
+    // }
 
     if (!allLinesFilled) {
       toast.error(language === 'it' ? 'Inserisci tutti i lanci' : 'Enter all tosses');
@@ -220,26 +221,14 @@ const Consultation = () => {
     );
   }
 
-  if (!hasSubscription) {
-    return (
-      <div className="section-zen" data-testid="subscription-required">
-        <div className="container-zen max-w-xl text-center">
-          <AlertCircle className="w-16 h-16 mx-auto mb-6 text-[#C44D38]" />
-          <h1 className="text-3xl font-serif text-[#2C2C2C] mb-4">
-            {t.consultation.requiresSubscription}
-          </h1>
-          <p className="text-[#595959] mb-8">
-            {t.consultation.subscribeMessage}
-          </p>
-          <Link to="/pricing">
-            <Button className="btn-primary" data-testid="subscribe-btn">
-              {t.pricing.subscribe}
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  // Subscription check disabled for now
+  // if (!hasSubscription) {
+  //   return (
+  //     <div className="section-zen" data-testid="subscription-required">
+  //       ...
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="section-zen" data-testid="consultation-page">
