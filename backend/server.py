@@ -882,6 +882,14 @@ def enrich_consultation_data(consultation: dict, language: str) -> dict:
             "moving_lines_text": []
         }
     
+    # Add synthesis fields if missing (for backward compatibility)
+    if "is_synthesis" not in consultation:
+        consultation["is_synthesis"] = False
+    if "linked_consultation_ids" not in consultation:
+        consultation["linked_consultation_ids"] = []
+    if "synthesis_type" not in consultation:
+        consultation["synthesis_type"] = None
+    
     return consultation
 
 # ============== SHARE CONSULTATION ==============
