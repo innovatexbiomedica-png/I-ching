@@ -218,6 +218,8 @@ for i in range(1, 65):
             "sentence_en": "",
             "image_it": "",
             "image_en": "",
+            "commentary_it": "",
+            "commentary_en": "",
             "trigram_above": "",
             "trigram_below": "",
             "lines": {
