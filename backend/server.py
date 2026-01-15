@@ -839,9 +839,22 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
     primary_trad_response = build_traditional_response(primary_traditional, hex_data["moving_lines"], hex_data["primary_hexagram"])
     derived_trad_response = build_traditional_response(derived_traditional, [], hex_data["derived_hexagram"]) if derived_traditional else None
     
-    # Generate interpretation based on consultation type
+    # Handle conversation continuation
+    conversation_history = []
+    conversation_depth = 0
+    parent_consultation_id = data.parent_consultation_id if hasattr(data, 'parent_consultation_id') else None
+    
+    if parent_consultation_id:
+        # Fetch the conversation history (up to last 5 consultations)
+        conversation_history = await get_conversation_history(parent_consultation_id, user["id"], max_depth=5)
+        conversation_depth = len(conversation_history)
+    
+    # Generate interpretation based on consultation type and conversation context
     consultation_type = data.consultation_type if hasattr(data, 'consultation_type') else "deep"
-    interpretation = await generate_interpretation(hex_data, data.question, lang, consultation_type)
+    interpretation = await generate_interpretation(
+        hex_data, data.question, lang, consultation_type, 
+        conversation_history=conversation_history
+    )
     
     # Create consultation record
     consultation_id = str(uuid.uuid4())
@@ -851,6 +864,8 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
         "question": data.question,
         "coin_tosses": data.coin_tosses.model_dump(),
         "consultation_type": consultation_type,
+        "parent_consultation_id": parent_consultation_id,
+        "conversation_depth": conversation_depth,
         "hexagram_number": hex_data["primary_hexagram"],
         "hexagram_name": primary.get(name_key, primary.get("name", "")),
         "hexagram_chinese": primary.get("name", ""),
@@ -882,7 +897,9 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
         derived_traditional_data=derived_trad_response,
         interpretation=interpretation,
         created_at=consultation_doc["created_at"],
-        consultation_type=consultation_type
+        consultation_type=consultation_type,
+        parent_consultation_id=parent_consultation_id,
+        conversation_depth=conversation_depth
     )
 
 @api_router.get("/consultations", response_model=List[ConsultationResponse])
