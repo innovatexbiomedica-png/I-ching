@@ -1919,6 +1919,116 @@ class IChingAPITester:
                         f"Database verification failed: {passed_checks}/{total_checks} checks passed")
             return False
 
+    def test_hexagram_14_traditional_moving_lines_text(self):
+        """Test that Hexagram 14 with moving lines 3, 4, 6 includes correct traditional texts"""
+        if not self.token:
+            self.log_test("Hexagram 14 Traditional Moving Lines Text", False, "No auth token")
+            return False
+            
+        # Create consultation for Hexagram 14 with moving lines 3, 4, 6 as specified
+        consultation_data = {
+            "question": "Test linee mutevoli",
+            "coin_tosses": {
+                "line1": 7,  # Yang (no change)
+                "line2": 7,  # Yang (no change)
+                "line3": 9,  # Old Yang (moving) - Line 3
+                "line4": 9,  # Old Yang (moving) - Line 4
+                "line5": 8,  # Yin (no change)
+                "line6": 9   # Old Yang (moving) - Line 6
+            },
+            "consultation_type": "deep"
+        }
+        
+        success, response = self.run_test(
+            "Hexagram 14 Traditional Moving Lines Text",
+            "POST",
+            "consultations",
+            200,
+            data=consultation_data
+        )
+        
+        if success and 'traditional_data' in response:
+            print(f"   ✅ Consultation created successfully")
+            print(f"   Hexagram: {response.get('hexagram_number')} - {response.get('hexagram_name')}")
+            print(f"   Moving lines: {response.get('moving_lines', [])}")
+            
+            # Verify this is Hexagram 14
+            if response.get('hexagram_number') != 14:
+                self.log_test("Hexagram 14 Traditional Moving Lines Text", False, 
+                            f"Expected Hexagram 14, got {response.get('hexagram_number')}")
+                return False
+            
+            # Verify moving lines are [3, 4, 6]
+            expected_moving_lines = [3, 4, 6]
+            actual_moving_lines = response.get('moving_lines', [])
+            if sorted(actual_moving_lines) != sorted(expected_moving_lines):
+                self.log_test("Hexagram 14 Traditional Moving Lines Text", False, 
+                            f"Expected moving lines {expected_moving_lines}, got {actual_moving_lines}")
+                return False
+            
+            # Check traditional_data exists and has moving_lines_text
+            traditional_data = response.get('traditional_data', {})
+            if not traditional_data:
+                self.log_test("Hexagram 14 Traditional Moving Lines Text", False, "No traditional_data in response")
+                return False
+            
+            moving_lines_text = traditional_data.get('moving_lines_text', [])
+            if not moving_lines_text:
+                self.log_test("Hexagram 14 Traditional Moving Lines Text", False, "moving_lines_text is empty")
+                return False
+            
+            print(f"   Found {len(moving_lines_text)} moving line texts")
+            
+            # Verify each expected moving line has traditional text
+            verification_checks = []
+            expected_texts = {
+                3: "Un principe ne fa offerta al Figlio del Cielo",
+                4: "Fa una distinzione tra sé e il suo prossimo", 
+                6: "Dal cielo egli viene benedetto"
+            }
+            
+            for moving_line_data in moving_lines_text:
+                position = moving_line_data.get('position')
+                text = moving_line_data.get('text', '')
+                meaning = moving_line_data.get('meaning', '')
+                
+                print(f"   Line {position}: '{text}'")
+                print(f"     Meaning: {meaning[:100]}...")
+                
+                if position in expected_texts:
+                    expected_text = expected_texts[position]
+                    if expected_text in text:
+                        verification_checks.append(f"✅ Line {position} contains expected text: '{expected_text}'")
+                    else:
+                        verification_checks.append(f"❌ Line {position} missing expected text: '{expected_text}' (found: '{text}')")
+                else:
+                    verification_checks.append(f"❌ Unexpected moving line position: {position}")
+            
+            # Check that all expected lines are present
+            found_positions = [ml.get('position') for ml in moving_lines_text]
+            for expected_pos in expected_moving_lines:
+                if expected_pos not in found_positions:
+                    verification_checks.append(f"❌ Missing moving line {expected_pos}")
+            
+            # Print verification results
+            print("   Traditional Text Verification:")
+            for check in verification_checks:
+                print(f"     {check}")
+            
+            # Count passed checks
+            passed_checks = sum(1 for check in verification_checks if check.startswith("✅"))
+            total_checks = len(verification_checks)
+            
+            if passed_checks == total_checks and total_checks >= 3:
+                print(f"   ✅ All traditional texts verified: {passed_checks}/{total_checks} checks passed")
+                return True
+            else:
+                self.log_test("Hexagram 14 Traditional Moving Lines Text", False, 
+                            f"Traditional text verification failed: {passed_checks}/{total_checks} checks passed")
+                return False
+        
+        return False
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting I Ching API Tests")
