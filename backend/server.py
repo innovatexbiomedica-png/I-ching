@@ -359,6 +359,7 @@ async def register(user_data: UserCreate):
         "email": user_data.email,
         "password": hash_password(user_data.password),
         "name": user_data.name,
+        "phone": user_data.phone,
         "language": user_data.language,
         "subscription_active": False,
         "subscription_end": None,
@@ -370,6 +371,7 @@ async def register(user_data: UserCreate):
         id=user_id,
         email=user_data.email,
         name=user_data.name,
+        phone=user_data.phone,
         language=user_data.language,
         subscription_active=False
     )
@@ -388,6 +390,7 @@ async def login(credentials: UserLogin):
             id=user["id"],
             email=user["email"],
             name=user["name"],
+            phone=user.get("phone", ""),
             language=user["language"],
             subscription_active=user.get("subscription_active", False),
             subscription_end=user.get("subscription_end")
