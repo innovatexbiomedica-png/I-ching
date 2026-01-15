@@ -67,7 +67,7 @@ const Consultation = () => {
     setLoading(true);
     
     try {
-      const response = await axios.post(`${API}/consultations`, {
+      const requestData = {
         question,
         coin_tosses: {
           line1: parseInt(lines.line1),
@@ -78,7 +78,14 @@ const Consultation = () => {
           line6: parseInt(lines.line6)
         },
         consultation_type: consultationType || 'deep'
-      }, {
+      };
+      
+      // Add parent consultation id if continuing a conversation
+      if (parentConsultation?.id) {
+        requestData.parent_consultation_id = parentConsultation.id;
+      }
+
+      const response = await axios.post(`${API}/consultations`, requestData, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       
