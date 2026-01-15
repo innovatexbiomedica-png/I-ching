@@ -240,6 +240,7 @@ def get_hexagram_traditional_data(hex_number: int, language: str = "it") -> dict
     return {
         "sentence": data.get(f"sentence{suffix}", ""),
         "image": data.get(f"image{suffix}", ""),
+        "commentary": data.get(f"commentary{suffix}", ""),
         "trigram_above": data.get("trigram_above", ""),
         "trigram_below": data.get("trigram_below", ""),
         "lines": data.get("lines", {})
