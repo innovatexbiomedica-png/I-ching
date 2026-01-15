@@ -435,6 +435,50 @@ async def get_consultation(consultation_id: str, user: dict = Depends(get_curren
         raise HTTPException(status_code=404, detail="Consultazione non trovata")
     return ConsultationResponse(**consultation)
 
+# ============== SHARE CONSULTATION ==============
+@api_router.post("/consultations/{consultation_id}/share")
+async def create_share_link(consultation_id: str, user: dict = Depends(get_current_user)):
+    """Generate a public share token for a consultation"""
+    consultation = await db.consultations.find_one(
+        {"id": consultation_id, "user_id": user["id"]},
+        {"_id": 0}
+    )
+    if not consultation:
+        raise HTTPException(status_code=404, detail="Consultazione non trovata")
+    
+    # Generate share token if not exists
+    share_token = consultation.get("share_token")
+    if not share_token:
+        share_token = str(uuid.uuid4())[:12]
+        await db.consultations.update_one(
+            {"id": consultation_id},
+            {"$set": {"share_token": share_token, "is_public": True}}
+        )
+    
+    return {"share_token": share_token, "consultation_id": consultation_id}
+
+@api_router.get("/shared/{share_token}")
+async def get_shared_consultation(share_token: str):
+    """Get a publicly shared consultation (no auth required)"""
+    consultation = await db.consultations.find_one(
+        {"share_token": share_token, "is_public": True},
+        {"_id": 0, "user_id": 0}  # Exclude user info for privacy
+    )
+    if not consultation:
+        raise HTTPException(status_code=404, detail="Consultazione non trovata o non condivisa")
+    
+    return {
+        "id": consultation["id"],
+        "question": consultation["question"],
+        "hexagram_number": consultation["hexagram_number"],
+        "hexagram_name": consultation["hexagram_name"],
+        "derived_hexagram_number": consultation.get("derived_hexagram_number"),
+        "derived_hexagram_name": consultation.get("derived_hexagram_name"),
+        "moving_lines": consultation["moving_lines"],
+        "interpretation": consultation["interpretation"],
+        "created_at": consultation["created_at"]
+    }
+
 # ============== STRIPE PAYMENT ROUTES ==============
 SUBSCRIPTION_PRICE = 9.99  # Monthly price in EUR
 
