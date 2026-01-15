@@ -202,6 +202,13 @@ class CheckoutRequest(BaseModel):
     origin_url: str
 
 # ============== AUTH HELPERS ==============
+import random
+import string
+
+def generate_reset_code():
+    """Genera un codice di reset a 6 cifre"""
+    return ''.join(random.choices(string.digits, k=6))
+
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
