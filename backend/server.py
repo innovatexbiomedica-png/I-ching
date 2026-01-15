@@ -1263,6 +1263,12 @@ def enrich_consultation_data(consultation: dict, language: str) -> dict:
     if "consultation_type" not in consultation:
         consultation["consultation_type"] = "deep"  # Default to deep for old consultations
     
+    # Add conversation fields if missing
+    if "parent_consultation_id" not in consultation:
+        consultation["parent_consultation_id"] = None
+    if "conversation_depth" not in consultation:
+        consultation["conversation_depth"] = 0
+    
     return consultation
 
 # ============== SHARE CONSULTATION ==============
