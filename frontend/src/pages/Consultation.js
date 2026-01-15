@@ -344,16 +344,31 @@ const Consultation = () => {
             <h3 className="font-serif text-xl text-[#2C2C2C] mb-3">
               {t.consultation.coinToss}
             </h3>
-            <p className="text-sm text-[#595959] mb-6">
+            <p className="text-sm text-[#595959] mb-4">
               {t.consultation.coinTossInstructions}
             </p>
+            
+            {/* Important note about hexagram construction */}
+            <div className="bg-[#E5E0D8]/50 border-l-4 border-[#C44D38] p-4 mb-6">
+              <p className="text-sm text-[#2C2C2C] font-medium">
+                {language === 'it' 
+                  ? '⬆ L\'esagramma si costruisce dal basso verso l\'alto: il primo lancio forma la linea inferiore (1), l\'ultimo lancio forma la linea superiore (6).'
+                  : '⬆ The hexagram is built from bottom to top: the first toss forms the bottom line (1), the last toss forms the top line (6).'}
+              </p>
+            </div>
 
             <div className="space-y-4">
               {[1, 2, 3, 4, 5, 6].map((num) => (
                 <div key={num} className="flex items-center space-x-4" data-testid={`line-${num}-input`}>
-                  <span className="w-20 text-sm text-[#595959]">
-                    {t.consultation.line} {num}
-                  </span>
+                  <div className="w-28 flex items-center space-x-2">
+                    <span className="text-sm text-[#595959]">
+                      {t.consultation.line} {num}
+                    </span>
+                    <span className="text-xs text-[#C44D38]">
+                      {num === 1 ? (language === 'it' ? '(basso)' : '(bottom)') : 
+                       num === 6 ? (language === 'it' ? '(alto)' : '(top)') : ''}
+                    </span>
+                  </div>
                   <Select 
                     value={lines[`line${num}`]} 
                     onValueChange={(v) => handleLineChange(`line${num}`, v)}
