@@ -403,6 +403,7 @@ async def get_me(user: dict = Depends(get_current_user)):
         id=user["id"],
         email=user["email"],
         name=user["name"],
+        phone=user.get("phone", ""),
         language=user["language"],
         subscription_active=user.get("subscription_active", False),
         subscription_end=user.get("subscription_end")
