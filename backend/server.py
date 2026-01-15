@@ -568,7 +568,8 @@ Write as an ancient Taoist master, with poetry, depth, and compassion."""
 async def generate_direct_interpretation(hexagram_data: dict, question: str, language: str, 
                                           primary: dict, derived: dict, 
                                           primary_extended: dict, derived_extended: dict,
-                                          name_key: str) -> str:
+                                          name_key: str,
+                                          conversation_history: list = None) -> str:
     """Generate a direct, impactful interpretation - simple and to the point"""
     
     primary_name = primary.get(name_key, primary.get("name", ""))
@@ -595,6 +596,20 @@ async def generate_direct_interpretation(hexagram_data: dict, question: str, lan
         else:
             derived_text = f"\n\nThe situation evolves towards: {derived_name}"
     
+    # Build conversation history for direct style
+    conversation_context = ""
+    if conversation_history and len(conversation_history) > 0:
+        if language == "it":
+            conversation_context = "\n\nSTORIA DELLA CONVERSAZIONE:\n"
+            for i, prev in enumerate(conversation_history, 1):
+                conversation_context += f"- Domanda {i}: \"{prev.get('question', '')}\" → Esagramma {prev.get('hexagram_number')}\n"
+            conversation_context += "\nCOLLEGA questa risposta alle precedenti in modo fluido.\n"
+        else:
+            conversation_context = "\n\nCONVERSATION HISTORY:\n"
+            for i, prev in enumerate(conversation_history, 1):
+                conversation_context += f"- Question {i}: \"{prev.get('question', '')}\" → Hexagram {prev.get('hexagram_number')}\n"
+            conversation_context += "\nCONNECT this response to the previous ones fluidly.\n"
+
     if language == "it":
         system_prompt = """Sei un consulente I Ching che parla in modo DIRETTO, CHIARO e D'IMPATTO.
 
