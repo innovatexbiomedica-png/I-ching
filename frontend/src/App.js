@@ -11,6 +11,7 @@ import Consultation from './pages/Consultation';
 import History from './pages/History';
 import Pricing from './pages/Pricing';
 import PaymentSuccess from './pages/PaymentSuccess';
+import SharedConsultation from './pages/SharedConsultation';
 import './App.css';
 
 // Protected Route Component
@@ -67,6 +68,7 @@ function AppRoutes() {
         </PublicRoute>
       } />
       <Route path="/pricing" element={<Layout><Pricing /></Layout>} />
+      <Route path="/shared/:shareToken" element={<SharedConsultation />} />
       
       {/* Protected Routes */}
       <Route path="/dashboard" element={
