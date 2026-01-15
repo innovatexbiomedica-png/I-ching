@@ -1058,7 +1058,11 @@ class IChingAPITester:
             self.test_get_hexagrams,
             self.test_get_single_hexagram,
             self.test_consultation_history_empty,
-            # New synthesis consultation tests
+            # Enhanced I Ching interpretation tests
+            self.test_enhanced_interpretation_italian_with_moving_lines,
+            self.test_enhanced_interpretation_english_with_moving_lines,
+            self.test_consultation_response_structure,
+            # Synthesis consultation tests
             self.test_create_consultation_1,
             self.test_create_consultation_2,
             self.test_create_consultation_3,
