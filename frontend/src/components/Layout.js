@@ -29,10 +29,10 @@ const Layout = ({ children }) => {
         { to: '/dashboard', label: t.nav.dashboard },
         { to: '/consult', label: t.nav.consult },
         { to: '/history', label: t.nav.history },
-        { to: '/pricing', label: t.nav.pricing },
+        // { to: '/pricing', label: t.nav.pricing }, // Disabled for now
       ]
     : [
-        { to: '/pricing', label: t.nav.pricing },
+        // { to: '/pricing', label: t.nav.pricing }, // Disabled for now
       ];
 
   const isActive = (path) => location.pathname === path;
