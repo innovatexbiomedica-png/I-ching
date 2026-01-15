@@ -246,6 +246,108 @@ const Consultation = () => {
           <div className="w-16 h-px bg-[#C44D38] mx-auto" />
         </div>
 
+        {/* Consultation Type Selection */}
+        {!consultationType && (
+          <div className="animate-fade-in-up mb-8" data-testid="consultation-type-selection">
+            <div className="zen-card border-2 border-[#E5E0D8] p-6 mb-4">
+              <h3 className="font-serif text-xl text-[#2C2C2C] mb-2 text-center">
+                {language === 'it' ? 'Scegli il tipo di consultazione' : 'Choose consultation type'}
+              </h3>
+              <p className="text-sm text-[#595959] text-center mb-6">
+                {language === 'it' 
+                  ? 'Seleziona lo stile di interpretazione che preferisci ricevere'
+                  : 'Select the interpretation style you prefer to receive'}
+              </p>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Direct Reading */}
+                <button
+                  type="button"
+                  onClick={() => setConsultationType('direct')}
+                  className="p-6 rounded-xl border-2 border-[#D1CDC7] hover:border-[#C44D38] hover:bg-[#C44D38]/5 transition-all text-left group"
+                  data-testid="select-direct"
+                >
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-[#C44D38] flex items-center justify-center">
+                      <Zap className="w-5 h-5 text-white" />
+                    </div>
+                    <h4 className="font-serif text-lg text-[#2C2C2C] group-hover:text-[#C44D38]">
+                      {language === 'it' ? 'Stesa Diretta' : 'Direct Reading'}
+                    </h4>
+                  </div>
+                  <p className="text-sm text-[#595959] mb-3">
+                    {language === 'it' 
+                      ? 'Interpretazione chiara, d\'impatto, che va dritta al punto. Ideale per risposte immediate e comprensibili.'
+                      : 'Clear, impactful interpretation that gets straight to the point. Ideal for immediate and understandable answers.'}
+                  </p>
+                  <ul className="text-xs text-[#595959] space-y-1">
+                    <li>✓ {language === 'it' ? 'Linguaggio semplice e diretto' : 'Simple and direct language'}</li>
+                    <li>✓ {language === 'it' ? 'Risposta concisa e pratica' : 'Concise and practical response'}</li>
+                    <li>✓ {language === 'it' ? 'Facile da comprendere' : 'Easy to understand'}</li>
+                  </ul>
+                </button>
+
+                {/* Deep Reading */}
+                <button
+                  type="button"
+                  onClick={() => setConsultationType('deep')}
+                  className="p-6 rounded-xl border-2 border-[#D1CDC7] hover:border-purple-500 hover:bg-purple-50 transition-all text-left group"
+                  data-testid="select-deep"
+                >
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center">
+                      <Compass className="w-5 h-5 text-white" />
+                    </div>
+                    <h4 className="font-serif text-lg text-[#2C2C2C] group-hover:text-purple-600">
+                      {language === 'it' ? 'Stesa Profonda' : 'Deep Reading'}
+                    </h4>
+                  </div>
+                  <p className="text-sm text-[#595959] mb-3">
+                    {language === 'it' 
+                      ? 'Interpretazione completa con riferimenti al Libro dei Mutamenti, archetipi e saggezza taoista.'
+                      : 'Complete interpretation with references to the Book of Changes, archetypes and Taoist wisdom.'}
+                  </p>
+                  <ul className="text-xs text-[#595959] space-y-1">
+                    <li>✓ {language === 'it' ? 'Citazioni dal Libro dei Mutamenti' : 'Quotes from the Book of Changes'}</li>
+                    <li>✓ {language === 'it' ? 'Analisi dettagliata delle linee' : 'Detailed line analysis'}</li>
+                    <li>✓ {language === 'it' ? 'Linguaggio contemplativo e poetico' : 'Contemplative and poetic language'}</li>
+                  </ul>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Show selected type indicator */}
+        {consultationType && (
+          <div className="mb-6 animate-fade-in-up">
+            <div className={`inline-flex items-center px-4 py-2 rounded-full ${
+              consultationType === 'direct' 
+                ? 'bg-[#C44D38]/10 text-[#C44D38]' 
+                : 'bg-purple-100 text-purple-700'
+            }`}>
+              {consultationType === 'direct' ? (
+                <Zap className="w-4 h-4 mr-2" />
+              ) : (
+                <Compass className="w-4 h-4 mr-2" />
+              )}
+              <span className="font-medium">
+                {consultationType === 'direct' 
+                  ? (language === 'it' ? 'Stesa Diretta' : 'Direct Reading')
+                  : (language === 'it' ? 'Stesa Profonda' : 'Deep Reading')}
+              </span>
+              <button 
+                type="button"
+                onClick={() => setConsultationType(null)}
+                className="ml-2 text-xs underline opacity-70 hover:opacity-100"
+              >
+                {language === 'it' ? 'cambia' : 'change'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {consultationType && (
         <form onSubmit={handleSubmit}>
           {/* Question Input */}
           <div className="zen-card mb-8 animate-fade-in-up stagger-1" data-testid="question-section">
