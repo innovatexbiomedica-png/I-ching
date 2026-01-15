@@ -420,6 +420,7 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
         return TraditionalData(
             sentence=trad_data.get("sentence", ""),
             image=trad_data.get("image", ""),
+            commentary=trad_data.get("commentary", ""),
             trigram_above=TrigramInfo(**trigram_above_info),
             trigram_below=TrigramInfo(**trigram_below_info),
             moving_lines_text=[MovingLineText(**m) for m in moving_texts]
