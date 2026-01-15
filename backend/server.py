@@ -197,6 +197,14 @@ class ConsultationResponse(BaseModel):
     derived_traditional_data: Optional[TraditionalData] = None
     interpretation: str
     created_at: str
+    # New fields for linked consultations
+    is_synthesis: bool = False
+    linked_consultation_ids: List[str] = []
+    synthesis_type: Optional[str] = None  # "confirmation", "deepening", "clarification"
+
+class SynthesisRequest(BaseModel):
+    consultation_ids: List[str]
+    synthesis_type: str = "deepening"  # confirmation, deepening, clarification
 
 class CheckoutRequest(BaseModel):
     origin_url: str
