@@ -288,7 +288,17 @@ const History = () => {
                       )}
                     </div>
                   </div>
-                  <ArrowRight className="w-5 h-5 text-[#D1CDC7] group-hover:text-[#C44D38] transition-colors flex-shrink-0 ml-4" />
+                  <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
+                    <button
+                      onClick={(e) => handleDelete(e, consultation.id)}
+                      className="p-2 text-[#D1CDC7] hover:text-[#C44D38] hover:bg-[#C44D38]/10 rounded transition-colors"
+                      title={language === 'it' ? 'Elimina' : 'Delete'}
+                      data-testid={`delete-${consultation.id}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <ArrowRight className="w-5 h-5 text-[#D1CDC7] group-hover:text-[#C44D38] transition-colors" />
+                  </div>
                 </div>
               </div>
             ))}
