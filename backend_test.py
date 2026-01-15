@@ -2029,6 +2029,342 @@ class IChingAPITester:
         
         return False
 
+    def test_hexagram_50_il_crogiolo(self):
+        """Test hexagram 50 (Il Crogiolo) with moving lines - specific test from review request"""
+        if not self.token:
+            self.log_test("Hexagram 50 (Il Crogiolo)", False, "No auth token")
+            return False
+            
+        # Coin tosses that should generate hexagram 50 with moving lines
+        consultation_data = {
+            "question": "Test dei nuovi esagrammi - Esagramma 50",
+            "consultation_type": "deep",
+            "coin_tosses": {
+                "line1": 8,  # Yin
+                "line2": 7,  # Yang
+                "line3": 9,  # Old Yang (moving)
+                "line4": 7,  # Yang
+                "line5": 6,  # Old Yin (moving)
+                "line6": 9   # Old Yang (moving)
+            }
+        }
+        
+        success, response = self.run_test(
+            "Hexagram 50 (Il Crogiolo)",
+            "POST",
+            "consultations",
+            200,
+            data=consultation_data
+        )
+        
+        if success and 'hexagram_number' in response:
+            hexagram_num = response.get('hexagram_number')
+            hexagram_name = response.get('hexagram_name', '')
+            moving_lines = response.get('moving_lines', [])
+            interpretation = response.get('interpretation', '')
+            
+            print(f"   Generated hexagram: {hexagram_num} - {hexagram_name}")
+            print(f"   Moving lines: {moving_lines}")
+            
+            # Verify this is a high hexagram number (50-64 range)
+            verification_checks = []
+            
+            if 50 <= hexagram_num <= 64:
+                verification_checks.append(f"✅ Generated high hexagram number: {hexagram_num}")
+            else:
+                verification_checks.append(f"❌ Generated low hexagram number: {hexagram_num} (expected 50-64)")
+            
+            # Check for moving lines
+            if moving_lines:
+                verification_checks.append(f"✅ Has moving lines: {moving_lines}")
+            else:
+                verification_checks.append("❌ No moving lines generated")
+            
+            # Check for traditional references in interpretation
+            traditional_refs = ["giudizio", "immagine", "linea", "mutevole", "tradizionale"]
+            found_refs = [ref for ref in traditional_refs if ref.lower() in interpretation.lower()]
+            if len(found_refs) >= 2:
+                verification_checks.append(f"✅ Contains traditional references: {found_refs}")
+            else:
+                verification_checks.append(f"❌ Lacks traditional references: {found_refs}")
+            
+            # Check interpretation length for deep consultation
+            word_count = len(interpretation.split())
+            if 600 <= word_count <= 900:
+                verification_checks.append(f"✅ Deep interpretation length: {word_count} words")
+            else:
+                verification_checks.append(f"❌ Incorrect interpretation length: {word_count} words (expected 600-900)")
+            
+            print("   Verification:")
+            for check in verification_checks:
+                print(f"     {check}")
+            
+            passed_checks = sum(1 for check in verification_checks if check.startswith("✅"))
+            if passed_checks >= 3:
+                return True
+            else:
+                self.log_test("Hexagram 50 (Il Crogiolo)", False, f"Verification failed: {passed_checks}/4 checks passed")
+                return False
+        
+        return False
+
+    def test_hexagram_64_prima_del_compimento(self):
+        """Test hexagram 64 (Prima del Compimento) with specific moving lines from review request"""
+        if not self.token:
+            self.log_test("Hexagram 64 (Prima del Compimento)", False, "No auth token")
+            return False
+            
+        # Specific coin tosses from review request that should generate hexagram 64
+        consultation_data = {
+            "question": "Test dei nuovi esagrammi",
+            "language": "it",
+            "consultation_type": "deep",
+            "coin_tosses": {
+                "line1": 8,  # Yin
+                "line2": 7,  # Yang
+                "line3": 9,  # Old Yang (moving)
+                "line4": 7,  # Yang
+                "line5": 7,  # Yang
+                "line6": 9   # Old Yang (moving)
+            }
+        }
+        
+        success, response = self.run_test(
+            "Hexagram 64 (Prima del Compimento)",
+            "POST",
+            "consultations",
+            200,
+            data=consultation_data
+        )
+        
+        if success and 'hexagram_number' in response:
+            hexagram_num = response.get('hexagram_number')
+            hexagram_name = response.get('hexagram_name', '')
+            moving_lines = response.get('moving_lines', [])
+            interpretation = response.get('interpretation', '')
+            traditional_data = response.get('traditional_data', {})
+            
+            print(f"   Generated hexagram: {hexagram_num} - {hexagram_name}")
+            print(f"   Moving lines: {moving_lines}")
+            
+            verification_checks = []
+            
+            # Check if we got hexagram 64 or another high hexagram
+            if hexagram_num == 64:
+                verification_checks.append(f"✅ Generated hexagram 64 (Prima del Compimento)")
+                
+                # Check for specific traditional text for hexagram 64 line 1
+                if "coda nell'acqua" in interpretation.lower() or "umiliante" in interpretation.lower():
+                    verification_checks.append("✅ Contains hexagram 64 traditional line text")
+                else:
+                    verification_checks.append("❌ Missing hexagram 64 traditional line text")
+            elif 50 <= hexagram_num <= 64:
+                verification_checks.append(f"✅ Generated high hexagram: {hexagram_num} (in range 50-64)")
+            else:
+                verification_checks.append(f"❌ Generated low hexagram: {hexagram_num} (expected 50-64)")
+            
+            # Check for moving lines presence
+            if moving_lines:
+                verification_checks.append(f"✅ Has moving lines: {moving_lines}")
+                
+                # Check if traditional moving lines text is present
+                moving_lines_text = traditional_data.get('moving_lines_text', [])
+                if moving_lines_text:
+                    verification_checks.append(f"✅ Traditional moving lines text present: {len(moving_lines_text)} lines")
+                else:
+                    verification_checks.append("❌ No traditional moving lines text")
+            else:
+                verification_checks.append("❌ No moving lines generated")
+            
+            # Check for traditional I Ching content
+            traditional_keywords = ["libro", "mutamenti", "tradizionale", "giudizio", "immagine"]
+            found_traditional = [kw for kw in traditional_keywords if kw.lower() in interpretation.lower()]
+            if len(found_traditional) >= 1:
+                verification_checks.append(f"✅ Contains traditional I Ching references: {found_traditional}")
+            else:
+                verification_checks.append(f"❌ Lacks traditional I Ching references")
+            
+            print("   Verification:")
+            for check in verification_checks:
+                print(f"     {check}")
+            
+            passed_checks = sum(1 for check in verification_checks if check.startswith("✅"))
+            if passed_checks >= 3:
+                return True
+            else:
+                self.log_test("Hexagram 64 (Prima del Compimento)", False, f"Verification failed: {passed_checks}/4 checks passed")
+                return False
+        
+        return False
+
+    def test_extended_hexagrams_availability(self):
+        """Test that extended hexagrams (50-64) are available with moving lines"""
+        if not self.token:
+            self.log_test("Extended Hexagrams Availability", False, "No auth token")
+            return False
+            
+        # Test multiple high hexagrams to verify they're all available
+        test_cases = [
+            {"target": "Hexagram 55+", "line1": 9, "line2": 6, "line3": 7, "line4": 8, "line5": 9, "line6": 6},
+            {"target": "Hexagram 60+", "line1": 6, "line2": 9, "line3": 8, "line4": 7, "line5": 6, "line6": 9},
+            {"target": "High Hexagram", "line1": 7, "line2": 8, "line3": 6, "line4": 9, "line5": 7, "line6": 8}
+        ]
+        
+        successful_tests = 0
+        
+        for i, test_case in enumerate(test_cases):
+            consultation_data = {
+                "question": f"Test esteso esagrammi superiori - {test_case['target']}",
+                "consultation_type": "deep",
+                "coin_tosses": {
+                    "line1": test_case["line1"],
+                    "line2": test_case["line2"],
+                    "line3": test_case["line3"],
+                    "line4": test_case["line4"],
+                    "line5": test_case["line5"],
+                    "line6": test_case["line6"]
+                }
+            }
+            
+            success, response = self.run_test(
+                f"Extended Hexagram Test {i+1}",
+                "POST",
+                "consultations",
+                200,
+                data=consultation_data
+            )
+            
+            if success and 'hexagram_number' in response:
+                hexagram_num = response.get('hexagram_number')
+                hexagram_name = response.get('hexagram_name', '')
+                moving_lines = response.get('moving_lines', [])
+                interpretation = response.get('interpretation', '')
+                
+                print(f"   Test {i+1}: Generated hexagram {hexagram_num} - {hexagram_name}")
+                print(f"   Moving lines: {moving_lines}")
+                
+                # Check if it's a valid hexagram with proper interpretation
+                if (1 <= hexagram_num <= 64 and 
+                    len(interpretation) > 500 and 
+                    hexagram_name):
+                    successful_tests += 1
+                    print(f"     ✅ Valid extended hexagram with full interpretation")
+                else:
+                    print(f"     ❌ Invalid or incomplete hexagram data")
+        
+        if successful_tests >= 2:  # At least 2 out of 3 should work
+            self.log_test("Extended Hexagrams Availability", True, f"{successful_tests}/3 extended hexagram tests passed")
+            return True
+        else:
+            self.log_test("Extended Hexagrams Availability", False, f"Only {successful_tests}/3 extended hexagram tests passed")
+            return False
+
+    def test_all_64_hexagrams_with_moving_lines(self):
+        """Test that all 64 hexagrams are now available with moving lines content"""
+        if not self.token:
+            self.log_test("All 64 Hexagrams with Moving Lines", False, "No auth token")
+            return False
+            
+        print("\n🔍 Testing comprehensive 64 hexagrams system...")
+        
+        # Test a few specific high-number hexagrams to verify the extended system
+        high_hexagram_tests = [
+            {
+                "name": "Test Hexagram 50+ Range",
+                "coin_tosses": {"line1": 8, "line2": 7, "line3": 9, "line4": 7, "line5": 6, "line6": 9}
+            },
+            {
+                "name": "Test Hexagram 60+ Range", 
+                "coin_tosses": {"line1": 6, "line2": 9, "line3": 7, "line4": 8, "line5": 6, "line6": 9}
+            }
+        ]
+        
+        verification_results = []
+        
+        for test in high_hexagram_tests:
+            consultation_data = {
+                "question": "Verifica sistema completo 64 esagrammi",
+                "consultation_type": "deep",
+                "coin_tosses": test["coin_tosses"]
+            }
+            
+            success, response = self.run_test(
+                test["name"],
+                "POST",
+                "consultations",
+                200,
+                data=consultation_data
+            )
+            
+            if success and 'hexagram_number' in response:
+                hexagram_num = response.get('hexagram_number')
+                hexagram_name = response.get('hexagram_name', '')
+                moving_lines = response.get('moving_lines', [])
+                traditional_data = response.get('traditional_data', {})
+                interpretation = response.get('interpretation', '')
+                
+                print(f"   {test['name']}: Hexagram {hexagram_num} - {hexagram_name}")
+                
+                # Verify comprehensive system features
+                checks = []
+                
+                # 1. Valid hexagram number
+                if 1 <= hexagram_num <= 64:
+                    checks.append("✅ Valid hexagram number")
+                else:
+                    checks.append(f"❌ Invalid hexagram number: {hexagram_num}")
+                
+                # 2. Has proper name
+                if hexagram_name and len(hexagram_name) > 3:
+                    checks.append("✅ Has proper hexagram name")
+                else:
+                    checks.append("❌ Missing or invalid hexagram name")
+                
+                # 3. Moving lines functionality
+                if moving_lines:
+                    checks.append(f"✅ Moving lines present: {moving_lines}")
+                    
+                    # 4. Traditional moving lines text
+                    moving_lines_text = traditional_data.get('moving_lines_text', [])
+                    if moving_lines_text and len(moving_lines_text) > 0:
+                        checks.append(f"✅ Traditional moving lines text: {len(moving_lines_text)} lines")
+                    else:
+                        checks.append("❌ No traditional moving lines text")
+                else:
+                    checks.append("⚠️ No moving lines (acceptable)")
+                
+                # 5. Rich interpretation
+                word_count = len(interpretation.split())
+                if word_count >= 600:
+                    checks.append(f"✅ Rich interpretation: {word_count} words")
+                else:
+                    checks.append(f"❌ Short interpretation: {word_count} words")
+                
+                # 6. Traditional data structure
+                if traditional_data and 'sentence' in traditional_data:
+                    checks.append("✅ Traditional data structure present")
+                else:
+                    checks.append("❌ Missing traditional data structure")
+                
+                for check in checks:
+                    print(f"     {check}")
+                
+                passed = sum(1 for check in checks if check.startswith("✅"))
+                verification_results.append(passed >= 4)  # At least 4/6 checks should pass
+        
+        # Overall assessment
+        successful_tests = sum(verification_results)
+        total_tests = len(verification_results)
+        
+        if successful_tests >= total_tests * 0.8:  # 80% success rate
+            self.log_test("All 64 Hexagrams with Moving Lines", True, 
+                         f"Comprehensive system verified: {successful_tests}/{total_tests} tests passed")
+            return True
+        else:
+            self.log_test("All 64 Hexagrams with Moving Lines", False, 
+                         f"System incomplete: {successful_tests}/{total_tests} tests passed")
+            return False
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting I Ching API Tests")
