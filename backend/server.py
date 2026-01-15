@@ -509,6 +509,16 @@ async def get_consultation(consultation_id: str, user: dict = Depends(get_curren
     consultation = enrich_consultation_data(consultation, lang)
     return ConsultationResponse(**consultation)
 
+@api_router.delete("/consultations/{consultation_id}")
+async def delete_consultation(consultation_id: str, user: dict = Depends(get_current_user)):
+    """Delete a consultation"""
+    result = await db.consultations.delete_one(
+        {"id": consultation_id, "user_id": user["id"]}
+    )
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Consultazione non trovata")
+    return {"message": "Consultazione eliminata"}
+
 def enrich_consultation_data(consultation: dict, language: str) -> dict:
     """Add missing traditional data to old consultations"""
     hex_num = consultation.get("hexagram_number")
