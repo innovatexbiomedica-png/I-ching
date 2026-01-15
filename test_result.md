@@ -228,3 +228,17 @@ agent_communication:
     message: "Implementato sistema completo di recupero password. Backend: 3 nuovi endpoint (request-reset, verify-reset, admin/reset-requests). Frontend: 2 nuove pagine (ForgotPassword, ResetPassword), aggiornato Register con campo telefono, aggiunto link in Login. Testare prima il backend."
   - agent: "testing"
     message: "✅ BACKEND TESTING COMPLETE: Password reset system fully functional. All 4 backend endpoints tested successfully: 1) POST /api/auth/register with phone field ✅ 2) POST /api/auth/request-reset ✅ 3) POST /api/auth/verify-reset ✅ 4) GET /api/admin/reset-requests ✅. Complete flow tested: registration → reset request → admin code retrieval → password verification → login with new password. All validation working (invalid codes, short passwords, expired codes). Ready for frontend testing or production use."
+  - agent: "main"
+    message: "Implementato sistema STESE DI SINTESI. Backend: nuovo endpoint POST /api/consultations/synthesis che genera interpretazione AI combinata da multiple consultazioni. Frontend: History.js aggiornato con modalità selezione (pallino/checkbox), pannello per scegliere tipo sintesi (conferma/approfondimento/chiarimento), badge distintivo per stese di sintesi. Testare endpoint synthesis."
+
+  - task: "Synthesis consultation endpoint"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementato POST /api/consultations/synthesis - genera interpretazione AI combinata da 2-5 consultazioni selezionate"
