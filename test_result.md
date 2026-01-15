@@ -162,6 +162,18 @@ backend:
         agent: "testing"
         comment: "✅ TESTED: GET /api/admin/reset-requests works correctly. Returns list of pending reset requests with all required fields (email, phone, name, code, expiration). Found 1 pending request during testing."
 
+  - task: "Enhanced rich interpretations"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py, backend/iching_extended.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Creato iching_extended.py con dati tradizionali completi (giudizio, immagine, linee, commenti). Modificato generate_interpretation per produrre interpretazioni 600-900 parole con citazioni tradizionali, spiegazione dettagliata linee mutevoli, esagramma derivato."
+
 frontend:
   - task: "ForgotPassword page"
     implemented: true
