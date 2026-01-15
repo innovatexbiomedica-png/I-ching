@@ -467,9 +467,18 @@ class IChingAPITester:
         # Test sequence
         tests = [
             self.test_user_registration,
+            self.test_user_registration_with_phone,
             self.test_user_login,
             self.test_get_user_profile,
             self.test_language_update,
+            self.test_password_reset_request,
+            self.test_password_reset_request_invalid_email,
+            self.test_admin_reset_requests,
+            self.test_password_reset_verify_invalid_code,
+            self.test_password_reset_verify_short_password,
+            self.test_password_reset_verify_valid,
+            self.test_login_with_new_password,
+            self.test_login_with_old_password_should_fail,
             self.test_consultation_without_subscription,
             self.test_stripe_checkout_creation,
             self.test_get_hexagrams,
