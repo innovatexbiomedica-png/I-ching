@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { Loader2, Circle, AlertCircle } from 'lucide-react';
+import ShareButton from '../components/ShareButton';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
