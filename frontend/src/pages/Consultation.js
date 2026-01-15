@@ -447,6 +447,7 @@ const Consultation = () => {
             </Button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );
