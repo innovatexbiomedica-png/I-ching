@@ -1,0 +1,149 @@
+{
+  "identity": {
+    "name": "E1: The Anti-AI Designer",
+    "mission": "Create a 'Digital Sanctuary' that feels like a physical space—paper, ink, and stone—rather than a SaaS app.",
+    "principles": [
+      "Fusion: Ancient Divination x Modern Swiss Design",
+      "Emotion: Calm, Introspective, Trustworthy",
+      "Texture over Gloss: Use grain and paper textures instead of glassmorphism",
+      "Asymmetry: Create tension like a calligraphy stroke"
+    ]
+  },
+  "typography": {
+    "headings": {
+      "family": "Cormorant Garamond, serif",
+      "weights": ["400", "600", "700"],
+      "usage": "All section titles, hero text, and hexagram names. Use italic for emphasis.",
+      "letterSpacing": "-0.02em"
+    },
+    "body": {
+      "family": "Manrope, sans-serif",
+      "weights": ["300", "400", "500"],
+      "usage": "UI elements, chat interface, long-form interpretations.",
+      "letterSpacing": "0.01em"
+    },
+    "mono": {
+      "family": "JetBrains Mono, monospace",
+      "usage": "Hexagram binary codes (lines), dates, and technical data."
+    }
+  },
+  "colors": {
+    "palette": {
+      "background": {
+        "primary": "#F9F7F2",
+        "secondary": "#E5E0D8",
+        "name": "Rice Paper"
+      },
+      "foreground": {
+        "primary": "#2C2C2C",
+        "secondary": "#595959",
+        "name": "Sumi Ink"
+      },
+      "accent": {
+        "primary": "#C44D38",
+        "secondary": "#A63D2B",
+        "name": "Cinnabar Seal"
+      },
+      "nature": {
+        "primary": "#8A9A5B",
+        "secondary": "#6B7A40",
+        "name": "Dried Bamboo"
+      },
+      "ui": {
+        "border": "#D1CDC7",
+        "input": "#EBE8E1"
+      }
+    },
+    "usage_rules": [
+      "NEVER use pure black (#000000). Use Sumi Ink (#2C2C2C).",
+      "NEVER use pure white (#FFFFFF) for backgrounds. Use Rice Paper (#F9F7F2).",
+      "Use Cinnabar Red ONLY for primary actions (CTAs) and active states.",
+      "Gradients are FORBIDDEN unless they are subtle noise gradients."
+    ]
+  },
+  "visual_enhancers": {
+    "textures": [
+      "Grain: Add a fixed noise overlay (opacity 3%) to the entire body to simulate paper.",
+      "Borders: Use 1px solid borders with color #D1CDC7 for cards. No shadows by default."
+    ],
+    "shadows": {
+      "soft": "0 4px 20px -2px rgba(44, 44, 44, 0.05)",
+      "lifted": "0 10px 40px -10px rgba(44, 44, 44, 0.1)"
+    },
+    "radius": {
+      "default": "2px",
+      "button": "2px",
+      "card": "4px"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#C44D38] text-[#F9F7F2] hover:bg-[#A63D2B] rounded-[2px] px-8 py-3 font-serif tracking-wide shadow-sm transition-transform active:scale-95",
+      "secondary": "bg-transparent border border-[#2C2C2C] text-[#2C2C2C] hover:bg-[#2C2C2C] hover:text-[#F9F7F2] rounded-[2px] px-8 py-3 font-serif tracking-wide"
+    },
+    "cards": {
+      "style": "bg-white/60 backdrop-blur-sm border border-[#D1CDC7] rounded-[4px] p-8",
+      "hover": "hover:border-[#C44D38]/30 transition-colors duration-300"
+    },
+    "inputs": {
+      "style": "bg-transparent border-b border-[#2C2C2C]/20 focus:border-[#C44D38] outline-none px-0 py-2 rounded-none transition-all placeholder:text-[#2C2C2C]/40 font-sans"
+    },
+    "navigation": {
+      "style": "backdrop-blur-md bg-[#F9F7F2]/80 border-b border-[#D1CDC7]/50 sticky top-0 z-50"
+    }
+  },
+  "layout": {
+    "grid_system": "Bento Grid",
+    "spacing": {
+      "container": "max-w-7xl mx-auto px-6 md:px-12",
+      "section": "py-24 md:py-32"
+    },
+    "strategies": [
+      "Use 'The Scroll' layout for results: tall, narrow containers centered on screen.",
+      "Use 'The Altar' layout for coin toss: symmetrical, focused center stage.",
+      "Always leave 20% more whitespace than you think is necessary."
+    ]
+  },
+  "motion": {
+    "principles": [
+      "Slow and deliberate. No snappy, bouncy animations.",
+      "Fade in and slide up (y: 20px) for entrance.",
+      "Duration: 0.6s to 0.8s for all transitions."
+    ],
+    "interactions": {
+      "hover": "Subtle color shift or border darken. No scaling up.",
+      "click": "Immediate feedback via color change."
+    }
+  },
+  "images": {
+    "hero_background": {
+      "url": "https://images.unsplash.com/photo-1628313348688-3d279e8538ed?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "alt": "Abstract zen stones balancing, white on white",
+      "usage": "Hero section background or decorative element"
+    },
+    "texture_overlay": {
+      "url": "https://images.unsplash.com/photo-1573883681183-f8a067598e32?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "alt": "Subtle concrete/paper texture",
+      "usage": "Blend mode overlay for sections"
+    },
+    "consultation_header": {
+      "url": "https://images.unsplash.com/photo-1579468118700-ed95e5b19fe2?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "alt": "Row of coins",
+      "usage": "Header for the consultation/coin toss page"
+    },
+    "meditation_detail": {
+      "url": "https://images.unsplash.com/photo-1626471240086-c4313f0b71cc?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "alt": "Single moonstone",
+      "usage": "Detail image for 'Focus' or 'Meditation' feature"
+    }
+  },
+  "universal_guidelines": [
+    "DO NOT use standard Tailwind shadows (shadow-md, shadow-lg). Use the custom soft shadows defined above.",
+    "DO NOT use 'Inter' font. Use 'Manrope' for body and 'Cormorant Garamond' for headings.",
+    "DO NOT use gradients. Use solid colors or noise textures.",
+    "Ensure all text has a contrast ratio of at least 4.5:1 against the background.",
+    "Use 'sonner' for toasts, styled to look like small paper slips.",
+    "All interactive elements must have 'data-testid' attributes."
+  ],
+  "instructions_to_main_agent": "You are building a digital sanctuary. Every pixel must feel intentional. If a component feels 'default', rewrite it. Use the 'Rice Paper' background for the body and 'Sumi Ink' for text. Implement the 'Cinnabar Seal' red only for the most important actions. When in doubt, add more whitespace."
+}
