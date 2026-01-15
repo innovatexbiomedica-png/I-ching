@@ -137,6 +137,44 @@ const History = () => {
                 {/* Hexagram Visual */}
                 <div className="flex justify-center">
                   <HexagramDisplay
+                    hexagramNumber={selectedConsultation.hexagram_number}
+                    hexagramName={selectedConsultation.hexagram_name}
+                    hexagramChinese={selectedConsultation.hexagram_chinese || selectedConsultation.hexagram_name}
+                    trigramAbove={selectedConsultation.trigram_above}
+                    trigramBelow={selectedConsultation.trigram_below}
+                    movingLines={selectedConsultation.moving_lines}
+                    lines={selectedConsultation.lines}
+                    size="medium"
+                  />
+                </div>
+                {/* Hexagram Info */}
+                <div className="text-center md:text-left">
+                  <h3 className="text-xl font-serif text-[#2C2C2C] mb-2">
+                    {selectedConsultation.hexagram_number}. {selectedConsultation.hexagram_name}
+                  </h3>
+                  {selectedConsultation.hexagram_chinese && (
+                    <p className="text-lg text-[#C44D38] font-serif mb-4">{selectedConsultation.hexagram_chinese}</p>
+                  )}
+                  {selectedConsultation.trigram_above && selectedConsultation.trigram_below && (
+                    <div className="text-sm text-[#595959] space-y-1">
+                      <p>{language === 'it' ? 'Trigramma superiore' : 'Upper Trigram'}: {selectedConsultation.trigram_above}</p>
+                      <p>{language === 'it' ? 'Trigramma inferiore' : 'Lower Trigram'}: {selectedConsultation.trigram_below}</p>
+                    </div>
+                  )}
+                  {selectedConsultation.derived_hexagram_number && (
+                    <div className="mt-4 pt-4 border-t border-[#E5E0D8]">
+                      <p className="text-sm text-[#595959]">
+                        {language === 'it' ? 'Evolve in' : 'Evolves into'}:
+                      </p>
+                      <p className="text-[#C44D38] font-serif">
+                        {selectedConsultation.derived_hexagram_number}. {selectedConsultation.derived_hexagram_name}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* SECTION 1: Traditional Reading */}
             <div className="mb-12">
               <div className="flex items-center space-x-3 mb-6">
