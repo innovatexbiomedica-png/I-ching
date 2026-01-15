@@ -142,6 +142,38 @@ HEXAGRAM_TRADITIONAL = {
             6: {"moving": "Bere vino in sincerità. Nessuna macchia. Ma se ci si bagna la testa si perde questa verità.", "meaning": "Celebra con moderazione o perderai tutto."},
         }
     },
+    61: {
+        "sentence_it": "La Verità Interiore. Porci e pesci. Salute. Propizio è attraversare la grande acqua. Propizia è perseveranza.",
+        "sentence_en": "Inner Truth. Pigs and fishes. Good fortune. It furthers one to cross the great water. Perseverance furthers.",
+        "image_it": "Vento sopra il lago: l'immagine della Verità Interiore. Così il nobile discute casi criminali per ritardare la pena di morte.",
+        "image_en": "Wind over lake: the image of Inner Truth. Thus the superior man discusses criminal cases to delay executions.",
+        "trigram_above": "☴",
+        "trigram_below": "☱",
+        "lines": {
+            1: {"moving": "Essere pronti reca salute. Se vi sono pensieri secondari, non v'è pace.", "meaning": "La preparazione e la concentrazione portano successo."},
+            2: {"moving": "Una gru che canta nell'ombra. Il suo piccolo le risponde. Io ho un buon calice. Voglio dividerlo con te.", "meaning": "L'influenza della sincerità si diffonde naturalmente."},
+            3: {"moving": "Egli trova un compagno. Ora batte il tamburo, ora cessa. Ora piange, ora canta.", "meaning": "Dipendenza emotiva da un altro porta instabilità."},
+            4: {"moving": "La luna quasi piena. Il cavallo del tiro si perde. Nessuna macchia.", "meaning": "La perfezione richiede di lasciar andare ciò che è superfluo."},
+            5: {"moving": "Egli possiede la verità che unisce. Nessuna macchia.", "meaning": "La sincerità crea legami profondi e duraturi."},
+            6: {"moving": "Il canto del gallo penetra fino al cielo. Perseveranza reca sciagura.", "meaning": "La verità senza saggezza porta rovina."},
+        }
+    },
+    18: {
+        "sentence_it": "L'Emendamento di ciò che è guastato. Sublime riuscita. Propizio è attraversare la grande acqua. Prima dell'inizio tre giorni. Dopo l'inizio tre giorni.",
+        "sentence_en": "Work on what has been spoiled. Supreme success. It furthers one to cross the great water. Before the starting point, three days. After the starting point, three days.",
+        "image_it": "Ai piedi del monte soffia il vento: l'immagine del Decadimento. Così il nobile scuote il popolo e ne rafforza lo spirito.",
+        "image_en": "The wind blows low at the foot of the mountain: the image of Decay. Thus the superior man stirs up the people and strengthens their spirit.",
+        "trigram_above": "☶",
+        "trigram_below": "☴",
+        "lines": {
+            1: {"moving": "Riparare quello che fu guastato dal padre. Se vi è un figlio, nessuna macchia resta sul padre defunto. Pericolo. Alla fine salute.", "meaning": "Correggere gli errori ereditati richiede cautela."},
+            2: {"moving": "Riparare quello che fu guastato dalla madre. Non si deve essere troppo perseveranti.", "meaning": "La delicatezza è necessaria nel rimediare."},
+            3: {"moving": "Riparare quello che fu guastato dal padre. Vi sarà un poco di pentimento. Nessuna grande macchia.", "meaning": "Un approccio troppo energico causa piccoli rimorsi."},
+            4: {"moving": "Tollerare quello che fu guastato dal padre. Continuando si vedrà umiliazione.", "meaning": "La passività peggiora la situazione."},
+            5: {"moving": "Riparare quello che fu guastato dal padre. Si incontra lode.", "meaning": "L'azione virtuosa porta onore."},
+            6: {"moving": "Egli non serve né re né principi. Pone più in alto le sue mete.", "meaning": "Oltre le riparazioni terrene, aspirare a mete più elevate."},
+        }
+    },
 }
 
 # Add more hexagrams with basic structure
