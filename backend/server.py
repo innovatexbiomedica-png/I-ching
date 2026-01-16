@@ -1231,7 +1231,8 @@ def enrich_consultation_data(consultation: dict, language: str) -> dict:
         trad_data = get_hexagram_traditional_data(hex_num, language)
         trigram_above_info = get_trigram_info(trad_data.get("trigram_above", "☰"), language)
         trigram_below_info = get_trigram_info(trad_data.get("trigram_below", "☷"), language)
-        moving_texts = get_moving_lines_text(hex_num, moving_lines, language)
+        # Use get_all_lines_text to get ALL 6 lines
+        all_lines_texts = get_all_lines_text(hex_num, moving_lines, language)
         
         consultation["traditional_data"] = {
             "sentence": trad_data.get("sentence", ""),
@@ -1239,7 +1240,7 @@ def enrich_consultation_data(consultation: dict, language: str) -> dict:
             "commentary": trad_data.get("commentary", ""),
             "trigram_above": trigram_above_info,
             "trigram_below": trigram_below_info,
-            "moving_lines_text": moving_texts
+            "moving_lines_text": all_lines_texts
         }
     
     # Add derived_traditional_data if missing
