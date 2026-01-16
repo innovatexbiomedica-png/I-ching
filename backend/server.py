@@ -13,7 +13,7 @@ import jwt
 import bcrypt
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest, CheckoutSessionResponse
-from iching_data import get_hexagram_traditional_data, get_trigram_info, get_moving_lines_text, TRIGRAMS
+from iching_data import get_hexagram_traditional_data, get_trigram_info, get_moving_lines_text, get_all_lines_text, TRIGRAMS
 from iching_extended import ICHING_EXTENDED, get_extended_hexagram_data, get_moving_line_extended
 
 ROOT_DIR = Path(__file__).parent
