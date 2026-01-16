@@ -810,9 +810,13 @@ async def request_password_reset(data: PasswordResetRequest):
     logger.info(f"   Codice: {reset_code}")
     logger.info(f"   Scade: {expires_at.isoformat()}")
     
+    # MODALITÀ TEST: restituisce il codice direttamente
+    # In produzione, rimuovere reset_code dalla risposta e inviare via SMS/Email
     return {
         "message": "Richiesta ricevuta. L'amministratore ti contatterà con il codice di reset.",
-        "contact_phone": data.phone or user.get("phone", "")
+        "contact_phone": data.phone or user.get("phone", ""),
+        "reset_code": reset_code,  # SOLO PER TEST - rimuovere in produzione!
+        "test_mode": True
     }
 
 @api_router.post("/auth/verify-reset")
