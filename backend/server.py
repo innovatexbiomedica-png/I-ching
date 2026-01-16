@@ -902,7 +902,8 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
     def build_traditional_response(trad_data, moving_lines, hex_num):
         trigram_above_info = get_trigram_info(trad_data.get("trigram_above", "☰"), lang)
         trigram_below_info = get_trigram_info(trad_data.get("trigram_below", "☷"), lang)
-        moving_texts = get_moving_lines_text(hex_num, moving_lines, lang)
+        # Use get_all_lines_text to get ALL 6 lines with is_active flag
+        all_lines_texts = get_all_lines_text(hex_num, moving_lines, lang)
         
         return TraditionalData(
             sentence=trad_data.get("sentence", ""),
@@ -910,7 +911,7 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
             commentary=trad_data.get("commentary", ""),
             trigram_above=TrigramInfo(**trigram_above_info),
             trigram_below=TrigramInfo(**trigram_below_info),
-            moving_lines_text=[MovingLineText(**m) for m in moving_texts]
+            moving_lines_text=[MovingLineText(**m) for m in all_lines_texts]
         )
     
     primary_trad_response = build_traditional_response(primary_traditional, hex_data["moving_lines"], hex_data["primary_hexagram"])
