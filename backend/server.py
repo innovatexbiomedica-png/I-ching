@@ -176,6 +176,7 @@ class MovingLineText(BaseModel):
     position: int
     text: str
     meaning: str
+    is_active: bool = True  # True if this line is a moving line
 
 class TraditionalData(BaseModel):
     sentence: str
