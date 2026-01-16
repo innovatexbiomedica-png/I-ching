@@ -20,18 +20,25 @@ const ForgotPassword = () => {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [resetCode, setResetCode] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      await axios.post(`${API}/auth/request-reset`, { email, phone });
+      const response = await axios.post(`${API}/auth/request-reset`, { email, phone });
       setSubmitted(true);
+      
+      // Se siamo in modalità test, salva il codice
+      if (response.data.reset_code) {
+        setResetCode(response.data.reset_code);
+      }
+      
       toast.success(
         language === 'it' 
-          ? 'Richiesta inviata! Ti contatteremo presto.' 
-          : 'Request sent! We will contact you soon.'
+          ? 'Richiesta inviata!' 
+          : 'Request sent!'
       );
     } catch (error) {
       toast.error(error.response?.data?.detail || t.auth.error);
@@ -50,18 +57,44 @@ const ForgotPassword = () => {
           <h1 className="text-2xl font-serif text-[#2C2C2C] mb-4">
             {language === 'it' ? 'Richiesta Inviata' : 'Request Sent'}
           </h1>
-          <p className="text-[#595959] mb-6">
-            {language === 'it' 
-              ? 'Abbiamo ricevuto la tua richiesta. L\'amministratore ti contatterà al numero di telefono fornito con il codice di reset.'
-              : 'We received your request. The administrator will contact you at the phone number provided with the reset code.'}
-          </p>
+          
+          {/* Mostra il codice in modalità test */}
+          {resetCode && (
+            <div className="mb-6 p-4 bg-amber-50 border-2 border-amber-400 rounded-lg">
+              <p className="text-amber-800 text-sm font-medium mb-2">
+                ⚠️ {language === 'it' ? 'MODALITÀ TEST' : 'TEST MODE'}
+              </p>
+              <p className="text-[#595959] text-sm mb-2">
+                {language === 'it' 
+                  ? 'Il tuo codice di reset è:'
+                  : 'Your reset code is:'}
+              </p>
+              <div className="text-3xl font-mono font-bold text-[#C44D38] tracking-widest" data-testid="reset-code-display">
+                {resetCode}
+              </div>
+              <p className="text-xs text-amber-700 mt-2">
+                {language === 'it' 
+                  ? '(In produzione questo codice verrà inviato via SMS/Email)'
+                  : '(In production this code will be sent via SMS/Email)'}
+              </p>
+            </div>
+          )}
+          
+          {!resetCode && (
+            <p className="text-[#595959] mb-6">
+              {language === 'it' 
+                ? 'Abbiamo ricevuto la tua richiesta. L\'amministratore ti contatterà al numero di telefono fornito con il codice di reset.'
+                : 'We received your request. The administrator will contact you at the phone number provided with the reset code.'}
+            </p>
+          )}
+          
           <div className="space-y-4">
             <Button
               onClick={() => navigate('/reset-password')}
               className="w-full btn-primary"
               data-testid="go-to-reset-btn"
             >
-              {language === 'it' ? 'Ho il codice, resetta password' : 'I have the code, reset password'}
+              {language === 'it' ? 'Vai a Reimposta Password' : 'Go to Reset Password'}
             </Button>
             <Link 
               to="/login" 
