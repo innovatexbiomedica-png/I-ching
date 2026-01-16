@@ -179,34 +179,61 @@ const TraditionalReading = ({
           </div>
           
           <div className="space-y-6">
-            {traditionalData.moving_lines_text.map((line, idx) => (
-              <div 
-                key={idx} 
-                className="relative pl-6 border-l-4 border-[#C44D38]"
-              >
-                <div className="absolute -left-4 top-0 w-8 h-8 rounded-full bg-[#C44D38] flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">{line.position}</span>
-                </div>
-                
-                <div className="ml-4">
-                  <p className="text-xs uppercase tracking-wider text-[#C44D38] mb-2">
-                    {t.line} {line.position}
-                  </p>
+            {traditionalData.moving_lines_text.map((line, idx) => {
+              const isActive = line.is_active !== false; // Default to true for backward compatibility
+              
+              return (
+                <div 
+                  key={idx} 
+                  className={`relative pl-6 border-l-4 transition-all ${
+                    isActive 
+                      ? 'border-[#C44D38]' 
+                      : 'border-[#D1CDC7] opacity-40'
+                  }`}
+                >
+                  <div className={`absolute -left-4 top-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                    isActive 
+                      ? 'bg-[#C44D38]' 
+                      : 'bg-[#B5B0A8]'
+                  }`}>
+                    <span className="text-white font-bold text-sm">{line.position}</span>
+                  </div>
                   
-                  {line.text && (
-                    <blockquote className="font-serif text-lg text-[#2C2C2C] italic mb-3 bg-[#E5E0D8]/30 p-4 rounded">
-                      "{line.text}"
-                    </blockquote>
-                  )}
-                  
-                  {line.meaning && (
-                    <p className="text-[#595959] text-sm">
-                      <span className="font-medium text-[#2C2C2C]">Significato:</span> {line.meaning}
+                  <div className="ml-4">
+                    <p className={`text-xs uppercase tracking-wider mb-2 ${
+                      isActive ? 'text-[#C44D38]' : 'text-[#B5B0A8]'
+                    }`}>
+                      {t.line} {line.position}
+                      {isActive && (
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#C44D38] text-white">
+                          {language === 'it' ? 'MUTEVOLE' : 'MOVING'}
+                        </span>
+                      )}
                     </p>
-                  )}
+                    
+                    {line.text && (
+                      <blockquote className={`font-serif text-lg italic mb-3 p-4 rounded ${
+                        isActive 
+                          ? 'text-[#2C2C2C] bg-[#E5E0D8]/30' 
+                          : 'text-[#8A8680] bg-[#F5F3EF]/50'
+                      }`}>
+                        "{line.text}"
+                      </blockquote>
+                    )}
+                    
+                    {line.meaning && (
+                      <p className={`text-sm ${
+                        isActive ? 'text-[#595959]' : 'text-[#A5A19B]'
+                      }`}>
+                        <span className={`font-medium ${isActive ? 'text-[#2C2C2C]' : 'text-[#8A8680]'}`}>
+                          {language === 'it' ? 'Significato:' : 'Meaning:'}
+                        </span> {line.meaning}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
