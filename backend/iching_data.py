@@ -303,3 +303,47 @@ def get_moving_lines_text(hex_number: int, moving_lines: list, language: str = "
         })
     
     return result
+
+
+def get_all_lines_text(hex_number: int, moving_lines: list, language: str = "it") -> list:
+    """Get text for ALL 6 lines, marking which ones are moving"""
+    # First try HEXAGRAM_TRADITIONAL
+    data = HEXAGRAM_TRADITIONAL.get(hex_number, {})
+    lines_data = data.get("lines", {})
+    
+    # Check if lines_data has actual content
+    has_content = False
+    if lines_data:
+        for line_info in lines_data.values():
+            if line_info.get("moving", "").strip() or line_info.get("meaning", "").strip():
+                has_content = True
+                break
+    
+    # If not in HEXAGRAM_TRADITIONAL or no content, try iching_extended
+    if not has_content:
+        try:
+            from iching_extended import ICHING_EXTENDED
+            extended_data = ICHING_EXTENDED.get(hex_number, {})
+            extended_lines = extended_data.get("linee", {})
+            if extended_lines:
+                lines_data = {}
+                for line_num, line_info in extended_lines.items():
+                    lines_data[line_num] = {
+                        "moving": line_info.get("testo", ""),
+                        "meaning": line_info.get("significato", "")
+                    }
+        except ImportError:
+            pass
+    
+    # Return all 6 lines with is_active flag
+    result = []
+    for line_num in range(1, 7):
+        line_info = lines_data.get(line_num, {})
+        result.append({
+            "position": line_num,
+            "text": line_info.get("moving", ""),
+            "meaning": line_info.get("meaning", ""),
+            "is_active": line_num in moving_lines  # Flag to indicate if this line is moving
+        })
+    
+    return result
