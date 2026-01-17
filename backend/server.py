@@ -163,6 +163,7 @@ class ConsultationCreate(BaseModel):
     coin_tosses: CoinToss
     consultation_type: str = "deep"  # "direct" or "deep"
     parent_consultation_id: Optional[str] = None  # For continuing a conversation
+    topic: Optional[str] = None  # 'amore', 'lavoro', 'fortuna', 'soldi', 'spirituale', 'personale', or custom text
 
 class TrigramInfo(BaseModel):
     symbol: str
