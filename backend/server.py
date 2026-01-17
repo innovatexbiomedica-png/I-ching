@@ -992,9 +992,11 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
     
     # Generate interpretation based on consultation type and conversation context
     consultation_type = data.consultation_type if hasattr(data, 'consultation_type') else "deep"
+    topic = data.topic if hasattr(data, 'topic') else None
     interpretation = await generate_interpretation(
         hex_data, data.question, lang, consultation_type, 
-        conversation_history=conversation_history
+        conversation_history=conversation_history,
+        topic=topic
     )
     
     # Create consultation record
@@ -1005,6 +1007,7 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
         "question": data.question,
         "coin_tosses": data.coin_tosses.model_dump(),
         "consultation_type": consultation_type,
+        "topic": topic,
         "parent_consultation_id": parent_consultation_id,
         "conversation_depth": conversation_depth,
         "hexagram_number": hex_data["primary_hexagram"],
