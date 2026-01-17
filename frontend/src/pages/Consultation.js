@@ -26,6 +26,8 @@ const Consultation = () => {
   const t = useTranslation(language);
   const navigate = useNavigate();
   
+  const [topic, setTopic] = useState(null); // 'amore', 'lavoro', 'fortuna', 'soldi', 'spirituale', 'personale', 'altro'
+  const [customTopic, setCustomTopic] = useState(''); // For 'altro' option
   const [consultationType, setConsultationType] = useState(null); // 'direct' or 'deep'
   const [question, setQuestion] = useState('');
   const [lines, setLines] = useState({
@@ -42,6 +44,30 @@ const Consultation = () => {
   // Conversation continuation states
   const [parentConsultation, setParentConsultation] = useState(null);
   const [continuationMode, setContinuationMode] = useState(false);
+
+  // Topic options
+  const topicOptions = {
+    it: [
+      { id: 'amore', label: 'Amore', icon: '❤️', description: 'Relazioni, sentimenti, vita affettiva' },
+      { id: 'lavoro', label: 'Lavoro', icon: '💼', description: 'Carriera, professione, progetti lavorativi' },
+      { id: 'fortuna', label: 'Fortuna', icon: '🍀', description: 'Opportunità, eventi favorevoli, destino' },
+      { id: 'soldi', label: 'Soldi', icon: '💰', description: 'Finanze, investimenti, prosperità economica' },
+      { id: 'spirituale', label: 'Crescita Spirituale', icon: '🧘', description: 'Evoluzione interiore, meditazione, ricerca spirituale' },
+      { id: 'personale', label: 'Crescita Personale', icon: '🌱', description: 'Sviluppo personale, obiettivi, miglioramento' },
+      { id: 'altro', label: 'Altro', icon: '✨', description: 'Specifica il tuo argomento' },
+    ],
+    en: [
+      { id: 'amore', label: 'Love', icon: '❤️', description: 'Relationships, feelings, emotional life' },
+      { id: 'lavoro', label: 'Work', icon: '💼', description: 'Career, profession, work projects' },
+      { id: 'fortuna', label: 'Fortune', icon: '🍀', description: 'Opportunities, favorable events, destiny' },
+      { id: 'soldi', label: 'Money', icon: '💰', description: 'Finances, investments, economic prosperity' },
+      { id: 'spirituale', label: 'Spiritual Growth', icon: '🧘', description: 'Inner evolution, meditation, spiritual search' },
+      { id: 'personale', label: 'Personal Growth', icon: '🌱', description: 'Personal development, goals, improvement' },
+      { id: 'altro', label: 'Other', icon: '✨', description: 'Specify your topic' },
+    ]
+  };
+
+  const currentTopicOptions = topicOptions[language] || topicOptions.it;
 
   const handleLineChange = (lineNum, value) => {
     setLines(prev => ({ ...prev, [lineNum]: value }));
