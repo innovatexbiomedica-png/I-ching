@@ -93,6 +93,9 @@ const Consultation = () => {
     setLoading(true);
     
     try {
+      // Determine the final topic to send
+      const finalTopic = topic === 'altro' ? customTopic : topic;
+      
       const requestData = {
         question,
         coin_tosses: {
@@ -103,7 +106,8 @@ const Consultation = () => {
           line5: parseInt(lines.line5),
           line6: parseInt(lines.line6)
         },
-        consultation_type: consultationType || 'deep'
+        consultation_type: consultationType || 'deep',
+        topic: finalTopic || null
       };
       
       // Add parent consultation id if continuing a conversation
