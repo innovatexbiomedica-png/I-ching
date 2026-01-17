@@ -336,7 +336,8 @@ async def get_conversation_history(parent_id: str, user_id: str, max_depth: int 
 
 async def generate_interpretation(hexagram_data: dict, question: str, language: str, 
                                    consultation_type: str = "deep", 
-                                   conversation_history: list = None) -> str:
+                                   conversation_history: list = None,
+                                   topic: str = None) -> str:
     """Generate AI interpretation using Gemini - either direct or deep style"""
     primary = HEXAGRAMS.get(hexagram_data["primary_hexagram"], {})
     derived = HEXAGRAMS.get(hexagram_data["derived_hexagram"], {}) if hexagram_data["derived_hexagram"] else None
@@ -352,14 +353,41 @@ async def generate_interpretation(hexagram_data: dict, question: str, language: 
         return await generate_direct_interpretation(
             hexagram_data, question, language, primary, derived, 
             primary_extended, derived_extended, name_key,
-            conversation_history=conversation_history
+            conversation_history=conversation_history,
+            topic=topic
         )
     
     # DEEP STYLE - Full traditional interpretation with Book of Changes quotes
     
+    # Topic context for more focused interpretations
+    topic_context_it = ""
+    topic_context_en = ""
+    if topic:
+        topic_map_it = {
+            'amore': 'AMORE E RELAZIONI - Focalizza l\'interpretazione su aspetti sentimentali, relazioni di coppia, affetti familiari, amicizie profonde',
+            'lavoro': 'LAVORO E CARRIERA - Focalizza l\'interpretazione su aspetti professionali, carriera, progetti lavorativi, rapporti con colleghi e superiori',
+            'fortuna': 'FORTUNA E OPPORTUNITÀ - Focalizza l\'interpretazione su opportunità future, eventi favorevoli, destino, tempismo delle azioni',
+            'soldi': 'FINANZE E DENARO - Focalizza l\'interpretazione su aspetti economici, investimenti, prosperità materiale, gestione delle risorse',
+            'spirituale': 'CRESCITA SPIRITUALE - Focalizza l\'interpretazione su evoluzione interiore, ricerca spirituale, meditazione, connessione con il Tao',
+            'personale': 'CRESCITA PERSONALE - Focalizza l\'interpretazione su sviluppo personale, raggiungimento obiettivi, superamento limiti, miglioramento di sé'
+        }
+        topic_map_en = {
+            'amore': 'LOVE AND RELATIONSHIPS - Focus the interpretation on romantic aspects, couple relationships, family bonds, deep friendships',
+            'lavoro': 'WORK AND CAREER - Focus the interpretation on professional aspects, career, work projects, relationships with colleagues and superiors',
+            'fortuna': 'FORTUNE AND OPPORTUNITIES - Focus the interpretation on future opportunities, favorable events, destiny, timing of actions',
+            'soldi': 'FINANCES AND MONEY - Focus the interpretation on economic aspects, investments, material prosperity, resource management',
+            'spirituale': 'SPIRITUAL GROWTH - Focus the interpretation on inner evolution, spiritual search, meditation, connection with the Tao',
+            'personale': 'PERSONAL GROWTH - Focus the interpretation on personal development, achieving goals, overcoming limits, self-improvement'
+        }
+        topic_context_it = topic_map_it.get(topic, f'ARGOMENTO SPECIFICO: {topic} - Focalizza l\'interpretazione su questo tema specifico indicato dal consultante')
+        topic_context_en = topic_map_en.get(topic, f'SPECIFIC TOPIC: {topic} - Focus the interpretation on this specific topic indicated by the querent')
+    
     if language == "it":
-        system_prompt = """Sei un venerabile Maestro dell'I Ching, custode della saggezza millenaria del Libro dei Mutamenti.
+        topic_instruction = f"\n\n**ARGOMENTO DELLA DOMANDA:**\n{topic_context_it}\nDevi interpretare OGNI aspetto dell'esagramma in relazione a questo argomento specifico. Sii CONCRETO e PRATICO nei consigli relativi a questo tema." if topic_context_it else ""
+        
+        system_prompt = f"""Sei un venerabile Maestro dell'I Ching, custode della saggezza millenaria del Libro dei Mutamenti.
 La tua voce è quella di un antico saggio taoista che parla con profondità, poesia e compassione.
+{topic_instruction}
 
 STILE DI SCRITTURA:
 - Scrivi in modo contemplativo, evocativo e profondamente spirituale
@@ -384,8 +412,11 @@ IMPORTANTE:
 - L'esagramma derivato indica DOVE si sta andando - spiegalo chiaramente
 - Lunghezza: 600-900 parole per un'interpretazione completa e soddisfacente"""
     else:
-        system_prompt = """You are a venerable Master of the I Ching, guardian of the ancient wisdom of the Book of Changes.
+        topic_instruction = f"\n\n**QUESTION TOPIC:**\n{topic_context_en}\nYou must interpret EVERY aspect of the hexagram in relation to this specific topic. Be CONCRETE and PRACTICAL in your advice related to this theme." if topic_context_en else ""
+        
+        system_prompt = f"""You are a venerable Master of the I Ching, guardian of the ancient wisdom of the Book of Changes.
 Your voice is that of an ancient Taoist sage who speaks with depth, poetry, and compassion.
+{topic_instruction}
 
 WRITING STYLE:
 - Write contemplatively, evocatively, and deeply spiritually
