@@ -602,7 +602,8 @@ async def generate_direct_interpretation(hexagram_data: dict, question: str, lan
                                           primary: dict, derived: dict, 
                                           primary_extended: dict, derived_extended: dict,
                                           name_key: str,
-                                          conversation_history: list = None) -> str:
+                                          conversation_history: list = None,
+                                          topic: str = None) -> str:
     """Generate a direct, impactful interpretation - simple and to the point"""
     
     primary_name = primary.get(name_key, primary.get("name", ""))
@@ -643,8 +644,34 @@ async def generate_direct_interpretation(hexagram_data: dict, question: str, lan
                 conversation_context += f"- Question {i}: \"{prev.get('question', '')}\" → Hexagram {prev.get('hexagram_number')}\n"
             conversation_context += "\nCONNECT this response to the previous ones fluidly.\n"
 
+    # Topic context for focused interpretations
+    topic_context_it = ""
+    topic_context_en = ""
+    if topic:
+        topic_map_it = {
+            'amore': 'AMORE E RELAZIONI - Interpreta tutto in chiave sentimentale e relazionale',
+            'lavoro': 'LAVORO E CARRIERA - Interpreta tutto in chiave professionale e lavorativa',
+            'fortuna': 'FORTUNA E OPPORTUNITÀ - Interpreta tutto in chiave di opportunità e destino',
+            'soldi': 'FINANZE E DENARO - Interpreta tutto in chiave economica e finanziaria',
+            'spirituale': 'CRESCITA SPIRITUALE - Interpreta tutto in chiave di evoluzione interiore',
+            'personale': 'CRESCITA PERSONALE - Interpreta tutto in chiave di sviluppo personale'
+        }
+        topic_map_en = {
+            'amore': 'LOVE AND RELATIONSHIPS - Interpret everything in romantic and relational terms',
+            'lavoro': 'WORK AND CAREER - Interpret everything in professional and work terms',
+            'fortuna': 'FORTUNE AND OPPORTUNITIES - Interpret everything in terms of opportunities and destiny',
+            'soldi': 'FINANCES AND MONEY - Interpret everything in economic and financial terms',
+            'spirituale': 'SPIRITUAL GROWTH - Interpret everything in terms of inner evolution',
+            'personale': 'PERSONAL GROWTH - Interpret everything in terms of personal development'
+        }
+        topic_context_it = topic_map_it.get(topic, f'ARGOMENTO: {topic} - Interpreta tutto in relazione a questo tema specifico')
+        topic_context_en = topic_map_en.get(topic, f'TOPIC: {topic} - Interpret everything in relation to this specific theme')
+
     if language == "it":
-        system_prompt = """Sei un consulente I Ching che parla in modo DIRETTO, CHIARO e D'IMPATTO.
+        topic_instruction = f"\n\n**ARGOMENTO SPECIFICO:** {topic_context_it}\nOgni parte della risposta DEVE essere focalizzata su questo argomento. Sii CONCRETO e SPECIFICO." if topic_context_it else ""
+        
+        system_prompt = f"""Sei un consulente I Ching che parla in modo DIRETTO, CHIARO e D'IMPATTO.
+{topic_instruction}
 
 STILE:
 - Vai dritto al punto, senza giri di parole
@@ -672,7 +699,10 @@ ESEMPIO DI TONO:
 "Questo è il momento di..."
 """
     else:
-        system_prompt = """You are an I Ching consultant who speaks in a DIRECT, CLEAR and IMPACTFUL way.
+        topic_instruction = f"\n\n**SPECIFIC TOPIC:** {topic_context_en}\nEvery part of the response MUST be focused on this topic. Be CONCRETE and SPECIFIC." if topic_context_en else ""
+        
+        system_prompt = f"""You are an I Ching consultant who speaks in a DIRECT, CLEAR and IMPACTFUL way.
+{topic_instruction}
 
 STYLE:
 - Get straight to the point, no beating around the bush
