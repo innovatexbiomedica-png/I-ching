@@ -290,6 +290,9 @@ const Consultation = () => {
                 setLines({ line1: '', line2: '', line3: '', line4: '', line5: '', line6: '' });
                 setParentConsultation(null);
                 setContinuationMode(false);
+                setTopic(null);
+                setCustomTopic('');
+                setConsultationType(null);
               }}
               className="btn-primary"
               data-testid="new-consultation-btn"
