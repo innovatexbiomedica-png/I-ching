@@ -367,7 +367,114 @@ const Consultation = () => {
         )}
 
         {/* Consultation Type Selection */}
-        {!consultationType && (
+        {!topic && (
+          <div className="animate-fade-in-up mb-8" data-testid="topic-selection">
+            <div className="zen-card border-2 border-[#E5E0D8] p-6 mb-4">
+              <h3 className="font-serif text-xl text-[#2C2C2C] mb-2 text-center">
+                {language === 'it' ? 'Di cosa vuoi parlare?' : 'What do you want to ask about?'}
+              </h3>
+              <p className="text-sm text-[#595959] text-center mb-6">
+                {language === 'it' 
+                  ? 'Seleziona l\'argomento della tua domanda per ricevere un\'interpretazione più precisa'
+                  : 'Select the topic of your question to receive a more accurate interpretation'}
+              </p>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {currentTopicOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setTopic(option.id)}
+                    className="p-4 rounded-xl border-2 border-[#D1CDC7] hover:border-[#C44D38] hover:bg-[#C44D38]/5 transition-all text-center group"
+                    data-testid={`select-topic-${option.id}`}
+                  >
+                    <div className="text-3xl mb-2">{option.icon}</div>
+                    <h4 className="font-serif text-sm text-[#2C2C2C] group-hover:text-[#C44D38] mb-1">
+                      {option.label}
+                    </h4>
+                    <p className="text-xs text-[#595959] hidden md:block">
+                      {option.description}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Custom Topic Input for "Altro" */}
+        {topic === 'altro' && !customTopic && (
+          <div className="animate-fade-in-up mb-8" data-testid="custom-topic-input">
+            <div className="zen-card border-2 border-[#E5E0D8] p-6">
+              <h3 className="font-serif text-xl text-[#2C2C2C] mb-2 text-center">
+                {language === 'it' ? 'Specifica l\'argomento' : 'Specify the topic'}
+              </h3>
+              <p className="text-sm text-[#595959] text-center mb-4">
+                {language === 'it' 
+                  ? 'Descrivi brevemente l\'argomento della tua domanda'
+                  : 'Briefly describe the topic of your question'}
+              </p>
+              <div className="max-w-md mx-auto">
+                <input
+                  type="text"
+                  value={customTopic}
+                  onChange={(e) => setCustomTopic(e.target.value)}
+                  placeholder={language === 'it' ? 'Es: Salute, Famiglia, Decisioni...' : 'E.g.: Health, Family, Decisions...'}
+                  className="w-full p-3 rounded-lg border-2 border-[#D1CDC7] focus:border-[#C44D38] focus:outline-none bg-[#F8F6F3] text-center"
+                  data-testid="custom-topic-field"
+                />
+                <div className="flex space-x-3 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setTopic(null)}
+                    className="flex-1 py-2 px-4 rounded-lg border-2 border-[#D1CDC7] text-[#595959] hover:bg-[#F0EDE8]"
+                  >
+                    {language === 'it' ? 'Indietro' : 'Back'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (customTopic.trim()) {
+                        // Keep topic as 'altro' but customTopic is set
+                      }
+                    }}
+                    disabled={!customTopic.trim()}
+                    className="flex-1 py-2 px-4 rounded-lg bg-[#C44D38] text-white hover:bg-[#A33D2B] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {language === 'it' ? 'Conferma' : 'Confirm'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Show selected topic indicator */}
+        {topic && (topic !== 'altro' || customTopic) && !consultationType && (
+          <div className="mb-4 animate-fade-in-up">
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-[#2C2C2C]/10 text-[#2C2C2C]">
+              <span className="mr-2">
+                {currentTopicOptions.find(o => o.id === topic)?.icon || '✨'}
+              </span>
+              <span className="font-medium">
+                {topic === 'altro' ? customTopic : currentTopicOptions.find(o => o.id === topic)?.label}
+              </span>
+              <button 
+                type="button"
+                onClick={() => {
+                  setTopic(null);
+                  setCustomTopic('');
+                }}
+                className="ml-2 text-xs underline opacity-70 hover:opacity-100"
+              >
+                {language === 'it' ? 'cambia' : 'change'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Consultation Type Selection - Now shows after topic is selected */}
+        {topic && (topic !== 'altro' || customTopic) && !consultationType && (
           <div className="animate-fade-in-up mb-8" data-testid="consultation-type-selection">
             <div className="zen-card border-2 border-[#E5E0D8] p-6 mb-4">
               <h3 className="font-serif text-xl text-[#2C2C2C] mb-2 text-center">
