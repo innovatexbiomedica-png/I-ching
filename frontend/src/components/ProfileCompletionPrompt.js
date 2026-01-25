@@ -102,25 +102,25 @@ const ProfileCompletionPrompt = ({ onComplete, onDismiss }) => {
   if (!showModal) {
     return (
       <div className="zen-card bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 mb-6 animate-fade-in-up">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center">
-              <User className="w-7 h-7 text-white" />
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex items-start space-x-3 sm:space-x-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
+              <User className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             </div>
-            <div>
-              <h3 className="font-serif text-lg text-[#2C2C2C] mb-1">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-serif text-base sm:text-lg text-[#2C2C2C] mb-1">
                 {language === 'it' ? 'Completa il tuo Profilo' : 'Complete Your Profile'}
               </h3>
-              <p className="text-sm text-[#595959]">
+              <p className="text-xs sm:text-sm text-[#595959]">
                 {language === 'it' 
-                  ? 'Aggiungi la tua data di nascita per scoprire il tuo profilo astrologico cinese e occidentale'
-                  : 'Add your birth date to discover your Chinese and Western astrological profile'}
+                  ? 'Aggiungi la tua data di nascita per scoprire il tuo profilo astrologico'
+                  : 'Add your birth date to discover your astrological profile'}
               </p>
             </div>
           </div>
           <button
             onClick={handleDismiss}
-            className="p-1 hover:bg-purple-100 rounded-full transition-colors"
+            className="absolute top-3 right-3 sm:static p-1 hover:bg-purple-100 rounded-full transition-colors"
           >
             <X className="w-5 h-5 text-[#595959]" />
           </button>
@@ -129,13 +129,13 @@ const ProfileCompletionPrompt = ({ onComplete, onDismiss }) => {
         <div className="mt-4 flex items-center space-x-3">
           <Button 
             onClick={() => setShowModal(true)}
-            className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600"
+            className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600 text-sm"
           >
             <Sparkles className="w-4 h-4 mr-2" />
             {language === 'it' ? 'Completa Ora' : 'Complete Now'}
           </Button>
           <span className="text-xs text-[#595959]">
-            {language === 'it' ? '~2 minuti' : '~2 minutes'}
+            {language === 'it' ? '~2 min' : '~2 min'}
           </span>
         </div>
       </div>
