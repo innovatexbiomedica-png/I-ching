@@ -574,8 +574,8 @@ const Consultation = () => {
           </div>
         )}
 
-        {/* Show selected topic indicator */}
-        {topic && (topic !== 'altro' || customTopic) && !consultationType && (
+        {/* Show selected topic indicator - not needed in path mode */}
+        {!isPathMode && topic && (topic !== 'altro' || customTopic) && !consultationType && (
           <div className="mb-4 animate-fade-in-up">
             <div className="inline-flex items-center px-4 py-2 rounded-full bg-[#2C2C2C]/10 text-[#2C2C2C]">
               <span className="mr-2">
