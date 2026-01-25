@@ -94,6 +94,18 @@ const Subscription = () => {
       free: false,
       premium: true,
     },
+    {
+      icon: <Sparkles className="w-5 h-5" />,
+      name: language === 'it' ? 'Consigli Personalizzati AI' : 'AI Personalized Advice',
+      free: false,
+      premium: true,
+    },
+    {
+      icon: <Bell className="w-5 h-5" />,
+      name: language === 'it' ? 'Notifiche & Calendario Cinese' : 'Notifications & Chinese Calendar',
+      free: false,
+      premium: true,
+    },
   ];
 
   if (loading) {
