@@ -2476,6 +2476,108 @@ async def get_profile_completion_status(request: Request):
     }
 
 
+# ============== NATAL CHART GENERATION ==============
+
+class NatalChartRequest(BaseModel):
+    name: Optional[str] = None
+    birth_date: str  # YYYY-MM-DD format
+    birth_time: str  # HH:MM format
+    birth_place: str  # City name or coordinates
+
+
+@api_router.post("/natal-chart/generate")
+async def generate_natal_chart(request: Request, chart_request: NatalChartRequest):
+    """
+    Generate a complete natal chart with planetary positions, houses, aspects, and SVG diagram.
+    Requires birth date, time, and place.
+    """
+    user = await get_current_user(request)
+    lang = user.get("language", "it")
+    
+    if not KERYKEION_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Natal chart service temporarily unavailable")
+    
+    # Parse birth date
+    try:
+        birth_parts = chart_request.birth_date.split("-")
+        year = int(birth_parts[0])
+        month = int(birth_parts[1])
+        day = int(birth_parts[2])
+    except:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    # Parse birth time
+    try:
+        time_parts = chart_request.birth_time.split(":")
+        hour = int(time_parts[0])
+        minute = int(time_parts[1])
+    except:
+        raise HTTPException(status_code=400, detail="Invalid time format. Use HH:MM")
+    
+    # Geocode birth place
+    geo_result = await geocode_location(chart_request.birth_place)
+    if not geo_result:
+        raise HTTPException(status_code=400, detail="Could not find location. Please try a different city name.")
+    
+    lat = geo_result["lat"]
+    lng = geo_result["lng"]
+    city = geo_result.get("display_name", chart_request.birth_place)
+    
+    # Calculate natal chart
+    name = chart_request.name or user.get("name", "User")
+    result = calculate_natal_chart(
+        name=name,
+        year=year,
+        month=month,
+        day=day,
+        hour=hour,
+        minute=minute,
+        lat=lat,
+        lng=lng,
+        city=city,
+        language=lang
+    )
+    
+    if not result.get("success"):
+        raise HTTPException(status_code=500, detail=result.get("error", "Error generating natal chart"))
+    
+    # Save to user profile
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {
+            "natal_chart": result,
+            "natal_chart_generated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return result
+
+
+@api_router.get("/natal-chart")
+async def get_saved_natal_chart(request: Request):
+    """Get user's saved natal chart if available"""
+    user = await get_current_user(request)
+    
+    natal_chart = user.get("natal_chart")
+    if not natal_chart:
+        return {"has_chart": False}
+    
+    return {
+        "has_chart": True,
+        "chart": natal_chart,
+        "generated_at": user.get("natal_chart_generated_at")
+    }
+
+
+@api_router.get("/geocode")
+async def geocode_city(city: str):
+    """Geocode a city name to get coordinates"""
+    result = await geocode_location(city)
+    if not result:
+        raise HTTPException(status_code=404, detail="Location not found")
+    return result
+
+
 # Include the router
 app.include_router(api_router)
 
