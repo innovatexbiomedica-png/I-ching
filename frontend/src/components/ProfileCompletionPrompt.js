@@ -144,12 +144,12 @@ const ProfileCompletionPrompt = ({ onComplete, onDismiss }) => {
 
   // Modal Form
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto my-auto shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-[#E5E0D8] px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-white border-b border-[#E5E0D8] px-4 sm:px-6 py-4 flex items-center justify-between z-10">
           <div>
-            <h2 className="font-serif text-xl text-[#2C2C2C]">
+            <h2 className="font-serif text-lg sm:text-xl text-[#2C2C2C]">
               {language === 'it' ? 'Il Tuo Profilo' : 'Your Profile'}
             </h2>
             <p className="text-sm text-[#595959]">
