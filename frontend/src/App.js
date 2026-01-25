@@ -18,6 +18,7 @@ import Library from './pages/Library';
 import Statistics from './pages/Statistics';
 import Paths from './pages/Paths';
 import Subscription from './pages/Subscription';
+import NotificationSettings from './pages/NotificationSettings';
 import './App.css';
 
 // Protected Route Component
