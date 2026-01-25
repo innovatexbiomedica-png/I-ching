@@ -1912,6 +1912,139 @@ async def get_user_statistics(request: Request):
     }
 
 
+# ============== GUIDED PATHS ==============
+
+@api_router.get("/paths")
+async def get_guided_paths(request: Request):
+    """Get available guided paths"""
+    try:
+        user = await get_current_user(request)
+        lang = user.get("language", "it")
+    except:
+        lang = "it"
+    
+    name_key = "name_it" if lang == "it" else "name_en"
+    desc_key = "description_it" if lang == "it" else "description_en"
+    
+    paths_list = []
+    for path_id, path in GUIDED_PATHS.items():
+        paths_list.append({
+            "id": path["id"],
+            "name": path[name_key],
+            "description": path[desc_key],
+            "emoji": path["emoji"],
+            "total_steps": len(path["steps"])
+        })
+    
+    return paths_list
+
+
+@api_router.get("/paths/{path_id}")
+async def get_path_detail(path_id: str, request: Request):
+    """Get details of a specific guided path"""
+    user = await get_current_user(request)
+    lang = user.get("language", "it")
+    
+    path = GUIDED_PATHS.get(path_id)
+    if not path:
+        raise HTTPException(status_code=404, detail="Percorso non trovato")
+    
+    name_key = "name_it" if lang == "it" else "name_en"
+    desc_key = "description_it" if lang == "it" else "description_en"
+    question_key = "question_it" if lang == "it" else "question_en"
+    
+    # Get user's progress on this path
+    user_path = await db.user_paths.find_one({
+        "user_id": user["id"],
+        "path_id": path_id
+    })
+    
+    completed_steps = user_path.get("completed_steps", []) if user_path else []
+    
+    steps = []
+    for step in path["steps"]:
+        steps.append({
+            "day": step["day"],
+            "question": step[question_key],
+            "completed": step["day"] in completed_steps
+        })
+    
+    return {
+        "id": path["id"],
+        "name": path[name_key],
+        "description": path[desc_key],
+        "emoji": path["emoji"],
+        "steps": steps,
+        "total_steps": len(path["steps"]),
+        "completed_steps": len(completed_steps),
+        "started": user_path is not None,
+        "started_at": user_path.get("started_at") if user_path else None
+    }
+
+
+@api_router.post("/paths/{path_id}/start")
+async def start_path(path_id: str, request: Request):
+    """Start a guided path"""
+    user = await get_current_user(request)
+    
+    path = GUIDED_PATHS.get(path_id)
+    if not path:
+        raise HTTPException(status_code=404, detail="Percorso non trovato")
+    
+    # Check if already started
+    existing = await db.user_paths.find_one({
+        "user_id": user["id"],
+        "path_id": path_id
+    })
+    
+    if existing:
+        return {"message": "Percorso già iniziato", "path_id": path_id}
+    
+    # Create path record
+    await db.user_paths.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "path_id": path_id,
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "completed_steps": [],
+        "consultations": []
+    })
+    
+    return {"message": "Percorso iniziato", "path_id": path_id}
+
+
+@api_router.post("/paths/{path_id}/complete-step")
+async def complete_path_step(path_id: str, request: Request, step_day: int = 1, consultation_id: str = None):
+    """Mark a step as completed"""
+    user = await get_current_user(request)
+    
+    user_path = await db.user_paths.find_one({
+        "user_id": user["id"],
+        "path_id": path_id
+    })
+    
+    if not user_path:
+        raise HTTPException(status_code=404, detail="Percorso non iniziato")
+    
+    update_data = {
+        "$addToSet": {"completed_steps": step_day}
+    }
+    
+    if consultation_id:
+        update_data["$push"] = {"consultations": {
+            "step_day": step_day,
+            "consultation_id": consultation_id,
+            "completed_at": datetime.now(timezone.utc).isoformat()
+        }}
+    
+    await db.user_paths.update_one(
+        {"user_id": user["id"], "path_id": path_id},
+        update_data
+    )
+    
+    return {"message": "Passo completato", "step_day": step_day}
+
+
 # Include the router
 app.include_router(api_router)
 
