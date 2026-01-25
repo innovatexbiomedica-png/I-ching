@@ -5,10 +5,11 @@ import { useTranslation } from '../lib/translations';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { it, enUS } from 'date-fns/locale';
-import { Plus, BookOpen, Calendar, ArrowRight, Loader2, Crown, Map, BarChart3 } from 'lucide-react';
+import { Plus, BookOpen, Calendar, ArrowRight, Loader2, Crown, Map, BarChart3, Star } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import DailyHexagram from '../components/DailyHexagram';
 import DailyAdvice from '../components/DailyAdvice';
+import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
