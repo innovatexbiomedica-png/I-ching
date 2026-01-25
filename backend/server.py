@@ -1738,6 +1738,89 @@ async def get_library_trigrams(request: Request):
     return trigrams_list
 
 
+# ============== PERSONAL DIARY / NOTES ==============
+
+@api_router.post("/notes")
+async def create_note(data: NoteCreate, request: Request):
+    """Add a personal note to a consultation (Premium only)"""
+    user = await get_current_user(request)
+    
+    # Check if premium
+    plan = get_user_plan(user)
+    if plan != "premium":
+        raise HTTPException(status_code=403, detail="Funzionalità Premium. Abbonati per aggiungere note personali.")
+    
+    # Verify consultation exists and belongs to user
+    consultation = await db.consultations.find_one({
+        "id": data.consultation_id,
+        "user_id": user["id"]
+    })
+    if not consultation:
+        raise HTTPException(status_code=404, detail="Consultazione non trovata")
+    
+    note_id = str(uuid.uuid4())
+    note_doc = {
+        "id": note_id,
+        "user_id": user["id"],
+        "consultation_id": data.consultation_id,
+        "content": data.content,
+        "mood": data.mood,
+        "tags": data.tags or [],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.notes.insert_one(note_doc)
+    
+    return {"id": note_id, "message": "Nota salvata"}
+
+
+@api_router.get("/notes")
+async def get_user_notes(request: Request, consultation_id: str = None):
+    """Get user's notes, optionally filtered by consultation"""
+    user = await get_current_user(request)
+    
+    query = {"user_id": user["id"]}
+    if consultation_id:
+        query["consultation_id"] = consultation_id
+    
+    notes = await db.notes.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return notes
+
+
+@api_router.put("/notes/{note_id}")
+async def update_note(note_id: str, data: NoteUpdate, request: Request):
+    """Update a note"""
+    user = await get_current_user(request)
+    
+    note = await db.notes.find_one({"id": note_id, "user_id": user["id"]})
+    if not note:
+        raise HTTPException(status_code=404, detail="Nota non trovata")
+    
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if data.content is not None:
+        update_data["content"] = data.content
+    if data.mood is not None:
+        update_data["mood"] = data.mood
+    if data.tags is not None:
+        update_data["tags"] = data.tags
+    
+    await db.notes.update_one({"id": note_id}, {"$set": update_data})
+    return {"message": "Nota aggiornata"}
+
+
+@api_router.delete("/notes/{note_id}")
+async def delete_note(note_id: str, request: Request):
+    """Delete a note"""
+    user = await get_current_user(request)
+    
+    result = await db.notes.delete_one({"id": note_id, "user_id": user["id"]})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Nota non trovata")
+    
+    return {"message": "Nota eliminata"}
+
+
 # Include the router
 app.include_router(api_router)
 
