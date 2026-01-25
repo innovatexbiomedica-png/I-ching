@@ -28,6 +28,7 @@ from astrology_profile import (
     get_full_astrological_profile, validate_profile_data, USER_PROFILE_FIELDS,
     calculate_chinese_zodiac, calculate_western_zodiac
 )
+from natal_chart import calculate_natal_chart, geocode_location, KERYKEION_AVAILABLE
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
