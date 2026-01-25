@@ -20,6 +20,7 @@ import Paths from './pages/Paths';
 import Subscription from './pages/Subscription';
 import NotificationSettings from './pages/NotificationSettings';
 import AstrologicalProfile from './pages/AstrologicalProfile';
+import NatalChart from './pages/NatalChart';
 import './App.css';
 
 // Protected Route Component
