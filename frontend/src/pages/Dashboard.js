@@ -74,8 +74,9 @@ const Dashboard = () => {
               </p>
             )}
             {!hasSubscription && (
-              <Link to="/pricing" className="text-[#C44D38] text-sm hover:underline">
-                {language === 'it' ? 'Sottoscrivi ora →' : 'Subscribe now →'}
+              <Link to="/subscription" className="text-[#C44D38] text-sm hover:underline flex items-center space-x-1">
+                <Crown className="w-4 h-4" />
+                <span>{language === 'it' ? 'Passa a Premium →' : 'Upgrade to Premium →'}</span>
               </Link>
             )}
           </div>
@@ -100,6 +101,54 @@ const Dashboard = () => {
               </Button>
             </Link>
           </div>
+        </div>
+
+        {/* Daily Hexagram */}
+        <div className="mb-12 animate-fade-in-up stagger-4">
+          <DailyHexagram />
+        </div>
+
+        {/* Quick Links */}
+        <div className="grid md:grid-cols-3 gap-4 mb-12">
+          <Link to="/library" className="zen-card hover:border-[#C44D38] transition-colors group">
+            <div className="flex items-center space-x-3">
+              <BookOpen className="w-8 h-8 text-[#C44D38]" />
+              <div>
+                <h3 className="font-medium text-[#2C2C2C] group-hover:text-[#C44D38]">
+                  {language === 'it' ? 'Biblioteca I Ching' : 'I Ching Library'}
+                </h3>
+                <p className="text-sm text-[#595959]">
+                  {language === 'it' ? 'Esplora i 64 esagrammi' : 'Explore the 64 hexagrams'}
+                </p>
+              </div>
+            </div>
+          </Link>
+          <Link to="/paths" className="zen-card hover:border-[#C44D38] transition-colors group">
+            <div className="flex items-center space-x-3">
+              <Map className="w-8 h-8 text-[#C44D38]" />
+              <div>
+                <h3 className="font-medium text-[#2C2C2C] group-hover:text-[#C44D38]">
+                  {language === 'it' ? 'Percorsi Guidati' : 'Guided Paths'}
+                </h3>
+                <p className="text-sm text-[#595959]">
+                  {language === 'it' ? 'Journey tematici' : 'Thematic journeys'}
+                </p>
+              </div>
+            </div>
+          </Link>
+          <Link to="/statistics" className="zen-card hover:border-[#C44D38] transition-colors group">
+            <div className="flex items-center space-x-3">
+              <BarChart3 className="w-8 h-8 text-[#C44D38]" />
+              <div>
+                <h3 className="font-medium text-[#2C2C2C] group-hover:text-[#C44D38]">
+                  {language === 'it' ? 'Le Tue Statistiche' : 'Your Statistics'}
+                </h3>
+                <p className="text-sm text-[#595959]">
+                  {language === 'it' ? 'Progressi e badge' : 'Progress and badges'}
+                </p>
+              </div>
+            </div>
+          </Link>
         </div>
 
         {/* Recent Consultations */}
