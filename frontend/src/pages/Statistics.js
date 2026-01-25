@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { BarChart3, Trophy, Star, TrendingUp, Lock, Crown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const API = process.env.REACT_APP_BACKEND_URL;
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Statistics = () => {
   const { language, getToken } = useAuth();
