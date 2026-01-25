@@ -598,8 +598,8 @@ const Consultation = () => {
           </div>
         )}
 
-        {/* Consultation Type Selection - Now shows after topic is selected */}
-        {topic && (topic !== 'altro' || customTopic) && !consultationType && (
+        {/* Consultation Type Selection - Now shows after topic is selected or in Path Mode */}
+        {(isPathMode || (topic && (topic !== 'altro' || customTopic))) && !consultationType && (
           <div className="animate-fade-in-up mb-8" data-testid="consultation-type-selection">
             <div className="zen-card border-2 border-[#E5E0D8] p-6 mb-4">
               <h3 className="font-serif text-xl text-[#2C2C2C] mb-2 text-center">
