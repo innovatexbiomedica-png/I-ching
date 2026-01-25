@@ -24,6 +24,10 @@ from personalized_advice import (
     generate_personalized_advice, get_chinese_day_energy, get_chinese_year_animal,
     get_user_notification_preferences, update_user_notification_preferences
 )
+from astrology_profile import (
+    get_full_astrological_profile, validate_profile_data, USER_PROFILE_FIELDS,
+    calculate_chinese_zodiac, calculate_western_zodiac
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
