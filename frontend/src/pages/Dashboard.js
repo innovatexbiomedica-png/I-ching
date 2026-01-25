@@ -104,8 +104,13 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Daily Hexagram */}
+        {/* Daily Advice - Premium Feature */}
         <div className="mb-12 animate-fade-in-up stagger-4">
+          <DailyAdvice />
+        </div>
+
+        {/* Daily Hexagram */}
+        <div className="mb-12 animate-fade-in-up stagger-5">
           <DailyHexagram />
         </div>
 
