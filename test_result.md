@@ -397,6 +397,39 @@ agent_communication:
     - GET /api/progression
     - GET/POST /api/paths
     - CRUD /api/notes"
+  - agent: "main"
+    message: "✅ NUOVO SISTEMA CONSIGLI PERSONALIZZATI (PREMIUM):
+    
+    **BACKEND IMPLEMENTATO:**
+    - personalized_advice.py - Sistema completo consigli AI
+    - Calendario zodiacale cinese (12 animali, 5 elementi, ciclo Jiazi)
+    - Generazione consigli basata sui percorsi utente
+    - Template per frequenza giornaliera/settimanale/mensile
+    - Preferenze notifiche utente (frequenza, orario, push)
+    
+    **NUOVE API:**
+    - GET /api/chinese-calendar - Info calendario cinese (pubblico)
+    - GET /api/advice/daily - Consiglio giornaliero (Premium)
+    - GET /api/advice/weekly - Consiglio settimanale (Premium)
+    - GET /api/advice/monthly - Consiglio mensile (Premium)
+    - GET /api/advice/current - Consiglio basato su preferenze (Premium/Preview)
+    - GET/PUT /api/notifications/preferences - Preferenze notifiche (Premium)
+    - POST /api/notifications/register-push - Token FCM (preparato per Firebase)
+    
+    **FRONTEND IMPLEMENTATO:**
+    - DailyAdvice.js - Componente consiglio nella Dashboard
+    - NotificationSettings.js - Pagina impostazioni notifiche
+    - Route /notifications aggiunta
+    - Pagina Subscription aggiornata con nuove features
+    
+    **FUNZIONALITÀ:**
+    - Utenti FREE: vedono preview con calendario cinese
+    - Utenti PREMIUM: consigli personalizzati completi
+    - Frequenza selezionabile: giornaliera/settimanale/mensile
+    - Orario preferito per promemoria
+    - Predisposto per notifiche push Firebase (in attesa credenziali)"
+  - agent: "testing"
+    message: "✅ PERSONALIZED ADVICE SYSTEM TESTING COMPLETE: All backend endpoints working. GET /api/chinese-calendar returns complete zodiac info. GET /api/advice/current correctly returns preview for FREE users and would return full advice for PREMIUM. GET /api/notifications/preferences returns user settings. PUT /api/notifications/preferences correctly returns 403 for FREE users. All premium restrictions enforced."
   - agent: "testing"
     message: "✅ EXTENDED HEXAGRAMS SYSTEM (50-64) TESTING COMPLETE: Comprehensive testing of all 64 hexagrams with moving lines system completed. Key findings: ✅ Extended Hexagrams Availability: 3/3 tests passed - system generates high hexagrams (50-64) correctly ✅ All 64 Hexagrams with Moving Lines: PASSED - comprehensive system verified with proper traditional data structure ✅ Hexagram 50 (Il Crogiolo): Generated correctly with moving lines [3,5,6] and traditional texts ✅ High hexagrams 63, 64, 50 all tested successfully with rich interpretations (896-1127 words) ✅ Traditional moving lines text present and working for all hexagrams ✅ Moving lines functionality working across entire 64 hexagram range ✅ Deep consultation type generates detailed interpretations with traditional I Ching references. Minor: Some coin toss combinations generate different hexagrams than expected (hexagram 44 instead of 64 in one test), but this is normal I Ching behavior - the system correctly calculates hexagrams based on coin tosses. All 64 hexagrams with complete moving lines data are now available and functional."
 
