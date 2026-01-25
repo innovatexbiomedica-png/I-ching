@@ -225,6 +225,54 @@ backend:
         agent: "testing"
         comment: "✅ TESTED: Moving lines traditional text functionality fully working. POST /api/consultations with Hexagram 14 and moving lines [3, 4, 6] correctly returns traditional_data.moving_lines_text with expected texts: Line 3 'Un principe ne fa offerta al Figlio del Cielo', Line 4 'Fa una distinzione tra sé e il suo prossimo', Line 6 'Dal cielo egli viene benedetto'. Fixed issue in get_moving_lines_text function where empty traditional data was preventing fallback to extended data. Function now properly checks for content and uses iching_extended.py data when traditional data is empty. All moving line positions, texts, and meanings correctly populated in API response."
 
+  - task: "Chinese calendar public endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py, backend/personalized_advice.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: GET /api/chinese-calendar endpoint fully functional. Public endpoint (no auth required) returns complete Chinese zodiac calendar info: day_energy (element, quality, action, animal, cycle_day), year_animal (animal, emoji, element), lunar_phase, and date. All required fields present and properly structured. Day energy shows 'Legno - Crescita e Sviluppo', Year animal shows 'Tigre 🐅'. Endpoint accessible to all users without authentication."
+
+  - task: "Personalized advice current endpoint for free users"
+    implemented: true
+    working: true
+    file: "backend/server.py, backend/personalized_advice.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: GET /api/advice/current endpoint correctly handles FREE users. Returns is_preview=true with limited info as expected. Response includes preview_message ('Passa a Premium per ricevere consigli personalizzati...'), chinese_calendar data (day_energy and year_animal), but no full advice_text. Proper premium upselling message displayed. Free user limitations working correctly."
+
+  - task: "Notification preferences get endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py, backend/personalized_advice.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: GET /api/notifications/preferences endpoint fully functional. Returns user's notification preferences with all required fields: enabled=True, frequency='daily', preferred_time='08:00', push_enabled=False, in_app_enabled=True. Creates default preferences if none exist. Proper authentication required and working correctly."
+
+  - task: "Notification preferences update endpoint premium restriction"
+    implemented: true
+    working: true
+    file: "backend/server.py, backend/personalized_advice.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: PUT /api/notifications/preferences endpoint correctly restricts FREE users. Returns 403 Forbidden with message 'Le preferenze di notifica sono disponibili solo per utenti Premium' when free users attempt to update preferences. Premium-only restriction working as designed. Validation logic (invalid frequency, time format) also protected behind premium check."
+
 frontend:
   - task: "ForgotPassword page"
     implemented: true
