@@ -8,6 +8,7 @@ import { it, enUS } from 'date-fns/locale';
 import { Plus, BookOpen, Calendar, ArrowRight, Loader2, Crown, Map, BarChart3 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import DailyHexagram from '../components/DailyHexagram';
+import DailyAdvice from '../components/DailyAdvice';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
