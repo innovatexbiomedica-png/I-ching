@@ -1045,7 +1045,10 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
     
     await db.consultations.insert_one(consultation_doc)
     
-    return ConsultationResponse(
+    # Check and award badges
+    new_badges = await check_and_award_badges(db, user["id"], consultation_doc)
+    
+    response = ConsultationResponse(
         id=consultation_id,
         question=data.question,
         hexagram_number=hex_data["primary_hexagram"],
@@ -1064,6 +1067,12 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
         parent_consultation_id=parent_consultation_id,
         conversation_depth=conversation_depth
     )
+    
+    # Log new badges for potential frontend notification
+    if new_badges:
+        logger.info(f"User {user['id']} earned badges: {[b['id'] for b in new_badges]}")
+    
+    return response
 
 @api_router.get("/consultations", response_model=List[ConsultationResponse])
 async def get_consultations(user: dict = Depends(get_current_user)):
