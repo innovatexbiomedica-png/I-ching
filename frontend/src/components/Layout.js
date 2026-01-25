@@ -29,10 +29,12 @@ const Layout = ({ children }) => {
         { to: '/dashboard', label: t.nav.dashboard },
         { to: '/consult', label: t.nav.consult },
         { to: '/history', label: t.nav.history },
-        // { to: '/pricing', label: t.nav.pricing }, // Disabled for now
+        { to: '/library', label: language === 'it' ? 'Biblioteca' : 'Library' },
+        { to: '/paths', label: language === 'it' ? 'Percorsi' : 'Paths' },
+        { to: '/statistics', label: language === 'it' ? 'Statistiche' : 'Statistics' },
       ]
     : [
-        // { to: '/pricing', label: t.nav.pricing }, // Disabled for now
+        { to: '/library', label: language === 'it' ? 'Biblioteca' : 'Library' },
       ];
 
   const isActive = (path) => location.pathname === path;
