@@ -82,7 +82,13 @@ const ProfileCompletionPrompt = ({ onComplete, onDismiss }) => {
 
   const handleDismiss = () => {
     setShowModal(false);
+    setDismissed(true);
     if (onDismiss) onDismiss();
+  };
+
+  const handleOpenModal = () => {
+    console.log('Opening modal');
+    setShowModal(true);
   };
 
   const toggleWellnessInterest = (interest) => {
