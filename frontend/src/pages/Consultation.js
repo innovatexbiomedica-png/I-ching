@@ -358,11 +358,20 @@ const Consultation = () => {
             >
               {t.dashboard.newConsultation}
             </Button>
-            <Link to="/history">
-              <Button variant="outline" className="btn-secondary w-full" data-testid="view-history-btn">
-                {t.history.title}
-              </Button>
-            </Link>
+            {isPathMode ? (
+              <Link to={`/paths/${pathId}`}>
+                <Button variant="outline" className="btn-secondary w-full flex items-center justify-center space-x-2" data-testid="back-to-path-btn">
+                  <Map className="w-4 h-4" />
+                  <span>{language === 'it' ? 'Torna al Percorso' : 'Back to Path'}</span>
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/history">
+                <Button variant="outline" className="btn-secondary w-full" data-testid="view-history-btn">
+                  {t.history.title}
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
