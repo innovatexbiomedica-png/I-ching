@@ -100,15 +100,16 @@ const ProfileCompletionPrompt = ({ onComplete, onDismiss }) => {
     }));
   };
 
-  // Don't show if profile is complete
-  if (completionStatus && !completionStatus.show_prompt) {
+  // Don't show if dismissed or profile is complete
+  if (dismissed || (completionStatus && !completionStatus.show_prompt)) {
     return null;
   }
 
-  // Prompt Banner
-  if (!showModal) {
+  // Show Modal when showModal is true
+  if (showModal) {
     return (
-      <div className="zen-card bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 mb-6 animate-fade-in-up relative">
+      <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+        <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto my-auto shadow-2xl">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex items-start space-x-3 sm:space-x-4 pr-8 sm:pr-0">
             <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
