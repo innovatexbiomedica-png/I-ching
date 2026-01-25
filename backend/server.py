@@ -1625,6 +1625,15 @@ async def get_daily_hexagram(request: Request):
     }
 
 
+# ============== LUNAR CALENDAR ==============
+
+@api_router.get("/lunar-calendar")
+async def get_lunar_calendar():
+    """Get current lunar phase and I Ching advice"""
+    phase = get_lunar_phase()
+    return phase
+
+
 # Include the router
 app.include_router(api_router)
 
