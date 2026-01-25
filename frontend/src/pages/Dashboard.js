@@ -105,18 +105,23 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Profile Completion Prompt */}
+        <div className="mb-6 animate-fade-in-up stagger-4">
+          <ProfileCompletionPrompt />
+        </div>
+
         {/* Daily Advice - Premium Feature */}
-        <div className="mb-12 animate-fade-in-up stagger-4">
+        <div className="mb-12 animate-fade-in-up stagger-5">
           <DailyAdvice />
         </div>
 
         {/* Daily Hexagram */}
-        <div className="mb-12 animate-fade-in-up stagger-5">
+        <div className="mb-12 animate-fade-in-up stagger-6">
           <DailyHexagram />
         </div>
 
         {/* Quick Links */}
-        <div className="grid md:grid-cols-3 gap-4 mb-12">
+        <div className="grid md:grid-cols-4 gap-4 mb-12">
           <Link to="/library" className="zen-card hover:border-[#C44D38] transition-colors group">
             <div className="flex items-center space-x-3">
               <BookOpen className="w-8 h-8 text-[#C44D38]" />
