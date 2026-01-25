@@ -3,7 +3,6 @@ import { Link, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { BookOpen, Search, ChevronRight, ArrowLeft } from 'lucide-react';
-import HexagramSymbol from '../components/HexagramSymbol';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
