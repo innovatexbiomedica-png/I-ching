@@ -337,6 +337,8 @@ test_plan:
 agent_communication:
   - agent: "main"
     message: "Implementato sistema completo di recupero password. Backend: 3 nuovi endpoint (request-reset, verify-reset, admin/reset-requests). Frontend: 2 nuove pagine (ForgotPassword, ResetPassword), aggiornato Register con campo telefono, aggiunto link in Login. Testare prima il backend."
+  - agent: "main"
+    message: "FIX: Il pulsante 'Completa Ora' nel ProfileCompletionPrompt.js non portava alla pagina con il form. Il componente navigava a /profile/astrology che mostrava di nuovo il ProfileCompletionPrompt senza form. Ho modificato ProfileCompletionPrompt.js per mostrare un form multi-step integrato (3 step: dati nascita, info personali, benessere) invece di navigare. Il form chiama PUT /api/profile e quando completato chiama onComplete. Testare il nuovo form di completamento profilo."
   - agent: "testing"
     message: "✅ BACKEND TESTING COMPLETE: Password reset system fully functional. All 4 backend endpoints tested successfully: 1) POST /api/auth/register with phone field ✅ 2) POST /api/auth/request-reset ✅ 3) POST /api/auth/verify-reset ✅ 4) GET /api/admin/reset-requests ✅. Complete flow tested: registration → reset request → admin code retrieval → password verification → login with new password. All validation working (invalid codes, short passwords, expired codes). Ready for frontend testing or production use."
   - agent: "main"
