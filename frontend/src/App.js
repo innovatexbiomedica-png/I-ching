@@ -139,6 +139,11 @@ function AppRoutes() {
           <Layout><Subscription /></Layout>
         </ProtectedRoute>
       } />
+      <Route path="/notifications" element={
+        <ProtectedRoute>
+          <Layout><NotificationSettings /></Layout>
+        </ProtectedRoute>
+      } />
       
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
