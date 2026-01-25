@@ -393,12 +393,12 @@ const ProfileCompletionPrompt = ({ onComplete, onDismiss }) => {
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-white border-t border-[#E5E0D8] px-6 py-4 flex items-center justify-between">
+        <div className="sticky bottom-0 bg-white border-t border-[#E5E0D8] px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
           {step > 1 ? (
             <Button
               variant="outline"
               onClick={() => setStep(step - 1)}
-              className="flex items-center"
+              className="flex items-center text-sm"
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
               {language === 'it' ? 'Indietro' : 'Back'}
@@ -407,16 +407,16 @@ const ProfileCompletionPrompt = ({ onComplete, onDismiss }) => {
             <Button
               variant="ghost"
               onClick={handleDismiss}
-              className="text-[#595959]"
+              className="text-[#595959] text-sm"
             >
-              {language === 'it' ? 'Salta per ora' : 'Skip for now'}
+              {language === 'it' ? 'Salta' : 'Skip'}
             </Button>
           )}
 
           {step < 3 ? (
             <Button
               onClick={() => setStep(step + 1)}
-              className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white"
+              className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-sm"
             >
               {language === 'it' ? 'Avanti' : 'Next'}
               <ChevronRight className="w-4 h-4 ml-1" />
@@ -425,14 +425,14 @@ const ProfileCompletionPrompt = ({ onComplete, onDismiss }) => {
             <Button
               onClick={handleSubmit}
               disabled={loading}
-              className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white"
+              className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-sm"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
               ) : (
                 <Check className="w-4 h-4 mr-2" />
               )}
-              {language === 'it' ? 'Salva Profilo' : 'Save Profile'}
+              {language === 'it' ? 'Salva' : 'Save'}
             </Button>
           )}
         </div>
