@@ -14,6 +14,10 @@ import History from './pages/History';
 import Pricing from './pages/Pricing';
 import PaymentSuccess from './pages/PaymentSuccess';
 import SharedConsultation from './pages/SharedConsultation';
+import Library from './pages/Library';
+import Statistics from './pages/Statistics';
+import Paths from './pages/Paths';
+import Subscription from './pages/Subscription';
 import './App.css';
 
 // Protected Route Component
