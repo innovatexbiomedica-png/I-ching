@@ -670,29 +670,31 @@ const Consultation = () => {
           </div>
         )}
 
-        {/* Show selected type indicator */}
+        {/* Show selected type indicator - Modified for Path Mode */}
         {consultationType && (
           <div className="mb-6 animate-fade-in-up flex flex-wrap gap-2">
-            {/* Topic indicator */}
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-[#2C2C2C]/10 text-[#2C2C2C]">
-              <span className="mr-2">
-                {currentTopicOptions.find(o => o.id === topic)?.icon || '✨'}
-              </span>
-              <span className="font-medium">
-                {topic === 'altro' ? customTopic : currentTopicOptions.find(o => o.id === topic)?.label}
-              </span>
-              <button 
-                type="button"
-                onClick={() => {
-                  setTopic(null);
-                  setCustomTopic('');
-                  setConsultationType(null);
-                }}
-                className="ml-2 text-xs underline opacity-70 hover:opacity-100"
-              >
-                {language === 'it' ? 'cambia' : 'change'}
-              </button>
-            </div>
+            {/* Topic indicator - only show if not in path mode */}
+            {!isPathMode && (
+              <div className="inline-flex items-center px-4 py-2 rounded-full bg-[#2C2C2C]/10 text-[#2C2C2C]">
+                <span className="mr-2">
+                  {currentTopicOptions.find(o => o.id === topic)?.icon || '✨'}
+                </span>
+                <span className="font-medium">
+                  {topic === 'altro' ? customTopic : currentTopicOptions.find(o => o.id === topic)?.label}
+                </span>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setTopic(null);
+                    setCustomTopic('');
+                    setConsultationType(null);
+                  }}
+                  className="ml-2 text-xs underline opacity-70 hover:opacity-100"
+                >
+                  {language === 'it' ? 'cambia' : 'change'}
+                </button>
+              </div>
+            )}
             
             {/* Type indicator */}
             <div className={`inline-flex items-center px-4 py-2 rounded-full ${
