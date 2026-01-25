@@ -2045,6 +2045,39 @@ async def complete_path_step(path_id: str, request: Request, step_day: int = 1, 
     return {"message": "Passo completato", "step_day": step_day}
 
 
+# ============== PROGRESSION SYSTEM ==============
+
+@api_router.get("/progression")
+async def get_user_progression(request: Request):
+    """Get user's progression (level, badges, etc.)"""
+    user = await get_current_user(request)
+    lang = user.get("language", "it")
+    
+    total = await db.consultations.count_documents({"user_id": user["id"]})
+    level_info = get_user_level(total)
+    
+    # Get user badges
+    user_badges = user.get("badges", [])
+    badges_detail = []
+    for badge in BADGES:
+        badge_copy = badge.copy()
+        badge_copy["earned"] = badge["id"] in user_badges
+        badge_copy["name"] = badge["name_it"] if lang == "it" else badge["name_en"]
+        badge_copy["description"] = badge["description_it"] if lang == "it" else badge["description_en"]
+        badges_detail.append(badge_copy)
+    
+    # Format level info
+    level_info["current"]["title"] = level_info["current"]["title_it"] if lang == "it" else level_info["current"]["title_en"]
+    if level_info["next"]:
+        level_info["next"]["title"] = level_info["next"]["title_it"] if lang == "it" else level_info["next"]["title_en"]
+    
+    return {
+        "level": level_info,
+        "badges": badges_detail,
+        "total_consultations": total
+    }
+
+
 # Include the router
 app.include_router(api_router)
 
