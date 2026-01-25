@@ -491,8 +491,8 @@ const Consultation = () => {
           </div>
         )}
 
-        {/* Consultation Type Selection */}
-        {!topic && (
+        {/* Consultation Type Selection - Skip in Path Mode */}
+        {!topic && !isPathMode && (
           <div className="animate-fade-in-up mb-8" data-testid="topic-selection">
             <div className="zen-card border-2 border-[#E5E0D8] p-6 mb-4">
               <h3 className="font-serif text-xl text-[#2C2C2C] mb-2 text-center">
