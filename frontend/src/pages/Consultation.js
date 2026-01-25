@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../lib/translations';
 import axios from 'axios';
@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
-import { Loader2, Circle, AlertCircle, BookOpen, Sparkles, Zap, Compass, ArrowRight, MessageCircle } from 'lucide-react';
+import { Loader2, Circle, AlertCircle, BookOpen, Sparkles, Zap, Compass, ArrowRight, MessageCircle, Map, ArrowLeft } from 'lucide-react';
 import ShareButton from '../components/ShareButton';
 import HexagramDisplay from '../components/HexagramDisplay';
 import TraditionalReading from '../components/TraditionalReading';
@@ -25,11 +25,18 @@ const Consultation = () => {
   const { language, getToken, hasSubscription } = useAuth();
   const t = useTranslation(language);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Path mode parameters
+  const pathId = searchParams.get('path');
+  const pathStep = searchParams.get('step');
+  const pathQuestion = searchParams.get('question');
+  const isPathMode = !!(pathId && pathStep);
   
   const [topic, setTopic] = useState(null); // 'amore', 'lavoro', 'fortuna', 'soldi', 'spirituale', 'personale', 'altro'
   const [customTopic, setCustomTopic] = useState(''); // For 'altro' option
   const [consultationType, setConsultationType] = useState(null); // 'direct' or 'deep'
-  const [question, setQuestion] = useState('');
+  const [question, setQuestion] = useState(pathQuestion || '');
   const [lines, setLines] = useState({
     line1: '',
     line2: '',
@@ -40,10 +47,56 @@ const Consultation = () => {
   });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [pathInfo, setPathInfo] = useState(null);
   
   // Conversation continuation states
   const [parentConsultation, setParentConsultation] = useState(null);
   const [continuationMode, setContinuationMode] = useState(false);
+
+  // Fetch path info if in path mode
+  useEffect(() => {
+    if (isPathMode) {
+      fetchPathInfo();
+      // Set question from URL parameter
+      if (pathQuestion) {
+        setQuestion(decodeURIComponent(pathQuestion));
+      }
+      // Auto-set topic based on path
+      const topicMapping = {
+        'love': 'amore',
+        'career': 'lavoro',
+        'spiritual': 'spirituale',
+        'new_beginning': 'personale'
+      };
+      setTopic(topicMapping[pathId] || 'personale');
+    }
+  }, [pathId, pathStep, pathQuestion]);
+
+  const fetchPathInfo = async () => {
+    try {
+      const response = await axios.get(`${API}/paths/${pathId}`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      setPathInfo(response.data);
+    } catch (error) {
+      console.error('Error fetching path info:', error);
+    }
+  };
+
+  const completePathStep = async (consultationId) => {
+    if (!isPathMode) return;
+    
+    try {
+      await axios.post(
+        `${API}/paths/${pathId}/complete-step?step_day=${pathStep}&consultation_id=${consultationId}`,
+        {},
+        { headers: { Authorization: `Bearer ${getToken()}` }}
+      );
+      toast.success(language === 'it' ? 'Step del percorso completato!' : 'Path step completed!');
+    } catch (error) {
+      console.error('Error completing path step:', error);
+    }
+  };
 
   // Topic options
   const topicOptions = {
