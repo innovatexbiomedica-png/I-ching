@@ -112,6 +112,32 @@ function AppRoutes() {
           <Layout><PaymentSuccess /></Layout>
         </ProtectedRoute>
       } />
+      <Route path="/library" element={
+        <Layout><Library /></Layout>
+      } />
+      <Route path="/library/:hexagramId" element={
+        <Layout><Library /></Layout>
+      } />
+      <Route path="/statistics" element={
+        <ProtectedRoute>
+          <Layout><Statistics /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/paths" element={
+        <ProtectedRoute>
+          <Layout><Paths /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/paths/:pathId" element={
+        <ProtectedRoute>
+          <Layout><Paths /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/subscription" element={
+        <ProtectedRoute>
+          <Layout><Subscription /></Layout>
+        </ProtectedRoute>
+      } />
       
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
