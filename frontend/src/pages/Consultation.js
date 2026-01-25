@@ -381,12 +381,75 @@ const Consultation = () => {
   return (
     <div className="section-zen" data-testid="consultation-page">
       <div className="container-zen max-w-2xl">
-        <div className="text-center mb-12 animate-fade-in-up">
-          <h1 className="text-3xl md:text-4xl font-serif text-[#2C2C2C] mb-4">
-            {t.consultation.title}
-          </h1>
-          <div className="w-16 h-px bg-[#C44D38] mx-auto" />
-        </div>
+        {/* Path Mode Header */}
+        {isPathMode && pathInfo && (
+          <div className="animate-fade-in-up mb-6">
+            <Link 
+              to={`/paths/${pathId}`}
+              className="inline-flex items-center text-[#C44D38] hover:underline mb-4"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              {language === 'it' ? 'Torna al Percorso' : 'Back to Path'}
+            </Link>
+            <div className="zen-card border-2 border-[#C44D38] bg-gradient-to-r from-[#C44D38]/5 to-transparent">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 rounded-full bg-[#C44D38] flex items-center justify-center">
+                  <span className="text-3xl">{pathInfo.emoji}</span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Map className="w-4 h-4 text-[#C44D38]" />
+                    <span className="text-xs uppercase tracking-wider text-[#C44D38] font-medium">
+                      {language === 'it' ? 'Percorso Guidato' : 'Guided Path'}
+                    </span>
+                  </div>
+                  <h2 className="font-serif text-xl text-[#2C2C2C]">{pathInfo.name}</h2>
+                  <p className="text-sm text-[#595959]">
+                    {language === 'it' ? `Step ${pathStep} di ${pathInfo.total_steps}` : `Step ${pathStep} of ${pathInfo.total_steps}`}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Progress bar */}
+              <div className="mt-4">
+                <div className="h-2 bg-[#E5E0D8] rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-[#C44D38] to-[#E67E22] rounded-full transition-all"
+                    style={{ width: `${(pathInfo.completed_steps / pathInfo.total_steps) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Path Mode Question Display */}
+        {isPathMode && (
+          <div className="animate-fade-in-up mb-6">
+            <div className="zen-card bg-[#FDF8F5] border-l-4 border-[#C44D38]">
+              <p className="text-xs uppercase tracking-wider text-[#8A8680] mb-2">
+                {language === 'it' ? 'La domanda del percorso' : 'The path question'}
+              </p>
+              <p className="font-serif text-xl text-[#2C2C2C] italic">
+                "{question}"
+              </p>
+              <p className="text-sm text-[#595959] mt-3">
+                {language === 'it' 
+                  ? 'Concentrati su questa domanda mentre lanci le monete. L\'oracolo guiderà la tua riflessione.'
+                  : 'Focus on this question while tossing the coins. The oracle will guide your reflection.'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {!isPathMode && (
+          <div className="text-center mb-12 animate-fade-in-up">
+            <h1 className="text-3xl md:text-4xl font-serif text-[#2C2C2C] mb-4">
+              {t.consultation.title}
+            </h1>
+            <div className="w-16 h-px bg-[#C44D38] mx-auto" />
+          </div>
+        )}
 
         {/* Continuation Mode Banner */}
         {continuationMode && parentConsultation && (
