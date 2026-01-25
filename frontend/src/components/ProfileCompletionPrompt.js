@@ -101,9 +101,9 @@ const ProfileCompletionPrompt = ({ onComplete, onDismiss }) => {
   // Prompt Banner
   if (!showModal) {
     return (
-      <div className="zen-card bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 mb-6 animate-fade-in-up">
+      <div className="zen-card bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 mb-6 animate-fade-in-up relative">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="flex items-start space-x-3 sm:space-x-4">
+          <div className="flex items-start space-x-3 sm:space-x-4 pr-8 sm:pr-0">
             <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
               <User className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             </div>
