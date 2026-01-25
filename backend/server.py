@@ -2094,6 +2094,205 @@ async def get_user_progression(request: Request):
     }
 
 
+# ============== PERSONALIZED ADVICE SYSTEM (PREMIUM) ==============
+
+class NotificationPreferencesUpdate(BaseModel):
+    enabled: Optional[bool] = None
+    frequency: Optional[str] = None  # daily, weekly, monthly
+    preferred_time: Optional[str] = None  # HH:MM format
+    push_enabled: Optional[bool] = None
+    in_app_enabled: Optional[bool] = None
+    fcm_token: Optional[str] = None
+
+
+@api_router.get("/advice/daily")
+async def get_daily_advice(request: Request):
+    """
+    Get personalized daily advice based on user's paths and Chinese zodiac calendar.
+    PREMIUM ONLY feature.
+    """
+    user = await get_current_user(request)
+    plan = get_user_plan(user)
+    
+    if plan != "premium":
+        raise HTTPException(
+            status_code=403, 
+            detail="Questa funzionalità è disponibile solo per utenti Premium"
+        )
+    
+    lang = user.get("language", "it")
+    advice = await generate_personalized_advice(db, user["id"], "daily", lang)
+    
+    return advice
+
+
+@api_router.get("/advice/weekly")
+async def get_weekly_advice(request: Request):
+    """Get personalized weekly advice. PREMIUM ONLY."""
+    user = await get_current_user(request)
+    plan = get_user_plan(user)
+    
+    if plan != "premium":
+        raise HTTPException(status_code=403, detail="Funzionalità Premium")
+    
+    lang = user.get("language", "it")
+    advice = await generate_personalized_advice(db, user["id"], "weekly", lang)
+    
+    return advice
+
+
+@api_router.get("/advice/monthly")
+async def get_monthly_advice(request: Request):
+    """Get personalized monthly advice. PREMIUM ONLY."""
+    user = await get_current_user(request)
+    plan = get_user_plan(user)
+    
+    if plan != "premium":
+        raise HTTPException(status_code=403, detail="Funzionalità Premium")
+    
+    lang = user.get("language", "it")
+    advice = await generate_personalized_advice(db, user["id"], "monthly", lang)
+    
+    return advice
+
+
+@api_router.get("/advice/current")
+async def get_current_advice(request: Request):
+    """
+    Get the current advice based on user's notification preference frequency.
+    Returns daily/weekly/monthly advice based on settings.
+    PREMIUM ONLY.
+    """
+    user = await get_current_user(request)
+    plan = get_user_plan(user)
+    
+    if plan != "premium":
+        # Return limited preview for free users
+        day_energy = get_chinese_day_energy()
+        year_animal = get_chinese_year_animal()
+        lang = user.get("language", "it")
+        
+        return {
+            "is_preview": True,
+            "preview_message": "Passa a Premium per ricevere consigli personalizzati basati sui tuoi percorsi!" if lang == "it" else "Upgrade to Premium to receive personalized advice based on your paths!",
+            "chinese_calendar": {
+                "day_energy": day_energy,
+                "year_animal": year_animal,
+            }
+        }
+    
+    # Get user's preference
+    prefs = await get_user_notification_preferences(db, user["id"])
+    frequency = prefs.get("frequency", "daily")
+    lang = user.get("language", "it")
+    
+    advice = await generate_personalized_advice(db, user["id"], frequency, lang)
+    advice["notification_preferences"] = prefs
+    
+    return advice
+
+
+@api_router.get("/chinese-calendar")
+async def get_chinese_calendar_info(request: Request):
+    """Get Chinese calendar information for today (available to all users)"""
+    try:
+        user = await get_current_user(request)
+        lang = user.get("language", "it")
+    except:
+        lang = "it"
+    
+    day_energy = get_chinese_day_energy()
+    year_animal = get_chinese_year_animal()
+    lunar_phase = get_lunar_phase()
+    
+    return {
+        "day_energy": day_energy,
+        "year_animal": year_animal,
+        "lunar_phase": lunar_phase,
+        "date": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@api_router.get("/notifications/preferences")
+async def get_notification_preferences(request: Request):
+    """Get user's notification preferences"""
+    user = await get_current_user(request)
+    prefs = await get_user_notification_preferences(db, user["id"])
+    
+    # Remove internal fields
+    return {
+        "enabled": prefs.get("enabled", True),
+        "frequency": prefs.get("frequency", "daily"),
+        "preferred_time": prefs.get("preferred_time", "08:00"),
+        "push_enabled": prefs.get("push_enabled", False),
+        "in_app_enabled": prefs.get("in_app_enabled", True),
+        "has_fcm_token": bool(prefs.get("fcm_token")),
+    }
+
+
+@api_router.put("/notifications/preferences")
+async def update_notification_preferences_endpoint(
+    request: Request,
+    updates: NotificationPreferencesUpdate
+):
+    """Update user's notification preferences. PREMIUM ONLY."""
+    user = await get_current_user(request)
+    plan = get_user_plan(user)
+    
+    if plan != "premium":
+        raise HTTPException(
+            status_code=403, 
+            detail="Le preferenze di notifica sono disponibili solo per utenti Premium"
+        )
+    
+    updates_dict = updates.dict(exclude_none=True)
+    
+    # Validate frequency
+    if "frequency" in updates_dict and updates_dict["frequency"] not in ["daily", "weekly", "monthly"]:
+        raise HTTPException(status_code=400, detail="Frequenza non valida. Usa: daily, weekly, monthly")
+    
+    # Validate time format
+    if "preferred_time" in updates_dict:
+        try:
+            datetime.strptime(updates_dict["preferred_time"], "%H:%M")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Formato ora non valido. Usa: HH:MM")
+    
+    updated_prefs = await update_user_notification_preferences(db, user["id"], updates_dict)
+    
+    return {
+        "message": "Preferenze aggiornate",
+        "preferences": {
+            "enabled": updated_prefs.get("enabled", True),
+            "frequency": updated_prefs.get("frequency", "daily"),
+            "preferred_time": updated_prefs.get("preferred_time", "08:00"),
+            "push_enabled": updated_prefs.get("push_enabled", False),
+            "in_app_enabled": updated_prefs.get("in_app_enabled", True),
+        }
+    }
+
+
+@api_router.post("/notifications/register-push")
+async def register_push_token(request: Request, token: str):
+    """
+    Register FCM token for push notifications.
+    This endpoint will be used when Firebase is configured.
+    PREMIUM ONLY.
+    """
+    user = await get_current_user(request)
+    plan = get_user_plan(user)
+    
+    if plan != "premium":
+        raise HTTPException(status_code=403, detail="Push notifications are Premium only")
+    
+    await update_user_notification_preferences(db, user["id"], {
+        "fcm_token": token,
+        "push_enabled": True
+    })
+    
+    return {"message": "Token registrato con successo", "push_enabled": True}
+
+
 # Include the router
 app.include_router(api_router)
 
