@@ -283,6 +283,30 @@ const AstrologicalProfile = () => {
           </div>
         )}
 
+        {/* Natal Chart CTA */}
+        <Link to="/natal-chart" className="block mt-6">
+          <div className="zen-card bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 transition-all">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
+                  <Star className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-serif text-xl">
+                    {language === 'it' ? 'Genera il tuo Tema Natale' : 'Generate your Natal Chart'}
+                  </h3>
+                  <p className="text-white/80 text-sm">
+                    {language === 'it' 
+                      ? 'Ruota zodiacale, posizioni planetarie, aspetti e interpretazioni complete'
+                      : 'Zodiac wheel, planetary positions, aspects and complete interpretations'}
+                  </p>
+                </div>
+              </div>
+              <ArrowLeft className="w-6 h-6 rotate-180" />
+            </div>
+          </div>
+        </Link>
+
         {/* Personal Info */}
         <div className="zen-card mt-6">
           <h3 className="font-serif text-xl text-[#2C2C2C] mb-4 flex items-center space-x-2">
