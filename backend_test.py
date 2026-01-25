@@ -2509,6 +2509,7 @@ class IChingAPITester:
             self.test_user_login,
             self.test_get_user_profile,
             self.test_language_update,
+            self.test_profile_completion_flow,  # Add the new profile test
             self.test_password_reset_request,
             self.test_password_reset_request_invalid_email,
             self.test_admin_reset_requests,
