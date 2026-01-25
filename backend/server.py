@@ -954,15 +954,18 @@ async def get_reset_requests():
 # ============== I CHING CONSULTATION ROUTES ==============
 @api_router.post("/consultations", response_model=ConsultationResponse)
 async def create_consultation(data: ConsultationCreate, user: dict = Depends(get_current_user)):
-    # Subscription check disabled for now
-    # if not user.get("subscription_active", False):
-    #     sub_end = user.get("subscription_end")
-    #     if sub_end:
-    #         end_date = datetime.fromisoformat(sub_end.replace("Z", "+00:00"))
-    #         if end_date < datetime.now(timezone.utc):
-    #             raise HTTPException(status_code=403, detail="Abbonamento non attivo.")
-    #     else:
-    #         raise HTTPException(status_code=403, detail="Abbonamento non attivo.")
+    # Check consultation limits
+    limit_check = await check_consultation_limit(db, user)
+    if not limit_check["allowed"]:
+        raise HTTPException(status_code=403, detail=limit_check["message"])
+    
+    # Check if user can use this consultation type
+    consultation_type = data.consultation_type if hasattr(data, 'consultation_type') else "deep"
+    if not can_use_consultation_type(user, consultation_type):
+        raise HTTPException(
+            status_code=403, 
+            detail="La Stesa Profonda è disponibile solo per utenti Premium. Passa a Premium o scegli la Stesa Diretta."
+        )
     
     # Calculate hexagram
     hex_data = calculate_hexagram(data.coin_tosses)
