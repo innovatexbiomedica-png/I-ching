@@ -223,6 +223,17 @@ class SynthesisRequest(BaseModel):
 class CheckoutRequest(BaseModel):
     origin_url: str
 
+class NoteCreate(BaseModel):
+    consultation_id: str
+    content: str
+    mood: Optional[str] = None  # 'positive', 'neutral', 'negative', 'reflective'
+    tags: Optional[List[str]] = []
+
+class NoteUpdate(BaseModel):
+    content: Optional[str] = None
+    mood: Optional[str] = None
+    tags: Optional[List[str]] = None
+
 # ============== AUTH HELPERS ==============
 import random
 import string
