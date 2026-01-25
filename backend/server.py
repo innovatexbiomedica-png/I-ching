@@ -20,6 +20,10 @@ from subscription_manager import (
     get_daily_hexagram_number, get_lunar_phase, get_user_level, check_and_award_badges,
     PLAN_LIMITS, SUBSCRIPTION_PRICES, USER_LEVELS, BADGES, GUIDED_PATHS
 )
+from personalized_advice import (
+    generate_personalized_advice, get_chinese_day_energy, get_chinese_year_animal,
+    get_user_notification_preferences, update_user_notification_preferences
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
