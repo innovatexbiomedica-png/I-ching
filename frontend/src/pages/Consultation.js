@@ -173,6 +173,12 @@ const Consultation = () => {
       });
       
       setResult(response.data);
+      
+      // If in path mode, complete the step
+      if (isPathMode && response.data.id) {
+        await completePathStep(response.data.id);
+      }
+      
       toast.success(language === 'it' ? 'Consultazione completata!' : 'Consultation complete!');
     } catch (error) {
       if (error.response?.status === 403) {
