@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-import { Crown, Check, X, Zap, Compass, BookOpen, BarChart3, StickyNote, Moon } from 'lucide-react';
+import { Crown, Check, X, Zap, Compass, BookOpen, BarChart3, StickyNote, Moon, Bell, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
