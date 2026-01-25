@@ -165,7 +165,7 @@ const ProfileCompletionPrompt = ({ onComplete, onDismiss }) => {
         </div>
 
         {/* Progress Bar */}
-        <div className="px-6 pt-4">
+        <div className="px-4 sm:px-6 pt-4">
           <div className="h-2 bg-[#E5E0D8] rounded-full overflow-hidden">
             <div 
               className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-300"
@@ -175,18 +175,18 @@ const ProfileCompletionPrompt = ({ onComplete, onDismiss }) => {
         </div>
 
         {/* Form Content */}
-        <div className="px-6 py-6">
+        <div className="px-4 sm:px-6 py-4 sm:py-6">
           {/* Step 1: Birth Data */}
           {step === 1 && (
-            <div className="space-y-6 animate-fade-in-up">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 flex items-center justify-center">
-                  <Calendar className="w-8 h-8 text-amber-600" />
+            <div className="space-y-4 sm:space-y-6 animate-fade-in-up">
+              <div className="text-center mb-4 sm:mb-6">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 flex items-center justify-center">
+                  <Calendar className="w-7 h-7 sm:w-8 sm:h-8 text-amber-600" />
                 </div>
-                <h3 className="font-serif text-lg text-[#2C2C2C]">
+                <h3 className="font-serif text-base sm:text-lg text-[#2C2C2C]">
                   {language === 'it' ? 'Dati di Nascita' : 'Birth Data'}
                 </h3>
-                <p className="text-sm text-[#595959]">
+                <p className="text-xs sm:text-sm text-[#595959]">
                   {language === 'it' 
                     ? 'Per calcolare il tuo profilo astrologico'
                     : 'To calculate your astrological profile'}
@@ -201,7 +201,7 @@ const ProfileCompletionPrompt = ({ onComplete, onDismiss }) => {
                   type="date"
                   value={formData.birth_date}
                   onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
-                  className="w-full px-4 py-3 border border-[#E5E0D8] rounded-lg bg-[#F8F6F3] focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-[#E5E0D8] rounded-lg bg-[#F8F6F3] focus:border-purple-500 focus:ring-1 focus:ring-purple-500 text-base"
                 />
               </div>
 
@@ -213,7 +213,7 @@ const ProfileCompletionPrompt = ({ onComplete, onDismiss }) => {
                   type="time"
                   value={formData.birth_time}
                   onChange={(e) => setFormData({ ...formData, birth_time: e.target.value })}
-                  className="w-full px-4 py-3 border border-[#E5E0D8] rounded-lg bg-[#F8F6F3] focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-[#E5E0D8] rounded-lg bg-[#F8F6F3] focus:border-purple-500 focus:ring-1 focus:ring-purple-500 text-base"
                 />
               </div>
 
