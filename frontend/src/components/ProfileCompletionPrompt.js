@@ -27,6 +27,7 @@ const ProfileCompletionPrompt = ({ onComplete, onDismiss }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [completionStatus, setCompletionStatus] = useState(null);
+  const [dismissed, setDismissed] = useState(false);
   
   const [formData, setFormData] = useState({
     birth_date: '',
