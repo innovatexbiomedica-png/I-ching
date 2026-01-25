@@ -161,6 +161,19 @@ const Dashboard = () => {
               </div>
             </div>
           </Link>
+          <Link to="/profile/astrology" className="zen-card hover:border-purple-500 transition-colors group bg-gradient-to-br from-purple-50 to-indigo-50">
+            <div className="flex items-center space-x-3">
+              <Star className="w-8 h-8 text-purple-500" />
+              <div>
+                <h3 className="font-medium text-[#2C2C2C] group-hover:text-purple-500">
+                  {language === 'it' ? 'Profilo Astrologico' : 'Astrological Profile'}
+                </h3>
+                <p className="text-sm text-[#595959]">
+                  {language === 'it' ? 'Zodiaco e tema natale' : 'Zodiac and natal chart'}
+                </p>
+              </div>
+            </div>
+          </Link>
         </div>
 
         {/* Recent Consultations */}
