@@ -2297,6 +2297,184 @@ async def register_push_token(request: Request, token: str):
     return {"message": "Token registrato con successo", "push_enabled": True}
 
 
+# ============== USER PROFILE SYSTEM ==============
+
+class UserProfileUpdate(BaseModel):
+    birth_date: Optional[str] = None  # YYYY-MM-DD format
+    birth_time: Optional[str] = None  # HH:MM format
+    birth_place: Optional[str] = None
+    gender: Optional[str] = None
+    occupation: Optional[str] = None
+    iching_experience: Optional[str] = None
+    activity_level: Optional[str] = None
+    wellness_interests: Optional[List[str]] = None
+
+
+@api_router.get("/profile")
+async def get_user_profile(request: Request):
+    """Get user's complete profile including astrological data"""
+    user = await get_current_user(request)
+    lang = user.get("language", "it")
+    
+    # Get extended profile from user document
+    profile_data = user.get("profile", {})
+    
+    response = {
+        "id": user["id"],
+        "name": user.get("name"),
+        "email": user.get("email"),
+        "language": lang,
+        "profile_completed": bool(profile_data.get("birth_date")),
+        "profile": profile_data,
+        "astrological_profile": None,
+    }
+    
+    # Calculate astrological profile if birth_date is available
+    if profile_data.get("birth_date"):
+        try:
+            from datetime import date
+            birth_parts = profile_data["birth_date"].split("-")
+            birth_date = date(int(birth_parts[0]), int(birth_parts[1]), int(birth_parts[2]))
+            
+            astro_profile = get_full_astrological_profile(
+                birth_date=birth_date,
+                birth_time=profile_data.get("birth_time"),
+                birth_place=profile_data.get("birth_place"),
+                language=lang
+            )
+            response["astrological_profile"] = astro_profile
+        except Exception as e:
+            print(f"Error calculating astrological profile: {e}")
+    
+    return response
+
+
+@api_router.put("/profile")
+async def update_user_profile(request: Request, profile_update: UserProfileUpdate):
+    """Update user's profile data"""
+    user = await get_current_user(request)
+    
+    # Prepare update data
+    update_data = profile_update.dict(exclude_none=True)
+    
+    # Validate occupation length
+    if "occupation" in update_data and len(update_data["occupation"]) > 30:
+        raise HTTPException(status_code=400, detail="Occupation must be max 30 characters")
+    
+    # Validate gender
+    valid_genders = ["male", "female", "other", "prefer_not_say"]
+    if "gender" in update_data and update_data["gender"] not in valid_genders:
+        raise HTTPException(status_code=400, detail="Invalid gender value")
+    
+    # Validate iching_experience
+    valid_experience = ["beginner", "intermediate", "expert"]
+    if "iching_experience" in update_data and update_data["iching_experience"] not in valid_experience:
+        raise HTTPException(status_code=400, detail="Invalid experience value")
+    
+    # Validate activity_level
+    valid_activity = ["sedentary", "moderate", "active"]
+    if "activity_level" in update_data and update_data["activity_level"] not in valid_activity:
+        raise HTTPException(status_code=400, detail="Invalid activity level")
+    
+    # Validate wellness_interests
+    valid_interests = ["meditation", "yoga", "taichi", "qigong"]
+    if "wellness_interests" in update_data:
+        for interest in update_data["wellness_interests"]:
+            if interest not in valid_interests:
+                raise HTTPException(status_code=400, detail=f"Invalid wellness interest: {interest}")
+    
+    # Validate date format
+    if "birth_date" in update_data:
+        try:
+            from datetime import datetime
+            datetime.strptime(update_data["birth_date"], "%Y-%m-%d")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    # Validate time format
+    if "birth_time" in update_data and update_data["birth_time"]:
+        try:
+            from datetime import datetime
+            datetime.strptime(update_data["birth_time"], "%H:%M")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid time format. Use HH:MM")
+    
+    # Update in database
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"profile": {**user.get("profile", {}), **update_data}}}
+    )
+    
+    # Return updated profile
+    return await get_user_profile(request)
+
+
+@api_router.get("/profile/fields")
+async def get_profile_fields(request: Request):
+    """Get profile field definitions for form building"""
+    try:
+        user = await get_current_user(request)
+        lang = user.get("language", "it")
+    except:
+        lang = "it"
+    
+    # Transform fields for frontend
+    fields = []
+    for field_name, config in USER_PROFILE_FIELDS.items():
+        field = {
+            "name": field_name,
+            "type": config["type"],
+            "required": config["required"],
+            "label": config[f"label_{lang}"] if f"label_{lang}" in config else config.get("label_it"),
+            "max_length": config.get("max_length"),
+        }
+        
+        if "options" in config:
+            field["options"] = [
+                {
+                    "value": opt["value"],
+                    "label": opt[f"label_{lang}"] if f"label_{lang}" in opt else opt.get("label_it")
+                }
+                for opt in config["options"]
+            ]
+        
+        fields.append(field)
+    
+    return {"fields": fields}
+
+
+@api_router.get("/profile/completion-status")
+async def get_profile_completion_status(request: Request):
+    """Check if user has completed their profile"""
+    user = await get_current_user(request)
+    profile = user.get("profile", {})
+    
+    # Check completion
+    has_birth_date = bool(profile.get("birth_date"))
+    has_basic_info = bool(profile.get("gender") or profile.get("birth_date"))
+    
+    completion_percentage = 0
+    filled_fields = 0
+    total_fields = len(USER_PROFILE_FIELDS)
+    
+    for field_name in USER_PROFILE_FIELDS:
+        if profile.get(field_name):
+            filled_fields += 1
+    
+    completion_percentage = int((filled_fields / total_fields) * 100)
+    
+    return {
+        "is_complete": has_birth_date and has_basic_info,
+        "completion_percentage": completion_percentage,
+        "filled_fields": filled_fields,
+        "total_fields": total_fields,
+        "missing_essential": not has_birth_date,
+        "show_prompt": not has_birth_date,
+    }
+
+
 # Include the router
 app.include_router(api_router)
 
