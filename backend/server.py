@@ -1537,6 +1537,46 @@ async def get_hexagram(number: int):
         raise HTTPException(status_code=404, detail="Esagramma non trovato")
     return HEXAGRAMS.get(number, {})
 
+
+# ============== SUBSCRIPTION & LIMITS ==============
+
+@api_router.get("/subscription/status")
+async def get_subscription_status(request: Request):
+    """Get user's subscription status and limits"""
+    user = await get_current_user(request)
+    plan = get_user_plan(user)
+    limits = get_plan_limits(plan)
+    
+    # Get consultation count this month
+    start_of_month = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    monthly_count = await db.consultations.count_documents({
+        "user_id": user["id"],
+        "created_at": {"$gte": start_of_month}
+    })
+    
+    remaining = limits["monthly_consultations"] - monthly_count if limits["monthly_consultations"] != -1 else -1
+    
+    return {
+        "plan": plan,
+        "limits": limits,
+        "usage": {
+            "monthly_consultations": monthly_count,
+            "remaining": remaining
+        },
+        "subscription_end": user.get("subscription_end"),
+        "prices": SUBSCRIPTION_PRICES
+    }
+
+
+@api_router.get("/subscription/check-limit")
+async def check_limit(request: Request):
+    """Check if user can make a consultation"""
+    user = await get_current_user(request)
+    result = await check_consultation_limit(db, user)
+    result["plan"] = get_user_plan(user)
+    return result
+
+
 # Include the router
 app.include_router(api_router)
 
