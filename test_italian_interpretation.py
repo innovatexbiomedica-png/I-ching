@@ -2,7 +2,7 @@ import requests
 import json
 
 # Test the Italian interpretation specifically
-base_url = "https://iching-collection.preview.emergentagent.com/api"
+base_url = "https://preview-sito.preview.emergentagent.com/api"
 
 # First register and login
 user_data = {
