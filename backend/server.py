@@ -1821,6 +1821,97 @@ async def delete_note(note_id: str, request: Request):
     return {"message": "Nota eliminata"}
 
 
+# ============== STATISTICS ==============
+
+@api_router.get("/statistics")
+async def get_user_statistics(request: Request):
+    """Get user's consultation statistics (Premium only)"""
+    user = await get_current_user(request)
+    
+    # Check if premium for full stats
+    plan = get_user_plan(user)
+    
+    # Basic stats for everyone
+    total_consultations = await db.consultations.count_documents({"user_id": user["id"]})
+    
+    # Get level info
+    level_info = get_user_level(total_consultations)
+    
+    # Get badges
+    user_badges = user.get("badges", [])
+    badges_detail = [b for b in BADGES if b["id"] in user_badges]
+    
+    basic_stats = {
+        "total_consultations": total_consultations,
+        "level": level_info,
+        "badges": badges_detail,
+        "plan": plan
+    }
+    
+    if plan != "premium":
+        basic_stats["premium_required"] = True
+        basic_stats["message"] = "Abbonati a Premium per vedere le statistiche complete"
+        return basic_stats
+    
+    # Premium stats
+    # Most frequent hexagrams
+    pipeline = [
+        {"$match": {"user_id": user["id"]}},
+        {"$group": {"_id": "$hexagram_number", "count": {"$sum": 1}, "name": {"$first": "$hexagram_name"}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 5}
+    ]
+    frequent_hexagrams = await db.consultations.aggregate(pipeline).to_list(5)
+    
+    # Topics distribution
+    pipeline_topics = [
+        {"$match": {"user_id": user["id"], "topic": {"$ne": None}}},
+        {"$group": {"_id": "$topic", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    topics_distribution = await db.consultations.aggregate(pipeline_topics).to_list(10)
+    
+    # Moving lines frequency
+    pipeline_lines = [
+        {"$match": {"user_id": user["id"]}},
+        {"$unwind": "$moving_lines"},
+        {"$group": {"_id": "$moving_lines", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    lines_frequency = await db.consultations.aggregate(pipeline_lines).to_list(6)
+    
+    # Unique hexagrams encountered
+    unique_hexagrams = await db.consultations.distinct("hexagram_number", {"user_id": user["id"]})
+    
+    # Consultations by type
+    direct_count = await db.consultations.count_documents({"user_id": user["id"], "consultation_type": "direct"})
+    deep_count = await db.consultations.count_documents({"user_id": user["id"], "consultation_type": "deep"})
+    
+    # Monthly trend (last 6 months)
+    six_months_ago = datetime.now(timezone.utc) - timedelta(days=180)
+    pipeline_monthly = [
+        {"$match": {"user_id": user["id"], "created_at": {"$gte": six_months_ago}}},
+        {"$group": {
+            "_id": {"$substr": ["$created_at", 0, 7]},  # YYYY-MM
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"_id": 1}}
+    ]
+    monthly_trend = await db.consultations.aggregate(pipeline_monthly).to_list(6)
+    
+    return {
+        **basic_stats,
+        "premium_required": False,
+        "frequent_hexagrams": [{"number": h["_id"], "name": h["name"], "count": h["count"]} for h in frequent_hexagrams],
+        "topics_distribution": {t["_id"]: t["count"] for t in topics_distribution},
+        "lines_frequency": {str(l["_id"]): l["count"] for l in lines_frequency},
+        "unique_hexagrams_count": len(unique_hexagrams),
+        "unique_hexagrams": unique_hexagrams,
+        "consultation_types": {"direct": direct_count, "deep": deep_count},
+        "monthly_trend": [{"month": m["_id"], "count": m["count"]} for m in monthly_trend]
+    }
+
+
 # Include the router
 app.include_router(api_router)
 
