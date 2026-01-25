@@ -1577,6 +1577,54 @@ async def check_limit(request: Request):
     return result
 
 
+# ============== DAILY HEXAGRAM ==============
+
+@api_router.get("/daily-hexagram")
+async def get_daily_hexagram(request: Request):
+    """Get the hexagram of the day"""
+    try:
+        user = await get_current_user(request)
+        lang = user.get("language", "it")
+    except:
+        lang = "it"
+    
+    hex_number = get_daily_hexagram_number()
+    hex_data = HEXAGRAMS.get(hex_number, {})
+    extended = get_extended_hexagram_data(hex_number, lang)
+    traditional = get_hexagram_traditional_data(hex_number, lang)
+    lunar = get_lunar_phase()
+    
+    name_key = "name_it" if lang == "it" else "name_en"
+    
+    # Generate a short daily message
+    daily_messages_it = [
+        f"Oggi il Tao ti parla attraverso {hex_data.get(name_key)}. Lascia che la sua energia ti guidi.",
+        f"L'esagramma {hex_number} illumina il tuo cammino oggi. Ascolta il suo messaggio.",
+        f"{hex_data.get(name_key)} ti accompagna in questa giornata. Cosa vuole insegnarti?",
+    ]
+    daily_messages_en = [
+        f"Today the Tao speaks to you through {hex_data.get(name_key)}. Let its energy guide you.",
+        f"Hexagram {hex_number} illuminates your path today. Listen to its message.",
+        f"{hex_data.get(name_key)} accompanies you on this day. What does it want to teach you?",
+    ]
+    
+    import random
+    random.seed(int(datetime.now(timezone.utc).strftime("%Y%m%d")))
+    message = random.choice(daily_messages_it if lang == "it" else daily_messages_en)
+    random.seed()
+    
+    return {
+        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "hexagram_number": hex_number,
+        "hexagram_name": hex_data.get(name_key, ""),
+        "hexagram_chinese": hex_data.get("name", ""),
+        "sentence": extended.get("giudizio", traditional.get("sentence", "")),
+        "image": extended.get("immagine", traditional.get("image", "")),
+        "daily_message": message,
+        "lunar_phase": lunar
+    }
+
+
 # Include the router
 app.include_router(api_router)
 
