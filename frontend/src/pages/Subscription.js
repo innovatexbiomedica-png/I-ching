@@ -329,6 +329,36 @@ const Subscription = () => {
                 </p>
               </div>
             </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-10 h-10 rounded-full bg-[#C44D38]/10 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-5 h-5 text-[#C44D38]" />
+              </div>
+              <div>
+                <h4 className="font-medium text-[#2C2C2C]">
+                  {language === 'it' ? 'Consigli Personalizzati AI' : 'AI Personalized Advice'}
+                </h4>
+                <p className="text-sm text-[#595959]">
+                  {language === 'it' 
+                    ? 'Ricevi consigli giornalieri basati sui tuoi percorsi e calendario zodiacale cinese'
+                    : 'Receive daily advice based on your paths and Chinese zodiac calendar'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-10 h-10 rounded-full bg-[#C44D38]/10 flex items-center justify-center flex-shrink-0">
+                <Bell className="w-5 h-5 text-[#C44D38]" />
+              </div>
+              <div>
+                <h4 className="font-medium text-[#2C2C2C]">
+                  {language === 'it' ? 'Notifiche Personalizzate' : 'Personalized Notifications'}
+                </h4>
+                <p className="text-sm text-[#595959]">
+                  {language === 'it' 
+                    ? 'Scegli frequenza giornaliera, settimanale o mensile per i tuoi promemoria'
+                    : 'Choose daily, weekly or monthly frequency for your reminders'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
