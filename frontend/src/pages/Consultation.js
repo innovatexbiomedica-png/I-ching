@@ -723,21 +723,23 @@ const Consultation = () => {
 
         {consultationType && (
         <form onSubmit={handleSubmit}>
-          {/* Question Input */}
-          <div className="zen-card mb-8 animate-fade-in-up stagger-1" data-testid="question-section">
-            <Label htmlFor="question" className="form-label text-lg font-serif">
-              {t.consultation.question}
-            </Label>
-            <Textarea
-              id="question"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder={t.consultation.questionPlaceholder}
-              className="min-h-[120px] bg-[#EBE8E1] border-[#D1CDC7] focus:border-[#C44D38] font-serif text-lg"
-              required
-              data-testid="question-input"
-            />
-          </div>
+          {/* Question Input - Read-only in Path Mode */}
+          {!isPathMode && (
+            <div className="zen-card mb-8 animate-fade-in-up stagger-1" data-testid="question-section">
+              <Label htmlFor="question" className="form-label text-lg font-serif">
+                {t.consultation.question}
+              </Label>
+              <Textarea
+                id="question"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder={t.consultation.questionPlaceholder}
+                className="min-h-[120px] bg-[#EBE8E1] border-[#D1CDC7] focus:border-[#C44D38] font-serif text-lg"
+                required
+                data-testid="question-input"
+              />
+            </div>
+          )}
 
           {/* Coin Tosses */}
           <div className="zen-card mb-8 animate-fade-in-up stagger-2" data-testid="coin-toss-section">
