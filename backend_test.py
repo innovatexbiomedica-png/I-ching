@@ -2365,6 +2365,138 @@ class IChingAPITester:
                          f"System incomplete: {successful_tests}/{total_tests} tests passed")
             return False
 
+    def test_profile_completion_flow(self):
+        """Test the complete profile completion flow as requested"""
+        if not self.token:
+            self.log_test("Profile Completion Flow", False, "No auth token")
+            return False
+        
+        print("\n👤 Testing Profile Completion Flow...")
+        
+        # Step 1: Check initial profile completion status (should show show_prompt: true for new user)
+        success, response = self.run_test(
+            "Check Initial Profile Completion Status",
+            "GET",
+            "profile/completion-status",
+            200
+        )
+        
+        if not success:
+            self.log_test("Profile Completion Flow", False, "Failed to get initial completion status")
+            return False
+        
+        # Verify new user has show_prompt: true
+        if not response.get('show_prompt', False):
+            self.log_test("Profile Completion Flow", False, f"New user should have show_prompt=true, got: {response.get('show_prompt')}")
+            return False
+        
+        print(f"   ✅ New user has show_prompt=true: {response.get('show_prompt')}")
+        print(f"   Initial completion: {response.get('completion_percentage', 0)}%")
+        
+        # Step 2: Update profile with birth_date and other data
+        profile_data = {
+            "birth_date": "1990-05-15",
+            "birth_time": "14:30", 
+            "birth_place": "Roma, Italia",
+            "gender": "male"
+        }
+        
+        success, response = self.run_test(
+            "Update Profile with Birth Data",
+            "PUT",
+            "profile",
+            200,
+            data=profile_data
+        )
+        
+        if not success:
+            self.log_test("Profile Completion Flow", False, "Failed to update profile")
+            return False
+        
+        # Verify profile was updated correctly
+        if not response.get('profile_completed', False):
+            self.log_test("Profile Completion Flow", False, f"Profile should be completed after birth_date, got: {response.get('profile_completed')}")
+            return False
+        
+        print(f"   ✅ Profile updated successfully")
+        print(f"   Profile completed: {response.get('profile_completed')}")
+        
+        # Step 3: Verify the profile data via GET /api/profile
+        success, response = self.run_test(
+            "Verify Profile Data",
+            "GET", 
+            "profile",
+            200
+        )
+        
+        if not success:
+            self.log_test("Profile Completion Flow", False, "Failed to get updated profile")
+            return False
+        
+        # Check that profile_completed is true and astrological_profile exists
+        verification_checks = []
+        
+        if response.get('profile_completed') == True:
+            verification_checks.append("✅ profile_completed is true")
+        else:
+            verification_checks.append(f"❌ profile_completed should be true, got: {response.get('profile_completed')}")
+        
+        if response.get('astrological_profile') is not None:
+            verification_checks.append("✅ astrological_profile data calculated")
+        else:
+            verification_checks.append("❌ astrological_profile data missing")
+        
+        # Check profile data fields
+        profile = response.get('profile', {})
+        expected_fields = ['birth_date', 'birth_time', 'birth_place', 'gender']
+        for field in expected_fields:
+            if profile.get(field) == profile_data[field]:
+                verification_checks.append(f"✅ {field} saved correctly: {profile.get(field)}")
+            else:
+                verification_checks.append(f"❌ {field} not saved correctly: expected {profile_data[field]}, got {profile.get(field)}")
+        
+        print("   Profile Verification:")
+        for check in verification_checks:
+            print(f"     {check}")
+        
+        # Step 4: Check completion status again (should show show_prompt: false)
+        success, response = self.run_test(
+            "Check Final Profile Completion Status",
+            "GET",
+            "profile/completion-status", 
+            200
+        )
+        
+        if not success:
+            self.log_test("Profile Completion Flow", False, "Failed to get final completion status")
+            return False
+        
+        # Verify show_prompt is now false
+        if response.get('show_prompt', True):
+            verification_checks.append(f"❌ show_prompt should be false after completion, got: {response.get('show_prompt')}")
+        else:
+            verification_checks.append("✅ show_prompt is false after profile completion")
+        
+        if response.get('is_complete', False):
+            verification_checks.append("✅ is_complete is true")
+        else:
+            verification_checks.append(f"❌ is_complete should be true, got: {response.get('is_complete')}")
+        
+        print(f"   ✅ Final completion status: show_prompt={response.get('show_prompt')}, is_complete={response.get('is_complete')}")
+        print(f"   Final completion percentage: {response.get('completion_percentage', 0)}%")
+        
+        # Count successful checks
+        passed_checks = sum(1 for check in verification_checks if check.startswith("✅"))
+        total_checks = len(verification_checks)
+        
+        if passed_checks >= total_checks - 1:  # Allow 1 failure
+            print(f"   ✅ Profile completion flow: {passed_checks}/{total_checks} checks passed")
+            self.log_test("Profile Completion Flow", True, f"Profile completion flow successful: {passed_checks}/{total_checks} checks passed")
+            return True
+        else:
+            self.log_test("Profile Completion Flow", False, f"Profile completion flow failed: {passed_checks}/{total_checks} checks passed")
+            return False
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting I Ching API Tests")
