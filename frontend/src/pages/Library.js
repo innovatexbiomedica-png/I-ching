@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { BookOpen, Search, ChevronRight, ArrowLeft } from 'lucide-react';
 import HexagramSymbol from '../components/HexagramSymbol';
 
-const API = process.env.REACT_APP_BACKEND_URL;
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Library = () => {
   const { language, getToken } = useAuth();
