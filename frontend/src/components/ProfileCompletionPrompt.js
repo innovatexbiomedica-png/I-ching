@@ -393,7 +393,11 @@ const ProfileCompletionPrompt = ({ onComplete, onDismiss }) => {
       
       <div className="mt-3">
         <Button 
-          onClick={() => setShowModal(true)}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            setShowModal(true);
+          }}
           className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-sm w-full"
         >
           <Sparkles className="w-4 h-4 mr-2" />
