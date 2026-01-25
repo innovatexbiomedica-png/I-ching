@@ -392,17 +392,18 @@ const ProfileCompletionPrompt = ({ onComplete, onDismiss }) => {
       </button>
       
       <div className="mt-3">
-        <Button 
+        <button 
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
             setShowModal(true);
           }}
-          className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-sm w-full"
+          className="w-full px-4 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-sm rounded-lg flex items-center justify-center hover:from-purple-600 hover:to-indigo-600 transition-all"
         >
           <Sparkles className="w-4 h-4 mr-2" />
           {language === 'it' ? 'Completa Ora (~2 min)' : 'Complete Now (~2 min)'}
-        </Button>
+        </button>
       </div>
     </div>
   );
