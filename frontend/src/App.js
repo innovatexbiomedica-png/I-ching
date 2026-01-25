@@ -146,6 +146,16 @@ function AppRoutes() {
           <Layout><NotificationSettings /></Layout>
         </ProtectedRoute>
       } />
+      <Route path="/profile/astrology" element={
+        <ProtectedRoute>
+          <Layout><AstrologicalProfile /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/natal-chart" element={
+        <ProtectedRoute>
+          <Layout><NatalChart /></Layout>
+        </ProtectedRoute>
+      } />
       
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
