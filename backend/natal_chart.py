@@ -8,8 +8,7 @@ import json
 import os
 
 try:
-    from kerykeion import AstrologicalSubject
-    from kerykeion.charts.kerykeion_chart_svg import KerykeionChartSVG
+    from kerykeion import AstrologicalSubject, KerykeionChartSVG
     KERYKEION_AVAILABLE = True
 except ImportError:
     KERYKEION_AVAILABLE = False
