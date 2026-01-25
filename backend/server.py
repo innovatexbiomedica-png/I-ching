@@ -15,6 +15,11 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest, CheckoutSessionResponse
 from iching_data import get_hexagram_traditional_data, get_trigram_info, get_moving_lines_text, get_all_lines_text, TRIGRAMS
 from iching_extended import ICHING_EXTENDED, get_extended_hexagram_data, get_moving_line_extended
+from subscription_manager import (
+    get_user_plan, get_plan_limits, check_consultation_limit, can_use_consultation_type,
+    get_daily_hexagram_number, get_lunar_phase, get_user_level, check_and_award_badges,
+    PLAN_LIMITS, SUBSCRIPTION_PRICES, USER_LEVELS, BADGES, GUIDED_PATHS
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
