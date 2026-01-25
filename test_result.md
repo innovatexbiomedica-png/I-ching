@@ -105,6 +105,18 @@
 user_problem_statement: "I Ching del Benessere - App di divinazione con abbonamenti. Test del nuovo sistema di tipi di consultazione (direct vs deep)."
 
 backend:
+  - task: "User profile completion endpoint PUT /api/profile"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Complete profile completion flow working perfectly. 1) New users have show_prompt=true in GET /api/profile/completion-status ✅ 2) PUT /api/profile with birth_date, birth_time, birth_place, gender updates profile correctly ✅ 3) GET /api/profile shows profile_completed=true and astrological_profile data calculated ✅ 4) GET /api/profile/completion-status shows show_prompt=false and is_complete=true after completion ✅. All profile data fields saved correctly, astrological calculations working, completion status logic functioning as expected. Profile completion percentage increased from 0% to 50% after adding birth data."
+
   - task: "Consultation type 'direct' endpoint"
     implemented: true
     working: true
