@@ -1634,6 +1634,99 @@ async def get_lunar_calendar():
     return phase
 
 
+# ============== I CHING LIBRARY ==============
+
+@api_router.get("/library/hexagrams")
+async def get_library_hexagrams(request: Request):
+    """Get all 64 hexagrams for the library"""
+    try:
+        user = await get_current_user(request)
+        lang = user.get("language", "it")
+    except:
+        lang = "it"
+    
+    name_key = "name_it" if lang == "it" else "name_en"
+    
+    hexagrams_list = []
+    for num in range(1, 65):
+        hex_data = HEXAGRAMS.get(num, {})
+        extended = ICHING_EXTENDED.get(num, {})
+        
+        hexagrams_list.append({
+            "number": num,
+            "name": hex_data.get(name_key, ""),
+            "chinese": hex_data.get("name", ""),
+            "trigram_above": hex_data.get("trigram_top", ""),
+            "trigram_below": hex_data.get("trigram_bottom", ""),
+            "giudizio": extended.get("giudizio", "")[:100] + "..." if extended.get("giudizio") else ""
+        })
+    
+    return hexagrams_list
+
+
+@api_router.get("/library/hexagrams/{number}")
+async def get_library_hexagram_detail(number: int, request: Request):
+    """Get detailed info for a specific hexagram"""
+    if number < 1 or number > 64:
+        raise HTTPException(status_code=404, detail="Esagramma non trovato")
+    
+    try:
+        user = await get_current_user(request)
+        lang = user.get("language", "it")
+    except:
+        lang = "it"
+    
+    hex_data = HEXAGRAMS.get(number, {})
+    extended = ICHING_EXTENDED.get(number, {})
+    traditional = get_hexagram_traditional_data(number, lang)
+    
+    name_key = "name_it" if lang == "it" else "name_en"
+    
+    # Get all 6 lines
+    lines = []
+    for line_num in range(1, 7):
+        line_data = extended.get("linee", {}).get(line_num, {})
+        lines.append({
+            "position": line_num,
+            "text": line_data.get("testo", ""),
+            "meaning": line_data.get("significato", "")
+        })
+    
+    # Get trigram info
+    trigram_above = get_trigram_info(traditional.get("trigram_above", hex_data.get("trigram_top", "☰")), lang)
+    trigram_below = get_trigram_info(traditional.get("trigram_below", hex_data.get("trigram_bottom", "☷")), lang)
+    
+    return {
+        "number": number,
+        "name": hex_data.get(name_key, ""),
+        "chinese": hex_data.get("name", ""),
+        "chinese_name": extended.get("nome_cinese", ""),
+        "giudizio": extended.get("giudizio", traditional.get("sentence", "")),
+        "immagine": extended.get("immagine", traditional.get("image", "")),
+        "commento": extended.get("commento", traditional.get("commentary", "")),
+        "trigram_above": trigram_above,
+        "trigram_below": trigram_below,
+        "lines": lines
+    }
+
+
+@api_router.get("/library/trigrams")
+async def get_library_trigrams(request: Request):
+    """Get all 8 trigrams info"""
+    try:
+        user = await get_current_user(request)
+        lang = user.get("language", "it")
+    except:
+        lang = "it"
+    
+    trigrams_list = []
+    for symbol in TRIGRAMS.keys():
+        info = get_trigram_info(symbol, lang)
+        trigrams_list.append(info)
+    
+    return trigrams_list
+
+
 # Include the router
 app.include_router(api_router)
 
