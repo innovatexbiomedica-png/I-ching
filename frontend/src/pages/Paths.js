@@ -157,7 +157,7 @@ const Paths = () => {
                       
                       {isAvailable && !step.completed && (
                         <Link 
-                          to={`/consultation?path=${selectedPath.id}&step=${step.day}&question=${encodeURIComponent(step.question)}`}
+                          to={`/consult?path=${selectedPath.id}&step=${step.day}&question=${encodeURIComponent(step.question)}`}
                           className="btn-primary text-sm py-2"
                         >
                           {language === 'it' ? 'Consulta' : 'Consult'}
