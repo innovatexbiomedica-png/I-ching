@@ -66,25 +66,25 @@ const Layout = ({ children }) => {
   return (
     <div className="min-h-screen flex flex-col bg-[#F9F7F2]">
       {/* Navigation */}
-      <nav className="backdrop-blur-md bg-[#F9F7F2]/80 border-b border-[#D1CDC7]/50 sticky top-0 z-50" data-testid="main-navigation">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
+      <nav className="backdrop-blur-md bg-[#F9F7F2]/95 border-b border-[#D1CDC7]/50 sticky top-0 z-50" data-testid="main-navigation">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo with Icon */}
             <Link 
               to="/" 
-              className="flex items-center"
+              className="flex items-center flex-shrink-0"
               data-testid="logo-link"
             >
               <Logo size="sm" showText={true} />
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
+            <div className="hidden lg:flex items-center space-x-4 xl:space-x-6">
               {navLinks.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`nav-link relative ${isActive(link.to) ? 'active text-[#2C2C2C]' : ''}`}
+                  className={`nav-link relative text-sm whitespace-nowrap ${isActive(link.to) ? 'active text-[#2C2C2C]' : ''}`}
                   data-testid={`nav-${link.to.replace('/', '')}`}
                 >
                   {link.label}
@@ -97,7 +97,7 @@ const Layout = ({ children }) => {
               ))}
 
               {/* Language Selector */}
-              <div className="flex items-center space-x-1 border-l border-[#D1CDC7] pl-6">
+              <div className="flex items-center space-x-1 border-l border-[#D1CDC7] pl-4">
                 <Globe className="w-4 h-4 text-[#595959]" />
                 <button
                   onClick={() => updateLanguage('it')}
@@ -126,7 +126,7 @@ const Layout = ({ children }) => {
                       data-testid="user-menu-trigger"
                     >
                       <User className="w-4 h-4" />
-                      <span className="font-sans text-sm">{user?.name}</span>
+                      <span className="font-sans text-sm max-w-[100px] truncate">{user?.name}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-[#F9F7F2] border-[#D1CDC7]">
