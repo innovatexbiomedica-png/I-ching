@@ -49,13 +49,13 @@ const Layout = ({ children }) => {
 
   const navLinks = isAuthenticated
     ? [
-        { to: '/dashboard', label: t.nav.dashboard },
+        { to: '/dashboard', label: language === 'it' ? 'Home' : 'Home' },
         { to: '/consult', label: t.nav.consult },
         { to: '/history', label: t.nav.history },
         { to: '/library', label: language === 'it' ? 'Biblioteca' : 'Library' },
         { to: '/paths', label: language === 'it' ? 'Percorsi' : 'Paths' },
         { to: '/completed-paths', label: language === 'it' ? 'Risultati' : 'Results', badge: unreadPathsCount },
-        { to: '/statistics', label: language === 'it' ? 'Statistiche' : 'Statistics' },
+        { to: '/statistics', label: language === 'it' ? 'Stats' : 'Stats' },
       ]
     : [
         { to: '/library', label: language === 'it' ? 'Biblioteca' : 'Library' },
