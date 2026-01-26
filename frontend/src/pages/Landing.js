@@ -1,8 +1,38 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../lib/translations';
-import { Coins, BookOpen, History, ArrowRight, Circle } from 'lucide-react';
+import { 
+  Coins, 
+  BookOpen, 
+  History, 
+  ArrowRight, 
+  Circle,
+  Calendar,
+  Target,
+  Heart,
+  Sparkles,
+  TrendingUp,
+  Leaf,
+  Brain,
+  DollarSign,
+  Watch,
+  Bell,
+  Video,
+  MessageCircle,
+  ChevronDown,
+  ChevronUp,
+  Star,
+  Compass,
+  Sun,
+  Moon,
+  Mountain,
+  Waves,
+  Wind,
+  Flame,
+  CloudRain,
+  Layers
+} from 'lucide-react';
 
 const Landing = () => {
   const { language, isAuthenticated } = useAuth();
