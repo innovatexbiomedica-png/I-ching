@@ -382,6 +382,9 @@ async def generate_interpretation(hexagram_data: dict, question: str, language: 
             topic=topic
         )
     
+    # PATH STYLE - For guided path consultations (uses deep style with path context)
+    is_path_consultation = consultation_type == "path"
+    
     # DEEP STYLE - Full traditional interpretation with Book of Changes quotes
     
     # Topic context for more focused interpretations
