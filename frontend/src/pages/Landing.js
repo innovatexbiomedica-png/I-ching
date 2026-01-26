@@ -37,6 +37,140 @@ import {
 const Landing = () => {
   const { language, isAuthenticated } = useAuth();
   const t = useTranslation(language);
+  const [expandedWellness, setExpandedWellness] = useState(null);
+  const [expandedFeature, setExpandedFeature] = useState(null);
+
+  // I Trigrammi con i loro significati
+  const trigrams = [
+    { name: '☰ Cielo', color: 'from-yellow-400 to-amber-500', icon: <Sun className="w-6 h-6" />, meaning: language === 'it' ? 'Creatività, Forza, Leadership' : 'Creativity, Strength, Leadership' },
+    { name: '☷ Terra', color: 'from-amber-700 to-yellow-900', icon: <Mountain className="w-6 h-6" />, meaning: language === 'it' ? 'Ricettività, Nutrimento, Stabilità' : 'Receptivity, Nurturing, Stability' },
+    { name: '☳ Tuono', color: 'from-purple-500 to-indigo-600', icon: <Sparkles className="w-6 h-6" />, meaning: language === 'it' ? 'Movimento, Iniziativa, Risveglio' : 'Movement, Initiative, Awakening' },
+    { name: '☵ Acqua', color: 'from-blue-500 to-cyan-600', icon: <Waves className="w-6 h-6" />, meaning: language === 'it' ? 'Profondità, Pericolo, Saggezza' : 'Depth, Danger, Wisdom' },
+    { name: '☶ Monte', color: 'from-stone-500 to-slate-700', icon: <Mountain className="w-6 h-6" />, meaning: language === 'it' ? 'Quiete, Meditazione, Fermezza' : 'Stillness, Meditation, Steadiness' },
+    { name: '☴ Vento', color: 'from-emerald-400 to-teal-500', icon: <Wind className="w-6 h-6" />, meaning: language === 'it' ? 'Penetrazione, Gentilezza, Adattamento' : 'Penetration, Gentleness, Adaptation' },
+    { name: '☲ Fuoco', color: 'from-orange-500 to-red-600', icon: <Flame className="w-6 h-6" />, meaning: language === 'it' ? 'Chiarezza, Intelligenza, Bellezza' : 'Clarity, Intelligence, Beauty' },
+    { name: '☱ Lago', color: 'from-sky-400 to-blue-500', icon: <CloudRain className="w-6 h-6" />, meaning: language === 'it' ? 'Gioia, Comunicazione, Piacere' : 'Joy, Communication, Pleasure' },
+  ];
+
+  // Aree di benessere
+  const wellnessAreas = [
+    {
+      id: 'economic',
+      icon: <DollarSign className="w-8 h-8" />,
+      title: language === 'it' ? 'Benessere Economico' : 'Economic Wellness',
+      color: 'from-emerald-500 to-green-600',
+      description: language === 'it' 
+        ? 'Strategie per la prosperità finanziaria basate sulla saggezza dell\'I Ching'
+        : 'Financial prosperity strategies based on I Ching wisdom',
+      details: language === 'it'
+        ? 'Ricevi consigli personalizzati su investimenti, risparmio e gestione delle risorse. L\'I Ching ti guida verso decisioni finanziarie equilibrate, aiutandoti a riconoscere i momenti propizi per agire e quelli per attendere.'
+        : 'Receive personalized advice on investments, savings and resource management. The I Ching guides you toward balanced financial decisions.'
+    },
+    {
+      id: 'moral',
+      icon: <Heart className="w-8 h-8" />,
+      title: language === 'it' ? 'Benessere Morale' : 'Moral Wellness',
+      color: 'from-rose-500 to-pink-600',
+      description: language === 'it'
+        ? 'Equilibrio etico e relazionale per una vita in armonia'
+        : 'Ethical and relational balance for a harmonious life',
+      details: language === 'it'
+        ? 'Coltiva relazioni sane, sviluppa la tua integrità personale e trova equilibrio tra i tuoi valori e le azioni quotidiane. Il percorso ti aiuta a navigare dilemmi etici con chiarezza.'
+        : 'Cultivate healthy relationships, develop personal integrity and find balance between your values and daily actions.'
+    },
+    {
+      id: 'nutrition',
+      icon: <Leaf className="w-8 h-8" />,
+      title: language === 'it' ? 'Benessere Alimentare' : 'Nutritional Wellness',
+      color: 'from-lime-500 to-green-500',
+      description: language === 'it'
+        ? 'Alimentazione consapevole secondo i principi Yin-Yang'
+        : 'Mindful nutrition according to Yin-Yang principles',
+      details: language === 'it'
+        ? 'Scopri come bilanciare la tua alimentazione secondo i principi energetici cinesi. Ricevi suggerimenti stagionali su cibi che armonizzano il tuo Qi e supportano il tuo benessere fisico.'
+        : 'Learn how to balance your diet according to Chinese energetic principles. Receive seasonal suggestions on foods that harmonize your Qi.'
+    },
+    {
+      id: 'spiritual',
+      icon: <Sparkles className="w-8 h-8" />,
+      title: language === 'it' ? 'Benessere Spirituale' : 'Spiritual Wellness',
+      color: 'from-purple-500 to-indigo-600',
+      description: language === 'it'
+        ? 'Crescita interiore e connessione con il Tao'
+        : 'Inner growth and connection with the Tao',
+      details: language === 'it'
+        ? 'Meditazioni guidate, pratiche di mindfulness e esercizi di connessione con il flusso universale. Impara a vivere in armonia con i cicli naturali e a coltivare la pace interiore.'
+        : 'Guided meditations, mindfulness practices and exercises for connecting with universal flow. Learn to live in harmony with natural cycles.'
+    },
+    {
+      id: 'mental',
+      icon: <Brain className="w-8 h-8" />,
+      title: language === 'it' ? 'Benessere Mentale' : 'Mental Wellness',
+      color: 'from-cyan-500 to-blue-600',
+      description: language === 'it'
+        ? 'Chiarezza mentale e gestione dello stress'
+        : 'Mental clarity and stress management',
+      details: language === 'it'
+        ? 'Tecniche per calmare la mente, migliorare la concentrazione e gestire l\'ansia. L\'I Ching offre prospettive uniche per affrontare le sfide mentali quotidiane.'
+        : 'Techniques to calm the mind, improve focus and manage anxiety. The I Ching offers unique perspectives for facing daily mental challenges.'
+    },
+    {
+      id: 'goals',
+      icon: <Target className="w-8 h-8" />,
+      title: language === 'it' ? 'Raggiungimento Obiettivi' : 'Goal Achievement',
+      color: 'from-amber-500 to-orange-600',
+      description: language === 'it'
+        ? 'Piano strategico per realizzare i tuoi sogni'
+        : 'Strategic plan to achieve your dreams',
+      details: language === 'it'
+        ? 'Definisci obiettivi chiari, crea piani d\'azione personalizzati e ricevi guidance settimanale per mantenerti sulla strada giusta. L\'I Ching ti aiuta a capire quando spingere e quando pazientare.'
+        : 'Define clear goals, create personalized action plans and receive weekly guidance to stay on track.'
+    },
+  ];
+
+  // Funzionalità future
+  const futureFeatures = [
+    {
+      id: 'audio-video',
+      icon: <Video className="w-8 h-8" />,
+      title: language === 'it' ? 'Consultazioni Audio/Video' : 'Audio/Video Consultations',
+      color: 'from-violet-500 to-purple-600',
+      description: language === 'it'
+        ? 'Messaggi popup con interpretazioni vocali e video animate'
+        : 'Popup messages with voice interpretations and animated videos',
+      status: language === 'it' ? 'Prossimamente' : 'Coming Soon'
+    },
+    {
+      id: 'smartwatch',
+      icon: <Watch className="w-8 h-8" />,
+      title: language === 'it' ? 'Integrazione Smartwatch' : 'Smartwatch Integration',
+      color: 'from-teal-500 to-cyan-600',
+      description: language === 'it'
+        ? 'Connessione con Apple Watch, Fitbit e altri per monitorare la tua salute e ricevere consigli personalizzati'
+        : 'Connect with Apple Watch, Fitbit and others to monitor your health and receive personalized advice',
+      status: language === 'it' ? 'In sviluppo' : 'In Development'
+    },
+    {
+      id: 'notifications',
+      icon: <Bell className="w-8 h-8" />,
+      title: language === 'it' ? 'Notifiche Intelligenti' : 'Smart Notifications',
+      color: 'from-pink-500 to-rose-600',
+      description: language === 'it'
+        ? 'Promemoria personalizzati basati sui tuoi ritmi e obiettivi, sincronizzati con i cicli lunari e le energie del giorno'
+        : 'Personalized reminders based on your rhythms and goals, synced with lunar cycles and daily energies',
+      status: language === 'it' ? 'Prossimamente' : 'Coming Soon'
+    },
+    {
+      id: 'ai-coach',
+      icon: <MessageCircle className="w-8 h-8" />,
+      title: language === 'it' ? 'Coach AI Personale' : 'Personal AI Coach',
+      color: 'from-indigo-500 to-blue-600',
+      description: language === 'it'
+        ? 'Un assistente AI che ti conosce, ti segue nel tempo e ti guida nel tuo percorso di crescita'
+        : 'An AI assistant that knows you, follows you over time and guides you on your growth path',
+      status: language === 'it' ? 'Beta' : 'Beta'
+    },
+  ];
 
   return (
     <div className="overflow-hidden">
