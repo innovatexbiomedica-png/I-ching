@@ -1,13 +1,15 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from './components/ui/sonner';
 import Layout from './components/Layout';
+import SplashScreen from './components/SplashScreen';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import Consultation from './pages/Consultation';
 import History from './pages/History';
@@ -61,9 +63,21 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
-function AppRoutes() {
+// Router component that handles auth callback detection
+function AppRouter() {
+  const location = useLocation();
+  
+  // Check URL fragment for session_id (Google OAuth callback)
+  // This must be checked synchronously BEFORE any other route matching
+  if (location.hash?.includes('session_id=') || location.pathname === '/auth/callback') {
+    return <AuthCallback />;
+  }
+
   return (
     <Routes>
+      {/* Auth Callback Route */}
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      
       {/* Public Routes */}
       <Route path="/" element={<Layout><Landing /></Layout>} />
       <Route path="/login" element={
@@ -163,23 +177,51 @@ function AppRoutes() {
   );
 }
 
+function AppWithSplash() {
+  const [showSplash, setShowSplash] = useState(true);
+  const [hasSeenSplash, setHasSeenSplash] = useState(false);
+
+  useEffect(() => {
+    // Check if user has already seen splash this session
+    const seen = sessionStorage.getItem('splashSeen');
+    if (seen) {
+      setShowSplash(false);
+      setHasSeenSplash(true);
+    }
+  }, []);
+
+  const handleSplashComplete = () => {
+    sessionStorage.setItem('splashSeen', 'true');
+    setShowSplash(false);
+    setHasSeenSplash(true);
+  };
+
+  if (showSplash && !hasSeenSplash) {
+    return <SplashScreen onComplete={handleSplashComplete} />;
+  }
+
+  return (
+    <BrowserRouter>
+      <AppRouter />
+      <Toaster 
+        position="top-center"
+        toastOptions={{
+          style: {
+            background: '#F9F7F2',
+            border: '1px solid #D1CDC7',
+            color: '#2C2C2C',
+            fontFamily: 'Manrope, sans-serif'
+          }
+        }}
+      />
+    </BrowserRouter>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-        <Toaster 
-          position="top-center"
-          toastOptions={{
-            style: {
-              background: '#F9F7F2',
-              border: '1px solid #D1CDC7',
-              color: '#2C2C2C',
-              fontFamily: 'Manrope, sans-serif'
-            }
-          }}
-        />
-      </BrowserRouter>
+      <AppWithSplash />
     </AuthProvider>
   );
 }
