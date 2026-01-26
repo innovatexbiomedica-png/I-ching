@@ -128,3 +128,4 @@ timezonefinder
 aiohttp
 h3
 pyswisseph
+httpx
