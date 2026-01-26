@@ -842,6 +842,114 @@ async def login(credentials: UserLogin):
         )
     }
 
+@api_router.post("/auth/google/callback")
+async def google_oauth_callback(data: dict, response: Response):
+    """
+    Handle Google OAuth callback from Emergent Auth.
+    Exchanges session_id for user data and creates/updates user.
+    """
+    import httpx
+    
+    session_id = data.get("session_id")
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id richiesto")
+    
+    try:
+        # Exchange session_id for user data via Emergent Auth
+        async with httpx.AsyncClient() as client:
+            auth_response = await client.get(
+                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                headers={"X-Session-ID": session_id}
+            )
+            
+            if auth_response.status_code != 200:
+                raise HTTPException(status_code=401, detail="Sessione non valida")
+            
+            auth_data = auth_response.json()
+    except Exception as e:
+        logger.error(f"Google OAuth error: {e}")
+        raise HTTPException(status_code=500, detail="Errore di autenticazione con Google")
+    
+    # Extract user info from Google
+    google_email = auth_data.get("email")
+    google_name = auth_data.get("name", "")
+    google_picture = auth_data.get("picture", "")
+    session_token = auth_data.get("session_token", "")
+    
+    if not google_email:
+        raise HTTPException(status_code=400, detail="Email non disponibile da Google")
+    
+    # Check if user exists
+    existing_user = await db.users.find_one({"email": google_email}, {"_id": 0})
+    
+    if existing_user:
+        # Update existing user with Google data
+        await db.users.update_one(
+            {"email": google_email},
+            {"$set": {
+                "google_picture": google_picture,
+                "google_name": google_name,
+                "last_login": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        user_id = existing_user["id"]
+        user_name = existing_user.get("name") or google_name
+        user_language = existing_user.get("language", "it")
+    else:
+        # Create new user from Google data
+        user_id = str(uuid.uuid4())
+        user_doc = {
+            "id": user_id,
+            "email": google_email,
+            "password": "",  # No password for OAuth users
+            "name": google_name,
+            "phone": "",
+            "language": "it",
+            "google_picture": google_picture,
+            "google_name": google_name,
+            "subscription_active": False,
+            "subscription_end": None,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "auth_provider": "google"
+        }
+        await db.users.insert_one(user_doc)
+        user_name = google_name
+        user_language = "it"
+    
+    # Store session token with expiry
+    session_doc = {
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.user_sessions.insert_one(session_doc)
+    
+    # Create our own JWT token
+    token = create_token(user_id, google_email)
+    
+    # Set httpOnly cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=7*24*60*60,  # 7 days
+        path="/"
+    )
+    
+    return {
+        "token": token,
+        "user": {
+            "id": user_id,
+            "email": google_email,
+            "name": user_name,
+            "picture": google_picture,
+            "language": user_language
+        }
+    }
+
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(user: dict = Depends(get_current_user)):
     return UserResponse(
