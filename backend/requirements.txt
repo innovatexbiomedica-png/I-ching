@@ -126,3 +126,5 @@ kerykeion
 pytz
 timezonefinder
 aiohttp
+h3
+pyswisseph
