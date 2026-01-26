@@ -84,10 +84,15 @@ const Layout = ({ children }) => {
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`nav-link ${isActive(link.to) ? 'active text-[#2C2C2C]' : ''}`}
+                  className={`nav-link relative ${isActive(link.to) ? 'active text-[#2C2C2C]' : ''}`}
                   data-testid={`nav-${link.to.replace('/', '')}`}
                 >
                   {link.label}
+                  {link.badge > 0 && (
+                    <span className="absolute -top-2 -right-3 w-5 h-5 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
+                      {link.badge}
+                    </span>
+                  )}
                 </Link>
               ))}
 
