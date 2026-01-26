@@ -2,9 +2,10 @@ import React from 'react';
 
 const Logo = ({ size = 'md', showText = true, className = '' }) => {
   const sizes = {
-    sm: { icon: 32, text: 'text-lg' },
-    md: { icon: 40, text: 'text-xl' },
-    lg: { icon: 56, text: 'text-2xl' },
+    xs: { icon: 24, text: 'text-sm' },
+    sm: { icon: 28, text: 'text-base' },
+    md: { icon: 36, text: 'text-lg' },
+    lg: { icon: 48, text: 'text-xl' },
     xl: { icon: 72, text: 'text-3xl' }
   };
 
