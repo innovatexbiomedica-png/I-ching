@@ -411,27 +411,97 @@ const NatalChart = () => {
                 </button>
 
                 {expandedSections.aspects && (
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-4 space-y-4">
                     {chartData.aspects.map((aspect, idx) => {
-                      const aspectColors = {
-                        conjunction: 'bg-purple-100 border-purple-300',
-                        sextile: 'bg-green-100 border-green-300',
-                        square: 'bg-red-100 border-red-300',
-                        trine: 'bg-blue-100 border-blue-300',
-                        opposition: 'bg-orange-100 border-orange-300'
+                      const aspectStyles = {
+                        conjunction: {
+                          bg: 'bg-gradient-to-br from-purple-50 to-indigo-50',
+                          border: 'border-purple-200',
+                          badge: 'bg-purple-500',
+                          icon: '☌'
+                        },
+                        sextile: {
+                          bg: 'bg-gradient-to-br from-green-50 to-emerald-50',
+                          border: 'border-green-200',
+                          badge: 'bg-green-500',
+                          icon: '⚹'
+                        },
+                        square: {
+                          bg: 'bg-gradient-to-br from-red-50 to-orange-50',
+                          border: 'border-red-200',
+                          badge: 'bg-red-500',
+                          icon: '□'
+                        },
+                        trine: {
+                          bg: 'bg-gradient-to-br from-blue-50 to-cyan-50',
+                          border: 'border-blue-200',
+                          badge: 'bg-blue-500',
+                          icon: '△'
+                        },
+                        opposition: {
+                          bg: 'bg-gradient-to-br from-orange-50 to-amber-50',
+                          border: 'border-orange-200',
+                          badge: 'bg-orange-500',
+                          icon: '☍'
+                        }
                       };
                       
+                      const style = aspectStyles[aspect.aspect] || aspectStyles.conjunction;
+                      const isHarmonic = aspect.aspect_nature === 'armonico';
+                      const isDynamic = aspect.aspect_nature === 'dinamico';
+                      
                       return (
-                        <div key={idx} className={`p-3 rounded-lg border ${aspectColors[aspect.aspect] || 'bg-gray-100'}`}>
-                          <div className="flex items-center space-x-3 mb-2">
-                            <span className="text-xl">{aspect.planet1_symbol}</span>
-                            <span className="text-lg">{aspect.aspect_symbol}</span>
-                            <span className="text-xl">{aspect.planet2_symbol}</span>
-                            <span className="text-sm text-[#595959]">
-                              ({aspect.angle}° ± {aspect.orb}°)
-                            </span>
+                        <div key={idx} className={`p-4 rounded-xl border-2 ${style.bg} ${style.border} transition-all hover:shadow-md`}>
+                          {/* Header con pianeti e tipo di aspetto */}
+                          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                            <div className="flex items-center space-x-2">
+                              <div className="flex items-center space-x-1 bg-white/80 rounded-full px-3 py-1.5 shadow-sm">
+                                <span className="text-2xl">{aspect.planet1_symbol}</span>
+                                <span className="font-medium text-[#2C2C2C]">
+                                  {aspect.planet1_name || aspect.planet1}
+                                </span>
+                              </div>
+                              <span className={`w-8 h-8 rounded-full ${style.badge} text-white flex items-center justify-center text-lg font-bold shadow-md`}>
+                                {style.icon}
+                              </span>
+                              <div className="flex items-center space-x-1 bg-white/80 rounded-full px-3 py-1.5 shadow-sm">
+                                <span className="text-2xl">{aspect.planet2_symbol}</span>
+                                <span className="font-medium text-[#2C2C2C]">
+                                  {aspect.planet2_name || aspect.planet2}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2">
+                              {isHarmonic && (
+                                <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                                  {language === 'it' ? '✨ Armonico' : '✨ Harmonic'}
+                                </span>
+                              )}
+                              {isDynamic && (
+                                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full font-medium">
+                                  {language === 'it' ? '⚡ Dinamico' : '⚡ Dynamic'}
+                                </span>
+                              )}
+                              <span className="text-xs text-[#595959] bg-white/60 px-2 py-1 rounded">
+                                {aspect.angle}° ± {aspect.orb}°
+                              </span>
+                            </div>
                           </div>
-                          <p className="text-sm text-[#595959]">{aspect.interpretation}</p>
+                          
+                          {/* Nome dell'aspetto */}
+                          <h4 className="font-serif text-lg text-[#2C2C2C] mb-2">
+                            {aspect.aspect_name || aspect.aspect}
+                          </h4>
+                          
+                          {/* Interpretazione dettagliata */}
+                          {aspect.interpretation && (
+                            <div className="bg-white/60 rounded-lg p-3">
+                              <p className="text-sm text-[#595959] leading-relaxed">
+                                {aspect.interpretation}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
