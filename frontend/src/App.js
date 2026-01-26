@@ -19,6 +19,7 @@ import SharedConsultation from './pages/SharedConsultation';
 import Library from './pages/Library';
 import Statistics from './pages/Statistics';
 import Paths from './pages/Paths';
+import CompletedPaths from './pages/CompletedPaths';
 import Subscription from './pages/Subscription';
 import NotificationSettings from './pages/NotificationSettings';
 import AstrologicalProfile from './pages/AstrologicalProfile';
