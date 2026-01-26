@@ -151,6 +151,16 @@ function AppRouter() {
           <Layout><Paths /></Layout>
         </ProtectedRoute>
       } />
+      <Route path="/completed-paths" element={
+        <ProtectedRoute>
+          <Layout><CompletedPaths /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/completed-paths/:completedPathId" element={
+        <ProtectedRoute>
+          <Layout><CompletedPaths /></Layout>
+        </ProtectedRoute>
+      } />
       <Route path="/subscription" element={
         <ProtectedRoute>
           <Layout><Subscription /></Layout>
