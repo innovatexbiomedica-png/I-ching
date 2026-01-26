@@ -284,15 +284,16 @@ const NatalChart = () => {
               </div>
             </div>
 
-            {/* Grafico SVG */}
+            {/* Grafico SVG Interattivo */}
             {chartData.chart_svg && (
               <div className="zen-card">
                 <h3 className="font-serif text-xl text-[#2C2C2C] mb-4 text-center">
-                  {language === 'it' ? 'Ruota Zodiacale' : 'Zodiac Wheel'}
+                  {language === 'it' ? 'Ruota Zodiacale Interattiva' : 'Interactive Zodiac Wheel'}
                 </h3>
-                <div 
-                  className="w-full max-w-2xl mx-auto"
-                  dangerouslySetInnerHTML={{ __html: chartData.chart_svg }}
+                <InteractiveNatalChart 
+                  svgContent={chartData.chart_svg}
+                  houses={chartData.houses}
+                  language={language}
                 />
               </div>
             )}
