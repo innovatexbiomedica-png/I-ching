@@ -2171,7 +2171,184 @@ async def complete_path_step(path_id: str, request: Request, step_day: int = 1, 
         update_data
     )
     
+    # Check if path is now complete and generate synthesis
+    path_info = GUIDED_PATHS.get(path_id)
+    if path_info:
+        total_steps = len(path_info.get("steps", []))
+        completed_steps = len(user_path.get("completed_steps", [])) + 1  # Include current step
+        
+        if completed_steps >= total_steps:
+            # Path completed! Generate synthesis
+            await generate_path_synthesis(db, user, path_id, path_info)
+    
     return {"message": "Passo completato", "step_day": step_day}
+
+
+async def generate_path_synthesis(db, user, path_id: str, path_info: dict):
+    """Generate AI synthesis for completed path"""
+    lang = user.get("language", "it")
+    
+    # Get all consultations for this path
+    user_path = await db.user_paths.find_one({
+        "user_id": user["id"],
+        "path_id": path_id
+    })
+    
+    if not user_path:
+        return
+    
+    consultation_ids = [c["consultation_id"] for c in user_path.get("consultations", [])]
+    
+    # Fetch all consultations
+    consultations = await db.consultations.find({
+        "id": {"$in": consultation_ids}
+    }).to_list(100)
+    
+    if not consultations:
+        return
+    
+    # Build context for AI synthesis
+    hexagrams_info = []
+    for consultation in consultations:
+        hex_num = consultation.get("hexagram_number")
+        hex_data = get_hexagram_traditional_data(hex_num) if hex_num else {}
+        moving_lines = consultation.get("moving_lines", [])
+        
+        hexagrams_info.append({
+            "question": consultation.get("question", ""),
+            "hexagram_number": hex_num,
+            "hexagram_name": hex_data.get("name", ""),
+            "hexagram_meaning": hex_data.get("meaning_it" if lang == "it" else "meaning_en", ""),
+            "judgment": hex_data.get("judgment_it" if lang == "it" else "judgment_en", ""),
+            "moving_lines": moving_lines,
+            "interpretation": consultation.get("interpretation", "")
+        })
+    
+    # Generate AI synthesis
+    synthesis_prompt = f"""Sei un saggio maestro dell'I Ching. Un utente ha completato il percorso "{path_info.get('name_it' if lang == 'it' else 'name_en', path_id)}".
+
+Durante il percorso ha consultato l'oracolo con le seguenti domande e ha ricevuto questi esagrammi:
+
+"""
+    
+    for i, info in enumerate(hexagrams_info, 1):
+        synthesis_prompt += f"""
+--- Consultazione {i} ---
+Domanda: {info['question']}
+Esagramma: {info['hexagram_number']} - {info['hexagram_name']}
+Significato: {info['hexagram_meaning']}
+Giudizio: {info['judgment']}
+Linee mutanti: {', '.join(map(str, info['moving_lines'])) if info['moving_lines'] else 'Nessuna'}
+"""
+
+    if lang == "it":
+        synthesis_prompt += """
+
+Basandoti su TUTTI questi esagrammi e le loro interazioni, crea una SINTESI UNICA e COMPLETA che:
+
+1. **ANALISI COMPLESSIVA**: Identifica il tema centrale che emerge dalla combinazione di tutti gli esagrammi
+2. **PUNTI DI FORZA**: Quali qualità e risorse l'utente può sfruttare
+3. **AREE DI MIGLIORAMENTO**: Aspetti su cui lavorare per la crescita personale
+4. **PIANO D'AZIONE**: Passi concreti e specifici da seguire (minimo 5 punti)
+5. **CONSIGLIO FINALE**: Un messaggio di saggezza che integra tutti gli insegnamenti
+
+Scrivi in modo profondo ma accessibile, come un maestro saggio che guida un allievo. Non elencare semplicemente i significati degli esagrammi, ma crea una visione INTEGRATA e PERSONALIZZATA per il percorso di crescita dell'utente.
+"""
+    else:
+        synthesis_prompt += """
+
+Based on ALL these hexagrams and their interactions, create a UNIQUE and COMPLETE SYNTHESIS that:
+
+1. **OVERALL ANALYSIS**: Identify the central theme emerging from the combination of all hexagrams
+2. **STRENGTHS**: What qualities and resources the user can leverage
+3. **AREAS FOR IMPROVEMENT**: Aspects to work on for personal growth
+4. **ACTION PLAN**: Concrete and specific steps to follow (minimum 5 points)
+5. **FINAL ADVICE**: A wisdom message that integrates all teachings
+
+Write in a deep but accessible way, like a wise master guiding a student. Don't simply list hexagram meanings, but create an INTEGRATED and PERSONALIZED vision for the user's growth path.
+"""
+    
+    try:
+        llm = LlmChat(api_key=os.getenv("EMERGENT_LLM_KEY"))
+        response = await llm.send_message_async(
+            message=UserMessage(text=synthesis_prompt),
+            model="anthropic/claude-sonnet-4-20250514",
+            max_tokens=2000
+        )
+        synthesis_text = response.text
+    except Exception as e:
+        logger.error(f"Error generating path synthesis: {e}")
+        synthesis_text = "Sintesi non disponibile al momento." if lang == "it" else "Synthesis not available at the moment."
+    
+    # Save completed path with synthesis
+    completed_path_doc = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "path_id": path_id,
+        "path_name": path_info.get("name_it" if lang == "it" else "name_en", path_id),
+        "path_emoji": path_info.get("emoji", "🎯"),
+        "consultations": hexagrams_info,
+        "synthesis": synthesis_text,
+        "completed_at": datetime.now(timezone.utc).isoformat(),
+        "is_read": False  # For notification badge
+    }
+    
+    await db.completed_paths.insert_one(completed_path_doc)
+    
+    # Update user_path to mark as synthesis_generated
+    await db.user_paths.update_one(
+        {"user_id": user["id"], "path_id": path_id},
+        {"$set": {"synthesis_generated": True, "completed_path_id": completed_path_doc["id"]}}
+    )
+
+
+@api_router.get("/paths/completed")
+async def get_completed_paths(request: Request):
+    """Get all completed paths with synthesis for current user"""
+    user = await get_current_user(request)
+    
+    completed = await db.completed_paths.find(
+        {"user_id": user["id"]},
+        {"_id": 0}
+    ).sort("completed_at", -1).to_list(100)
+    
+    return completed
+
+
+@api_router.get("/paths/completed/{completed_path_id}")
+async def get_completed_path_detail(completed_path_id: str, request: Request):
+    """Get detail of a specific completed path"""
+    user = await get_current_user(request)
+    
+    completed_path = await db.completed_paths.find_one(
+        {"id": completed_path_id, "user_id": user["id"]},
+        {"_id": 0}
+    )
+    
+    if not completed_path:
+        raise HTTPException(status_code=404, detail="Percorso completato non trovato")
+    
+    # Mark as read
+    if not completed_path.get("is_read"):
+        await db.completed_paths.update_one(
+            {"id": completed_path_id},
+            {"$set": {"is_read": True}}
+        )
+    
+    return completed_path
+
+
+@api_router.get("/paths/unread-count")
+async def get_unread_paths_count(request: Request):
+    """Get count of unread completed paths for notification badge"""
+    user = await get_current_user(request)
+    
+    count = await db.completed_paths.count_documents({
+        "user_id": user["id"],
+        "is_read": False
+    })
+    
+    return {"count": count}
 
 
 # ============== PROGRESSION SYSTEM ==============
