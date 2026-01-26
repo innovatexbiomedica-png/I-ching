@@ -284,7 +284,9 @@ def calculate_natal_chart(
 
 
 def calculate_aspects(subject, language: str = "it") -> List[Dict]:
-    """Calcola gli aspetti tra i pianeti"""
+    """Calcola gli aspetti tra i pianeti con interpretazioni dettagliate"""
+    from aspect_interpretations import get_detailed_aspect_interpretation
+    
     aspects = []
     
     planet_names = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
@@ -305,6 +307,22 @@ def calculate_aspects(subject, language: str = "it") -> List[Dict]:
         "opposition": (180, 8)
     }
     
+    aspect_names_it = {
+        "conjunction": "Congiunzione",
+        "sextile": "Sestile",
+        "square": "Quadratura",
+        "trine": "Trigono",
+        "opposition": "Opposizione"
+    }
+    
+    aspect_nature = {
+        "conjunction": "neutro",  # Dipende dai pianeti
+        "sextile": "armonico",
+        "square": "dinamico",
+        "trine": "armonico",
+        "opposition": "dinamico"
+    }
+    
     for i, p1 in enumerate(planet_names):
         for p2 in planet_names[i+1:]:
             if p1 in positions and p2 in positions:
@@ -314,22 +332,31 @@ def calculate_aspects(subject, language: str = "it") -> List[Dict]:
                 
                 for aspect_name, (angle, orb) in aspect_orbs.items():
                     if abs(diff - angle) <= orb:
-                        interpretation = ASPECT_INTERPRETATIONS.get(aspect_name, {}).get(language, "")
-                        interpretation = interpretation.format(
-                            planet1=get_planet_name_it(p1) if language == "it" else p1,
-                            planet2=get_planet_name_it(p2) if language == "it" else p2
-                        )
+                        # Ottieni interpretazione dettagliata
+                        detailed_interpretation = get_detailed_aspect_interpretation(p1, p2, aspect_name, language)
+                        
+                        # Fallback alla vecchia interpretazione se non c'è quella dettagliata
+                        if not detailed_interpretation:
+                            detailed_interpretation = ASPECT_INTERPRETATIONS.get(aspect_name, {}).get(language, "")
+                            detailed_interpretation = detailed_interpretation.format(
+                                planet1=get_planet_name_it(p1) if language == "it" else p1,
+                                planet2=get_planet_name_it(p2) if language == "it" else p2
+                            )
                         
                         aspects.append({
                             "planet1": p1,
+                            "planet1_name": get_planet_name_it(p1) if language == "it" else p1,
                             "planet1_symbol": PLANET_SYMBOLS.get(p1, ""),
                             "planet2": p2,
+                            "planet2_name": get_planet_name_it(p2) if language == "it" else p2,
                             "planet2_symbol": PLANET_SYMBOLS.get(p2, ""),
                             "aspect": aspect_name,
+                            "aspect_name": aspect_names_it.get(aspect_name, aspect_name) if language == "it" else aspect_name.title(),
                             "aspect_symbol": ASPECT_SYMBOLS.get(aspect_name, ""),
+                            "aspect_nature": aspect_nature.get(aspect_name, "neutro"),
                             "angle": angle,
                             "orb": round(abs(diff - angle), 2),
-                            "interpretation": interpretation
+                            "interpretation": detailed_interpretation
                         })
                         break
     
