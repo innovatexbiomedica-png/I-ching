@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../lib/translations';
@@ -12,13 +12,35 @@ import {
 } from './ui/dropdown-menu';
 import { Button } from './ui/button';
 import Logo from './Logo';
+import axios from 'axios';
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Layout = ({ children }) => {
-  const { user, logout, language, updateLanguage, isAuthenticated } = useAuth();
+  const { user, logout, language, updateLanguage, isAuthenticated, getToken } = useAuth();
   const t = useTranslation(language);
   const location = useLocation();
   const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [unreadPathsCount, setUnreadPathsCount] = useState(0);
+
+  // Fetch unread paths count
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUnreadCount();
+    }
+  }, [isAuthenticated, location.pathname]);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await axios.get(`${API}/paths/unread-count`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      setUnreadPathsCount(response.data.count);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -32,13 +54,14 @@ const Layout = ({ children }) => {
         { to: '/history', label: t.nav.history },
         { to: '/library', label: language === 'it' ? 'Biblioteca' : 'Library' },
         { to: '/paths', label: language === 'it' ? 'Percorsi' : 'Paths' },
+        { to: '/completed-paths', label: language === 'it' ? 'Risultati' : 'Results', badge: unreadPathsCount },
         { to: '/statistics', label: language === 'it' ? 'Statistiche' : 'Statistics' },
       ]
     : [
         { to: '/library', label: language === 'it' ? 'Biblioteca' : 'Library' },
       ];
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F9F7F2]">
