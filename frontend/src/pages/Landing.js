@@ -342,6 +342,292 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* ============ NEW: Guided Paths Section ============ */}
+      <section className="section-zen bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 relative overflow-hidden">
+        {/* Animated background */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-20 left-10 w-32 h-32 bg-purple-500 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-20 right-10 w-40 h-40 bg-indigo-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-pink-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        </div>
+
+        <div className="container-zen relative z-10">
+          <div className="text-center mb-12">
+            <span className="inline-block px-4 py-1 bg-white/10 rounded-full text-purple-300 text-sm mb-4">
+              {language === 'it' ? '✨ Non solo consultazioni' : '✨ More than consultations'}
+            </span>
+            <h2 className="text-3xl md:text-5xl font-serif text-white mb-4">
+              {language === 'it' 
+                ? 'Percorsi di Trasformazione Personale'
+                : 'Personal Transformation Paths'}
+            </h2>
+            <p className="text-lg text-purple-200 max-w-3xl mx-auto">
+              {language === 'it'
+                ? 'L\'I Ching del Benessere non è un semplice oracolo. È un sistema completo di guida che ti accompagna giorno dopo giorno, mese dopo mese, verso i tuoi obiettivi.'
+                : 'I Ching del Benessere is not just an oracle. It\'s a complete guidance system that accompanies you day by day, month by month, towards your goals.'}
+            </p>
+          </div>
+
+          {/* Path visualization */}
+          <div className="relative">
+            {/* Central calendar visual */}
+            <div className="flex flex-col lg:flex-row items-center justify-center gap-8 mb-12">
+              <div className="lg:w-1/2">
+                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
+                  <div className="flex items-center space-x-3 mb-6">
+                    <Calendar className="w-8 h-8 text-purple-300" />
+                    <h3 className="text-2xl font-serif text-white">
+                      {language === 'it' ? 'Calendarizzazione Mensile' : 'Monthly Calendar'}
+                    </h3>
+                  </div>
+                  
+                  {/* Mini calendar grid */}
+                  <div className="grid grid-cols-7 gap-2 mb-6">
+                    {['L', 'M', 'M', 'G', 'V', 'S', 'D'].map((day, i) => (
+                      <div key={i} className="text-center text-xs text-purple-300 font-medium">{day}</div>
+                    ))}
+                    {[...Array(31)].map((_, i) => (
+                      <div 
+                        key={i}
+                        className={`aspect-square rounded-lg flex items-center justify-center text-sm ${
+                          [3, 7, 12, 18, 24, 28].includes(i + 1)
+                            ? 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-bold'
+                            : 'bg-white/5 text-white/60'
+                        }`}
+                      >
+                        {i + 1}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <p className="text-purple-200 text-sm">
+                    {language === 'it'
+                      ? 'Ogni giorno evidenziato rappresenta una consultazione guidata, un esercizio o un consiglio personalizzato per il tuo percorso.'
+                      : 'Each highlighted day represents a guided consultation, exercise or personalized advice for your path.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="lg:w-1/2 space-y-4">
+                <div className="flex items-start space-x-4 bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-colors">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0">
+                    <Compass className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-serif text-white mb-1">
+                      {language === 'it' ? 'Percorsi Tematici' : 'Thematic Paths'}
+                    </h4>
+                    <p className="text-sm text-purple-200">
+                      {language === 'it'
+                        ? 'Amore, Carriera, Salute, Crescita Personale... scegli il tuo focus e ricevi un piano strutturato.'
+                        : 'Love, Career, Health, Personal Growth... choose your focus and receive a structured plan.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-4 bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-colors">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-serif text-white mb-1">
+                      {language === 'it' ? 'Sintesi Finale AI' : 'AI Final Synthesis'}
+                    </h4>
+                    <p className="text-sm text-purple-200">
+                      {language === 'it'
+                        ? 'Al termine del percorso, l\'AI crea una sintesi unica con un piano d\'azione concreto basato su tutte le tue consultazioni.'
+                        : 'At the end of the path, AI creates a unique synthesis with a concrete action plan based on all your consultations.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-4 bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-colors">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center flex-shrink-0">
+                    <Star className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-serif text-white mb-1">
+                      {language === 'it' ? 'Progressi Misurabili' : 'Measurable Progress'}
+                    </h4>
+                    <p className="text-sm text-purple-200">
+                      {language === 'it'
+                        ? 'Traccia i tuoi miglioramenti, rivedi le consultazioni passate e osserva la tua crescita nel tempo.'
+                        : 'Track your improvements, review past consultations and observe your growth over time.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <Link
+                to={isAuthenticated ? '/paths' : '/register'}
+                className="inline-flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl font-medium hover:from-purple-600 hover:to-indigo-700 transition-all shadow-lg shadow-purple-500/30"
+              >
+                <Sparkles className="w-5 h-5" />
+                <span>{language === 'it' ? 'Inizia un Percorso Guidato' : 'Start a Guided Path'}</span>
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ NEW: Wellness Areas Section ============ */}
+      <section className="section-zen bg-[#F9F7F2]">
+        <div className="container-zen">
+          <div className="text-center mb-12">
+            <span className="inline-block px-4 py-1 bg-[#C44D38]/10 rounded-full text-[#C44D38] text-sm mb-4">
+              {language === 'it' ? '🌱 Benessere Integrale' : '🌱 Integral Wellness'}
+            </span>
+            <h2 className="text-3xl md:text-4xl font-serif text-[#2C2C2C] mb-4">
+              {language === 'it' 
+                ? 'Consigli Pratici per Ogni Area della Tua Vita'
+                : 'Practical Advice for Every Area of Your Life'}
+            </h2>
+            <p className="text-lg text-[#595959] max-w-3xl mx-auto">
+              {language === 'it'
+                ? 'L\'I Ching non è solo divinazione. È una guida pratica per migliorare ogni aspetto della tua esistenza.'
+                : 'The I Ching is not just divination. It\'s a practical guide to improve every aspect of your existence.'}
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {wellnessAreas.map((area) => (
+              <div 
+                key={area.id}
+                className="group cursor-pointer"
+                onClick={() => setExpandedWellness(expandedWellness === area.id ? null : area.id)}
+              >
+                <div className={`zen-card h-full border-2 transition-all duration-300 ${
+                  expandedWellness === area.id 
+                    ? 'border-[#C44D38] shadow-lg' 
+                    : 'border-transparent hover:border-[#D1CDC7]'
+                }`}>
+                  <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${area.color} flex items-center justify-center text-white mb-4`}>
+                    {area.icon}
+                  </div>
+                  <h3 className="font-serif text-xl text-[#2C2C2C] mb-2">{area.title}</h3>
+                  <p className="text-[#595959] text-sm mb-3">{area.description}</p>
+                  
+                  <button className="flex items-center text-[#C44D38] text-sm font-medium">
+                    {expandedWellness === area.id ? (
+                      <>
+                        <span>{language === 'it' ? 'Chiudi' : 'Close'}</span>
+                        <ChevronUp className="w-4 h-4 ml-1" />
+                      </>
+                    ) : (
+                      <>
+                        <span>{language === 'it' ? 'Scopri di più' : 'Learn more'}</span>
+                        <ChevronDown className="w-4 h-4 ml-1" />
+                      </>
+                    )}
+                  </button>
+
+                  {expandedWellness === area.id && (
+                    <div className="mt-4 pt-4 border-t border-[#E5E0D8] animate-fade-in">
+                      <p className="text-[#595959] text-sm leading-relaxed">{area.details}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============ NEW: Trigrams Visual Section ============ */}
+      <section className="section-zen bg-gradient-to-b from-[#2C2C2C] to-[#1a1a1a]">
+        <div className="container-zen">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-serif text-white mb-4">
+              {language === 'it' ? 'Gli Otto Trigrammi' : 'The Eight Trigrams'}
+            </h2>
+            <p className="text-[#E5E0D8] max-w-2xl mx-auto">
+              {language === 'it'
+                ? 'Le forze fondamentali dell\'universo che guidano ogni consultazione'
+                : 'The fundamental forces of the universe that guide every consultation'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {trigrams.map((trigram, idx) => (
+              <div 
+                key={idx}
+                className="group relative overflow-hidden rounded-2xl p-6 bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/30 transition-all hover:scale-105"
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${trigram.color} opacity-0 group-hover:opacity-20 transition-opacity`} />
+                <div className="relative z-10 text-center">
+                  <div className={`w-14 h-14 mx-auto mb-3 rounded-full bg-gradient-to-br ${trigram.color} flex items-center justify-center text-white`}>
+                    {trigram.icon}
+                  </div>
+                  <h3 className="font-serif text-lg text-white mb-1">{trigram.name}</h3>
+                  <p className="text-xs text-[#E5E0D8]">{trigram.meaning}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============ NEW: Future Features Section ============ */}
+      <section className="section-zen bg-[#F9F7F2]">
+        <div className="container-zen">
+          <div className="text-center mb-12">
+            <span className="inline-block px-4 py-1 bg-purple-100 rounded-full text-purple-600 text-sm mb-4">
+              {language === 'it' ? '🚀 Prossimamente' : '🚀 Coming Soon'}
+            </span>
+            <h2 className="text-3xl md:text-4xl font-serif text-[#2C2C2C] mb-4">
+              {language === 'it' 
+                ? 'L\'Evoluzione Non Si Ferma'
+                : 'Evolution Never Stops'}
+            </h2>
+            <p className="text-lg text-[#595959] max-w-3xl mx-auto">
+              {language === 'it'
+                ? 'Stiamo costruendo un ecosistema completo per il tuo benessere. Ecco cosa arriverà presto:'
+                : 'We\'re building a complete ecosystem for your wellness. Here\'s what\'s coming soon:'}
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {futureFeatures.map((feature) => (
+              <div 
+                key={feature.id}
+                className="flex items-start space-x-4 p-6 bg-white rounded-2xl border-2 border-[#E5E0D8] hover:border-purple-300 transition-all hover:shadow-lg group"
+              >
+                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center text-white flex-shrink-0 group-hover:scale-110 transition-transform`}>
+                  {feature.icon}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <h3 className="font-serif text-lg text-[#2C2C2C]">{feature.title}</h3>
+                    <span className="px-2 py-0.5 bg-purple-100 text-purple-600 text-xs rounded-full">
+                      {feature.status}
+                    </span>
+                  </div>
+                  <p className="text-sm text-[#595959]">{feature.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-10">
+            <p className="text-[#595959] mb-4">
+              {language === 'it'
+                ? 'Vuoi essere avvisato quando saranno disponibili?'
+                : 'Want to be notified when they\'re available?'}
+            </p>
+            <Link
+              to="/register"
+              className="inline-flex items-center space-x-2 px-6 py-3 bg-[#2C2C2C] text-white rounded-xl font-medium hover:bg-[#1a1a1a] transition-colors"
+            >
+              <Bell className="w-4 h-4" />
+              <span>{language === 'it' ? 'Registrati per gli Aggiornamenti' : 'Register for Updates'}</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Hexagram Display Section */}
       <section className="section-zen bg-[#2C2C2C]" data-testid="hexagram-display-section">
         <div className="container-zen">
