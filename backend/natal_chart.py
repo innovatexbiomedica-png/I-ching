@@ -339,15 +339,43 @@ def calculate_aspects(subject, language: str = "it") -> List[Dict]:
 def generate_chart_svg(subject) -> str:
     """Genera il grafico SVG del tema natale"""
     try:
+        import tempfile
+        import os as os_module
+        
         # Usa KerykeionChartSVG per generare il grafico
         chart = KerykeionChartSVG(subject)
         
-        # Genera SVG come stringa
-        svg_string = chart.makeSVG()
+        # KerykeionChartSVG salva su file, dobbiamo catturarlo
+        # Prima genera l'SVG (viene salvato nella directory corrente)
+        chart.makeSVG()
         
-        return svg_string
+        # Il file viene salvato come "{name} - Natal Chart.svg"
+        svg_filename = f"{subject.name} - Natal Chart.svg"
+        
+        # Cerca il file nella directory home e corrente
+        possible_paths = [
+            os_module.path.join(os_module.path.expanduser("~"), svg_filename),
+            os_module.path.join(os_module.getcwd(), svg_filename),
+            svg_filename
+        ]
+        
+        svg_content = ""
+        for path in possible_paths:
+            if os_module.path.exists(path):
+                with open(path, 'r', encoding='utf-8') as f:
+                    svg_content = f.read()
+                # Elimina il file temporaneo
+                try:
+                    os_module.remove(path)
+                except:
+                    pass
+                break
+        
+        return svg_content
     except Exception as e:
         print(f"Error generating SVG chart: {e}")
+        import traceback
+        traceback.print_exc()
         return ""
 
 
