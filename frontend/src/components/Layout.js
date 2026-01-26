@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { Button } from './ui/button';
+import Logo from './Logo';
 
 const Layout = ({ children }) => {
   const { user, logout, language, updateLanguage, isAuthenticated } = useAuth();
@@ -45,13 +46,13 @@ const Layout = ({ children }) => {
       <nav className="backdrop-blur-md bg-[#F9F7F2]/80 border-b border-[#D1CDC7]/50 sticky top-0 z-50" data-testid="main-navigation">
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
+            {/* Logo with Icon */}
             <Link 
               to="/" 
-              className="font-serif text-xl md:text-2xl text-[#2C2C2C] tracking-tight"
+              className="flex items-center"
               data-testid="logo-link"
             >
-              I Ching <span className="text-[#C44D38]">del Benessere</span>
+              <Logo size="sm" showText={true} />
             </Link>
 
             {/* Desktop Navigation */}
