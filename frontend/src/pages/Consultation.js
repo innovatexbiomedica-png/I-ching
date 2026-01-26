@@ -607,8 +607,45 @@ const Consultation = () => {
           </div>
         )}
 
-        {/* Consultation Type Selection - Now shows after topic is selected or in Path Mode */}
-        {(isPathMode || (topic && (topic !== 'altro' || customTopic))) && !consultationType && (
+        {/* Path Mode - Skip consultation type selection, go directly to coin toss */}
+        {isPathMode && !consultationType && (
+          <div className="animate-fade-in-up mb-8">
+            <div className="zen-card border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 p-6">
+              <div className="flex items-center justify-center space-x-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
+                  <Compass className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-center">
+                  <h3 className="font-serif text-xl text-[#2C2C2C]">
+                    {language === 'it' ? 'Consultazione del Percorso' : 'Path Consultation'}
+                  </h3>
+                  <p className="text-sm text-[#595959]">
+                    {language === 'it' 
+                      ? 'Questa stesa farà parte della sintesi finale del tuo percorso'
+                      : 'This reading will be part of your path\'s final synthesis'}
+                  </p>
+                </div>
+              </div>
+              <p className="text-center text-sm text-[#595959] mb-4">
+                {language === 'it' 
+                  ? 'Concentrati sulla domanda e lancia le monete. Al completamento del percorso riceverai una sintesi personalizzata basata su tutte le tue consultazioni.'
+                  : 'Focus on the question and toss the coins. Upon completing the path, you will receive a personalized synthesis based on all your consultations.'}
+              </p>
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => setConsultationType('path')}
+                  className="btn-primary"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  {language === 'it' ? 'Inizia il Lancio' : 'Start the Toss'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Consultation Type Selection - Now shows after topic is selected (NOT in Path Mode) */}
+        {!isPathMode && (topic && (topic !== 'altro' || customTopic)) && !consultationType && (
           <div className="animate-fade-in-up mb-8" data-testid="consultation-type-selection">
             <div className="zen-card border-2 border-[#E5E0D8] p-6 mb-4">
               <h3 className="font-serif text-xl text-[#2C2C2C] mb-2 text-center">
