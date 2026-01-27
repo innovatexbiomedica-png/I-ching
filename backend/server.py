@@ -2693,10 +2693,57 @@ async def update_user_profile(request: Request, profile_update: UserProfileUpdat
     # Update in database
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     
+    # Merge with existing profile
+    merged_profile = {**user.get("profile", {}), **update_data}
+    
     await db.users.update_one(
         {"id": user["id"]},
-        {"$set": {"profile": {**user.get("profile", {}), **update_data}}}
+        {"$set": {"profile": merged_profile}}
     )
+    
+    # AUTO-GENERATE NATAL CHART if birth data is complete
+    birth_date = merged_profile.get("birth_date")
+    birth_time = merged_profile.get("birth_time")
+    birth_place = merged_profile.get("birth_place")
+    
+    if birth_date and birth_time and birth_place and KERYKEION_AVAILABLE:
+        try:
+            # Check if natal chart already exists
+            existing_chart = user.get("natal_chart")
+            if not existing_chart:
+                logger.info(f"Auto-generating natal chart for user {user['id']}")
+                
+                # Geocode the birth place
+                coords = geocode_location(birth_place)
+                if coords:
+                    lat, lon, city_name = coords
+                    
+                    # Calculate natal chart
+                    result = calculate_natal_chart(
+                        name=user.get("name", "User"),
+                        year=int(birth_date.split("-")[0]),
+                        month=int(birth_date.split("-")[1]),
+                        day=int(birth_date.split("-")[2]),
+                        hour=int(birth_time.split(":")[0]),
+                        minute=int(birth_time.split(":")[1]),
+                        city=city_name,
+                        lat=lat,
+                        lon=lon
+                    )
+                    
+                    if result:
+                        # Save natal chart to user profile
+                        await db.users.update_one(
+                            {"id": user["id"]},
+                            {"$set": {
+                                "natal_chart": result,
+                                "natal_chart_generated_at": datetime.now(timezone.utc).isoformat()
+                            }}
+                        )
+                        logger.info(f"Natal chart auto-generated successfully for user {user['id']}")
+        except Exception as e:
+            logger.error(f"Error auto-generating natal chart: {e}")
+            # Don't fail the profile update if natal chart generation fails
     
     # Return updated profile
     return await get_user_profile(request)
