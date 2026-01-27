@@ -24,6 +24,7 @@ import Subscription from './pages/Subscription';
 import NotificationSettings from './pages/NotificationSettings';
 import AstrologicalProfile from './pages/AstrologicalProfile';
 import NatalChart from './pages/NatalChart';
+import GuidaTutorial from './pages/GuidaTutorial';
 import './App.css';
 
 // Protected Route Component
