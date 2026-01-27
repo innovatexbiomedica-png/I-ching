@@ -2,13 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../lib/translations';
-import { Menu, X, User, LogOut, Globe } from 'lucide-react';
+import { 
+  Menu, X, User, LogOut, Globe, ChevronDown, 
+  BookOpen, Compass, History, BarChart3, Map, 
+  Crown, Bell, Star, Moon, Settings, Home,
+  Sparkles, Calendar, Award, Target
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuLabel,
 } from './ui/dropdown-menu';
 import { Button } from './ui/button';
 import Logo from './Logo';
