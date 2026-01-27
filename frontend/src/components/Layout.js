@@ -129,22 +129,64 @@ const Layout = ({ children }) => {
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-4 xl:space-x-6">
-              {navLinks.map((link) => (
+            <div className="hidden lg:flex items-center space-x-2 xl:space-x-4">
+              {/* Quick Links */}
+              {quickLinks.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`nav-link relative text-sm whitespace-nowrap ${isActive(link.to) ? 'active text-[#2C2C2C]' : ''}`}
+                  className={`nav-link relative text-sm whitespace-nowrap flex items-center space-x-1 ${isActive(link.to) ? 'active text-[#2C2C2C]' : ''}`}
                   data-testid={`nav-${link.to.replace('/', '')}`}
                 >
-                  {link.label}
-                  {link.badge > 0 && (
-                    <span className="absolute -top-2 -right-3 w-5 h-5 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
-                      {link.badge}
-                    </span>
-                  )}
+                  <link.icon className="w-4 h-4" />
+                  <span>{link.label}</span>
                 </Link>
               ))}
+
+              {/* Full Menu Dropdown (only for authenticated users) */}
+              {isAuthenticated && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      className="flex items-center space-x-1 text-[#595959] hover:text-[#2C2C2C]"
+                    >
+                      <Menu className="w-4 h-4" />
+                      <span className="text-sm">{language === 'it' ? 'Menu' : 'Menu'}</span>
+                      <ChevronDown className="w-3 h-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" className="w-64 bg-[#F9F7F2] border-[#D1CDC7]">
+                    {Object.entries(menuSections).map(([key, section]) => (
+                      <React.Fragment key={key}>
+                        <DropdownMenuLabel className="flex items-center space-x-2 text-[#595959] text-xs uppercase tracking-wider">
+                          <section.icon className="w-3 h-3" />
+                          <span>{section.label}</span>
+                        </DropdownMenuLabel>
+                        {section.items.map((item) => (
+                          <DropdownMenuItem key={item.to} asChild>
+                            <Link 
+                              to={item.to} 
+                              className={`flex items-center justify-between w-full px-2 py-2 cursor-pointer ${isActive(item.to) ? 'text-[#C44D38] bg-[#C44D38]/5' : 'text-[#2C2C2C]'}`}
+                            >
+                              <div className="flex items-center space-x-2">
+                                <item.icon className="w-4 h-4" />
+                                <span>{item.label}</span>
+                              </div>
+                              {item.badge > 0 && (
+                                <span className="w-5 h-5 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center">
+                                  {item.badge}
+                                </span>
+                              )}
+                            </Link>
+                          </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator className="bg-[#D1CDC7]/50" />
+                      </React.Fragment>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
 
               {/* Language Selector */}
               <div className="flex items-center space-x-1 border-l border-[#D1CDC7] pl-4">
