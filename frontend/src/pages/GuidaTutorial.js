@@ -110,7 +110,7 @@ const GuidaTutorial = () => {
             { icon: Target, title: "Choose Topic", desc: "Select from Love, Work, Fortune, Money, Spiritual or Personal Growth" },
             { icon: Sparkles, title: "Choose Reading Type", desc: "Direct Reading (brief) or Deep Reading (detailed, Premium)" },
             { icon: MessageCircle, title: "Ask Your Question", desc: "Write your question with clarity and intention" },
-            { icon: Coins, title: "Toss the Coins", desc: "Click 6 times to toss virtual coins and create the hexagram" },
+            { icon: Coins, title: "Toss the Coins", desc: "Toss 3 physical coins 6 times and enter the results to create the hexagram" },
             { icon: BookOpen, title: "Receive Interpretation", desc: "The I Ching will respond with personalized wisdom" }
           ]
         },
