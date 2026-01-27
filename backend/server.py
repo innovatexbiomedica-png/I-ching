@@ -1835,9 +1835,11 @@ async def get_library_hexagram_detail(number: int, request: Request):
             "meaning": line_data.get("significato", "")
         })
     
-    # Get trigram info
-    trigram_above = get_trigram_info(traditional.get("trigram_above", hex_data.get("trigram_top", "☰")), lang)
-    trigram_below = get_trigram_info(traditional.get("trigram_below", hex_data.get("trigram_bottom", "☷")), lang)
+    # Get trigram info - use traditional data if available, otherwise fallback to HEXAGRAMS
+    trig_above_symbol = traditional.get("trigram_above") or hex_data.get("trigram_top", "☰")
+    trig_below_symbol = traditional.get("trigram_below") or hex_data.get("trigram_bottom", "☷")
+    trigram_above = get_trigram_info(trig_above_symbol, lang)
+    trigram_below = get_trigram_info(trig_below_symbol, lang)
     
     return {
         "number": number,
