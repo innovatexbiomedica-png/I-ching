@@ -421,6 +421,17 @@ const Layout = ({ children }) => {
             <div className="font-serif text-[#2C2C2C]">
               I Ching <span className="text-[#C44D38]">del Benessere</span>
             </div>
+            <div className="flex items-center space-x-6 text-sm">
+              <Link to="/guida" className="text-[#595959] hover:text-[#C44D38] transition-colors">
+                {language === 'it' ? 'Guida' : 'Guide'}
+              </Link>
+              <Link to="/library" className="text-[#595959] hover:text-[#C44D38] transition-colors">
+                {language === 'it' ? 'Biblioteca' : 'Library'}
+              </Link>
+              <Link to="/pricing" className="text-[#595959] hover:text-[#C44D38] transition-colors">
+                {language === 'it' ? 'Prezzi' : 'Pricing'}
+              </Link>
+            </div>
             <div className="text-sm text-[#595959]">
               © {new Date().getFullYear()} — L'antica saggezza per il mondo moderno
             </div>
