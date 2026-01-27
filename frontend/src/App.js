@@ -137,6 +137,9 @@ function AppRouter() {
       <Route path="/library/:hexagramId" element={
         <Layout><Library /></Layout>
       } />
+      <Route path="/guida" element={
+        <Layout><GuidaTutorial /></Layout>
+      } />
       <Route path="/statistics" element={
         <ProtectedRoute>
           <Layout><Statistics /></Layout>
