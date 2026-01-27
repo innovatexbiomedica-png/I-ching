@@ -54,18 +54,21 @@ const NatalChart = () => {
       const profileResponse = await axios.get(`${API}/profile`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
-      const profile = profileResponse.data;
-      setProfileData(profile);
+      const profileData = profileResponse.data;
+      const profile = profileData.profile || {};
+      setProfileData(profileData);
       
       // Pre-fill form with profile data if available
-      if (profile.birth_date || profile.birth_time || profile.birth_place) {
-        setFormData({
-          name: profile.name || user?.name || '',
-          birth_date: profile.birth_date || '',
-          birth_time: profile.birth_time || '',
-          birth_place: profile.birth_place || ''
-        });
-      }
+      const birthDate = profile.birth_date || '';
+      const birthTime = profile.birth_time || '';
+      const birthPlace = profile.birth_place || '';
+      
+      setFormData({
+        name: profileData.name || user?.name || '',
+        birth_date: birthDate,
+        birth_time: birthTime,
+        birth_place: birthPlace
+      });
       
       // Fetch saved natal chart
       const chartResponse = await axios.get(`${API}/natal-chart`, {
@@ -77,9 +80,14 @@ const NatalChart = () => {
         setShowForm(false);
       } else {
         // No chart exists - check if we have profile data to auto-generate
-        if (profile.birth_date && profile.birth_time && profile.birth_place) {
+        if (birthDate && birthTime && birthPlace) {
           // Auto-generate with profile data
-          await generateChartFromProfile(profile);
+          await generateChartFromProfile({
+            name: profileData.name,
+            birth_date: birthDate,
+            birth_time: birthTime,
+            birth_place: birthPlace
+          });
         } else {
           setShowForm(true);
         }
