@@ -1535,6 +1535,103 @@ async def get_shared_consultation(share_token: str):
         "created_at": consultation["created_at"]
     }
 
+
+# ============== CONSULTATION FEEDBACK ==============
+
+class FeedbackInput(BaseModel):
+    rating: str  # 'yes', 'no', 'other', 'skipped'
+    feedback_text: Optional[str] = None
+
+
+@api_router.post("/consultations/{consultation_id}/feedback")
+async def submit_consultation_feedback(consultation_id: str, feedback: FeedbackInput, request: Request):
+    """Submit feedback for a consultation to improve interpretation quality"""
+    user = await get_current_user(request)
+    
+    # Verify consultation exists and belongs to user
+    consultation = await db.consultations.find_one({
+        "id": consultation_id,
+        "user_id": user["id"]
+    })
+    
+    if not consultation:
+        raise HTTPException(status_code=404, detail="Consultazione non trovata")
+    
+    # Check if feedback already submitted
+    existing_feedback = await db.consultation_feedback.find_one({
+        "consultation_id": consultation_id,
+        "user_id": user["id"]
+    })
+    
+    if existing_feedback:
+        # Update existing feedback
+        await db.consultation_feedback.update_one(
+            {"consultation_id": consultation_id, "user_id": user["id"]},
+            {"$set": {
+                "rating": feedback.rating,
+                "feedback_text": feedback.feedback_text,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+    else:
+        # Create new feedback
+        feedback_doc = {
+            "id": str(uuid.uuid4()),
+            "consultation_id": consultation_id,
+            "user_id": user["id"],
+            "rating": feedback.rating,
+            "feedback_text": feedback.feedback_text,
+            # Include consultation context for ML training
+            "hexagram_number": consultation.get("hexagram_number"),
+            "derived_hexagram_number": consultation.get("derived_hexagram_number"),
+            "moving_lines": consultation.get("moving_lines"),
+            "consultation_type": consultation.get("consultation_type"),
+            "topic": consultation.get("topic"),
+            "question_length": len(consultation.get("question", "")),
+            "interpretation_length": len(consultation.get("interpretation", "")),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.consultation_feedback.insert_one(feedback_doc)
+    
+    # Update consultation with feedback status
+    await db.consultations.update_one(
+        {"id": consultation_id},
+        {"$set": {"has_feedback": True, "feedback_rating": feedback.rating}}
+    )
+    
+    # Log for analytics
+    logger.info(f"Feedback received: consultation={consultation_id}, rating={feedback.rating}")
+    
+    return {"message": "Feedback salvato con successo", "rating": feedback.rating}
+
+
+@api_router.get("/feedback/stats")
+async def get_feedback_statistics(request: Request):
+    """Get aggregated feedback statistics (admin only or for ML training)"""
+    user = await get_current_user(request)
+    
+    # Count by rating
+    pipeline = [
+        {"$group": {
+            "_id": "$rating",
+            "count": {"$sum": 1}
+        }}
+    ]
+    
+    rating_counts = {}
+    async for doc in db.consultation_feedback.aggregate(pipeline):
+        rating_counts[doc["_id"]] = doc["count"]
+    
+    total = sum(rating_counts.values())
+    
+    return {
+        "total_feedback": total,
+        "ratings": rating_counts,
+        "positive_rate": round((rating_counts.get("yes", 0) / total * 100), 1) if total > 0 else 0,
+        "needs_improvement_rate": round(((rating_counts.get("no", 0) + rating_counts.get("other", 0)) / total * 100), 1) if total > 0 else 0
+    }
+
+
 # ============== STRIPE PAYMENT ROUTES ==============
 SUBSCRIPTION_PRICE = 9.99  # Monthly price in EUR
 
