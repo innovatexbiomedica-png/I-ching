@@ -56,18 +56,59 @@ const Layout = ({ children }) => {
     navigate('/');
   };
 
-  const navLinks = isAuthenticated
+  // Menu sections for authenticated users
+  const menuSections = {
+    consultazioni: {
+      label: language === 'it' ? 'Consultazioni' : 'Consultations',
+      icon: Compass,
+      items: [
+        { to: '/consult', label: language === 'it' ? 'Nuova Consultazione' : 'New Consultation', icon: Sparkles },
+        { to: '/history', label: language === 'it' ? 'Storico' : 'History', icon: History },
+      ]
+    },
+    percorsi: {
+      label: language === 'it' ? 'Percorsi' : 'Paths',
+      icon: Map,
+      items: [
+        { to: '/paths', label: language === 'it' ? 'Percorsi Guidati' : 'Guided Paths', icon: Target },
+        { to: '/completed-paths', label: language === 'it' ? 'Risultati' : 'Results', icon: Award, badge: unreadPathsCount },
+      ]
+    },
+    biblioteca: {
+      label: language === 'it' ? 'Biblioteca' : 'Library',
+      icon: BookOpen,
+      items: [
+        { to: '/library', label: language === 'it' ? 'I 64 Esagrammi' : 'The 64 Hexagrams', icon: BookOpen },
+      ]
+    },
+    profilo: {
+      label: language === 'it' ? 'Profilo' : 'Profile',
+      icon: Star,
+      items: [
+        { to: '/profile/astrology', label: language === 'it' ? 'Profilo Astrologico' : 'Astrological Profile', icon: Star },
+        { to: '/natal-chart', label: language === 'it' ? 'Tema Natale' : 'Natal Chart', icon: Moon },
+        { to: '/statistics', label: language === 'it' ? 'Statistiche & Badge' : 'Statistics & Badges', icon: BarChart3 },
+      ]
+    },
+    impostazioni: {
+      label: language === 'it' ? 'Impostazioni' : 'Settings',
+      icon: Settings,
+      items: [
+        { to: '/subscription', label: language === 'it' ? 'Abbonamento' : 'Subscription', icon: Crown },
+        { to: '/notifications', label: language === 'it' ? 'Notifiche' : 'Notifications', icon: Bell },
+      ]
+    }
+  };
+
+  // Quick nav links (shown in header)
+  const quickLinks = isAuthenticated
     ? [
-        { to: '/dashboard', label: language === 'it' ? 'Home' : 'Home' },
-        { to: '/consult', label: t.nav.consult },
-        { to: '/history', label: t.nav.history },
-        { to: '/library', label: language === 'it' ? 'Biblioteca' : 'Library' },
-        { to: '/paths', label: language === 'it' ? 'Percorsi' : 'Paths' },
-        { to: '/completed-paths', label: language === 'it' ? 'Risultati' : 'Results', badge: unreadPathsCount },
-        { to: '/statistics', label: language === 'it' ? 'Stats' : 'Stats' },
+        { to: '/dashboard', label: language === 'it' ? 'Home' : 'Home', icon: Home },
+        { to: '/consult', label: language === 'it' ? 'Consulta' : 'Consult', icon: Compass },
+        { to: '/library', label: language === 'it' ? 'Biblioteca' : 'Library', icon: BookOpen },
       ]
     : [
-        { to: '/library', label: language === 'it' ? 'Biblioteca' : 'Library' },
+        { to: '/library', label: language === 'it' ? 'Biblioteca' : 'Library', icon: BookOpen },
       ];
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
