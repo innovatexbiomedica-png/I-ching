@@ -79,6 +79,7 @@ const Layout = ({ children }) => {
       icon: BookOpen,
       items: [
         { to: '/library', label: language === 'it' ? 'I 64 Esagrammi' : 'The 64 Hexagrams', icon: BookOpen },
+        { to: '/guida', label: language === 'it' ? 'Guida Interattiva' : 'Interactive Guide', icon: Compass },
       ]
     },
     profilo: {
