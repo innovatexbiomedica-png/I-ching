@@ -52,6 +52,9 @@ def get_user_plan(user: dict) -> str:
         if sub_end:
             if isinstance(sub_end, str):
                 sub_end = datetime.fromisoformat(sub_end.replace('Z', '+00:00'))
+            # Ensure sub_end is timezone-aware
+            if sub_end.tzinfo is None:
+                sub_end = sub_end.replace(tzinfo=timezone.utc)
             if sub_end > datetime.now(timezone.utc):
                 return "premium"
     return "free"
