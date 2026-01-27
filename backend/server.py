@@ -2046,6 +2046,55 @@ async def get_user_statistics(request: Request):
 
 # ============== GUIDED PATHS ==============
 
+@api_router.get("/paths/completed")
+async def get_completed_paths(request: Request):
+    """Get all completed paths with synthesis for current user"""
+    user = await get_current_user(request)
+    
+    completed = await db.completed_paths.find(
+        {"user_id": user["id"]},
+        {"_id": 0}
+    ).sort("completed_at", -1).to_list(100)
+    
+    return completed
+
+
+@api_router.get("/paths/completed/{completed_path_id}")
+async def get_completed_path_detail(completed_path_id: str, request: Request):
+    """Get detail of a specific completed path"""
+    user = await get_current_user(request)
+    
+    completed_path = await db.completed_paths.find_one(
+        {"id": completed_path_id, "user_id": user["id"]},
+        {"_id": 0}
+    )
+    
+    if not completed_path:
+        raise HTTPException(status_code=404, detail="Percorso completato non trovato")
+    
+    # Mark as read
+    if not completed_path.get("is_read"):
+        await db.completed_paths.update_one(
+            {"id": completed_path_id},
+            {"$set": {"is_read": True}}
+        )
+    
+    return completed_path
+
+
+@api_router.get("/paths/unread-count")
+async def get_unread_paths_count(request: Request):
+    """Get count of unread completed paths for notification badge"""
+    user = await get_current_user(request)
+    
+    count = await db.completed_paths.count_documents({
+        "user_id": user["id"],
+        "is_read": False
+    })
+    
+    return {"count": count}
+
+
 @api_router.get("/paths")
 async def get_guided_paths(request: Request):
     """Get available guided paths"""
