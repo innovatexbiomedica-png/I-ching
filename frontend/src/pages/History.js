@@ -330,6 +330,29 @@ const History = () => {
                   {selectedConsultation.interpretation}
                 </div>
               </div>
+              
+              {/* Feedback Banner - solo se non è già stato dato feedback */}
+              {!selectedConsultation.has_feedback && !selectedConsultation.is_synthesis && (
+                <div className="mt-6">
+                  <FeedbackBanner 
+                    consultationId={selectedConsultation.id}
+                    language={language}
+                    getToken={getToken}
+                    onFeedbackSubmitted={(rating, text) => {
+                      // Aggiorna la consultazione localmente per mostrare che il feedback è stato dato
+                      setSelectedConsultation(prev => ({...prev, has_feedback: true, feedback_rating: rating}));
+                    }}
+                  />
+                </div>
+              )}
+              
+              {/* Badge se feedback già dato */}
+              {selectedConsultation.has_feedback && (
+                <div className="mt-4 flex items-center justify-center space-x-2 text-sm text-green-600">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{language === 'it' ? 'Feedback già inviato' : 'Feedback already submitted'}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
