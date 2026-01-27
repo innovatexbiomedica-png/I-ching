@@ -295,7 +295,7 @@ const Layout = ({ children }) => {
 
             {/* Mobile menu button */}
             <button
-              className="md:hidden p-2 text-[#2C2C2C]"
+              className="lg:hidden p-2 text-[#2C2C2C]"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               data-testid="mobile-menu-btn"
             >
