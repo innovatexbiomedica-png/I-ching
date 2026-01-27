@@ -30,6 +30,7 @@ const NatalChart = () => {
   const [generating, setGenerating] = useState(false);
   const [chartData, setChartData] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [profileData, setProfileData] = useState(null);
   const [expandedSections, setExpandedSections] = useState({
     planets: true,
     houses: false,
@@ -44,8 +45,76 @@ const NatalChart = () => {
   });
 
   useEffect(() => {
-    fetchSavedChart();
+    fetchData();
   }, []);
+
+  const fetchData = async () => {
+    try {
+      // Fetch profile data first
+      const profileResponse = await axios.get(`${API}/profile`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      const profile = profileResponse.data;
+      setProfileData(profile);
+      
+      // Pre-fill form with profile data if available
+      if (profile.birth_date || profile.birth_time || profile.birth_place) {
+        setFormData({
+          name: profile.name || user?.name || '',
+          birth_date: profile.birth_date || '',
+          birth_time: profile.birth_time || '',
+          birth_place: profile.birth_place || ''
+        });
+      }
+      
+      // Fetch saved natal chart
+      const chartResponse = await axios.get(`${API}/natal-chart`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      
+      if (chartResponse.data.has_chart) {
+        setChartData(chartResponse.data.chart);
+        setShowForm(false);
+      } else {
+        // No chart exists - check if we have profile data to auto-generate
+        if (profile.birth_date && profile.birth_time && profile.birth_place) {
+          // Auto-generate with profile data
+          await generateChartFromProfile(profile);
+        } else {
+          setShowForm(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setShowForm(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateChartFromProfile = async (profile) => {
+    setGenerating(true);
+    try {
+      const response = await axios.post(
+        `${API}/natal-chart/generate`,
+        {
+          name: profile.name || user?.name || '',
+          birth_date: profile.birth_date,
+          birth_time: profile.birth_time,
+          birth_place: profile.birth_place
+        },
+        { headers: { Authorization: `Bearer ${getToken()}` }}
+      );
+      setChartData(response.data);
+      setShowForm(false);
+      toast.success(language === 'it' ? 'Tema natale generato automaticamente!' : 'Natal chart auto-generated!');
+    } catch (error) {
+      console.error('Error auto-generating chart:', error);
+      setShowForm(true);
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const fetchSavedChart = async () => {
     try {
