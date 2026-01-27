@@ -288,6 +288,18 @@ const Consultation = () => {
             </div>
           </div>
 
+          {/* Feedback Banner */}
+          <div className="mb-8 animate-fade-in-up stagger-4">
+            <FeedbackBanner 
+              consultationId={result.id}
+              language={language}
+              getToken={getToken}
+              onFeedbackSubmitted={(rating, text) => {
+                console.log('Feedback submitted:', rating, text);
+              }}
+            />
+          </div>
+
           {/* Continue Consultation Button */}
           <div className="zen-card mb-8 animate-fade-in-up stagger-4 border-2 border-dashed border-[#D1CDC7] hover:border-[#C44D38] transition-colors">
             <button
