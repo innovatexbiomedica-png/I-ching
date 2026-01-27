@@ -306,20 +306,51 @@ const Layout = ({ children }) => {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-[#F9F7F2] border-t border-[#D1CDC7]" data-testid="mobile-menu">
-            <div className="px-6 py-4 space-y-4">
-              {navLinks.map((link) => (
+          <div className="lg:hidden bg-[#F9F7F2] border-t border-[#D1CDC7] max-h-[80vh] overflow-y-auto" data-testid="mobile-menu">
+            <div className="px-6 py-4 space-y-2">
+              {/* Quick links */}
+              {quickLinks.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`block py-2 ${isActive(link.to) ? 'text-[#C44D38]' : 'text-[#2C2C2C]'}`}
+                  className={`flex items-center space-x-3 py-3 px-2 rounded-lg ${isActive(link.to) ? 'text-[#C44D38] bg-[#C44D38]/5' : 'text-[#2C2C2C]'}`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {link.label}
+                  <link.icon className="w-5 h-5" />
+                  <span className="font-medium">{link.label}</span>
                 </Link>
               ))}
               
-              <div className="flex items-center space-x-4 py-2 border-t border-[#D1CDC7]">
+              {/* Menu sections for authenticated users */}
+              {isAuthenticated && Object.entries(menuSections).map(([key, section]) => (
+                <div key={key} className="border-t border-[#D1CDC7]/50 pt-3">
+                  <div className="flex items-center space-x-2 px-2 mb-2 text-[#595959] text-xs uppercase tracking-wider">
+                    <section.icon className="w-3 h-3" />
+                    <span>{section.label}</span>
+                  </div>
+                  {section.items.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className={`flex items-center justify-between py-2 px-4 rounded-lg ${isActive(item.to) ? 'text-[#C44D38] bg-[#C44D38]/5' : 'text-[#2C2C2C]'}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <item.icon className="w-4 h-4" />
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge > 0 && (
+                        <span className="w-5 h-5 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              ))}
+              
+              {/* Language selector */}
+              <div className="flex items-center space-x-4 py-3 px-2 border-t border-[#D1CDC7]">
                 <Globe className="w-4 h-4 text-[#595959]" />
                 <button
                   onClick={() => { updateLanguage('it'); setMobileMenuOpen(false); }}
@@ -335,26 +366,37 @@ const Layout = ({ children }) => {
                 </button>
               </div>
 
+              {/* User section */}
               {isAuthenticated ? (
-                <button
-                  onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-                  className="flex items-center space-x-2 py-2 text-[#2C2C2C]"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>{t.nav.logout}</span>
-                </button>
+                <div className="border-t border-[#D1CDC7] pt-3">
+                  <div className="flex items-center space-x-3 px-2 py-2 mb-2">
+                    <User className="w-5 h-5 text-[#595959]" />
+                    <div>
+                      <p className="font-medium text-[#2C2C2C]">{user?.name}</p>
+                      <p className="text-xs text-[#595959]">{user?.email}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+                    className="flex items-center space-x-3 py-3 px-2 text-[#C44D38] w-full"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span>{t.nav.logout}</span>
+                  </button>
+                </div>
               ) : (
-                <div className="flex flex-col space-y-2 pt-2 border-t border-[#D1CDC7]">
+                <div className="flex flex-col space-y-2 pt-3 border-t border-[#D1CDC7]">
                   <Link
                     to="/login"
-                    className="py-2 text-[#2C2C2C]"
+                    className="py-3 px-2 text-[#2C2C2C] flex items-center space-x-3"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    {t.nav.login}
+                    <User className="w-5 h-5" />
+                    <span>{t.nav.login}</span>
                   </Link>
                   <Link
                     to="/register"
-                    className="btn-primary text-center py-2"
+                    className="btn-primary text-center py-3"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t.nav.register}
