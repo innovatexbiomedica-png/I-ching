@@ -32,7 +32,7 @@ const GuidaTutorial = () => {
             { icon: Target, title: "Scegli l'Argomento", desc: "Seleziona tra Amore, Lavoro, Fortuna, Soldi, Crescita Spirituale o Personale" },
             { icon: Sparkles, title: "Scegli il Tipo di Stesa", desc: "Stesa Diretta (breve) o Stesa Profonda (dettagliata, Premium)" },
             { icon: MessageCircle, title: "Formula la Domanda", desc: "Scrivi la tua domanda con chiarezza e intenzione" },
-            { icon: Coins, title: "Lancia le Monete", desc: "Clicca 6 volte per lanciare le monete virtuali e creare l'esagramma" },
+            { icon: Coins, title: "Lancia le Monete", desc: "Lancia 3 monete fisiche 6 volte e inserisci i risultati per creare l'esagramma" },
             { icon: BookOpen, title: "Ricevi l'Interpretazione", desc: "L'I Ching ti risponderà con saggezza personalizzata" }
           ]
         },
