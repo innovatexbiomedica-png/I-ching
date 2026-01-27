@@ -26,7 +26,7 @@ import axios from 'axios';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Layout = ({ children }) => {
-  const { user, logout, language, updateLanguage, isAuthenticated, getToken } = useAuth();
+  const { user, logout, language, updateLanguage, isAuthenticated, getToken, hasSubscription } = useAuth();
   const t = useTranslation(language);
   const location = useLocation();
   const navigate = useNavigate();
