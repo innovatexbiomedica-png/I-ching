@@ -175,12 +175,18 @@ const NatalChart = () => {
     }
   };
 
-  if (loading) {
+  if (loading || generating) {
     return (
       <div className="page-container">
         <div className="content-container">
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-[#C44D38]" />
+          <div className="flex flex-col items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-[#C44D38] mb-4" />
+            <p className="text-[#595959]">
+              {generating 
+                ? (language === 'it' ? 'Generazione tema natale in corso...' : 'Generating natal chart...')
+                : (language === 'it' ? 'Caricamento...' : 'Loading...')
+              }
+            </p>
           </div>
         </div>
       </div>
