@@ -18,6 +18,7 @@ import { Loader2, Circle, AlertCircle, BookOpen, Sparkles, Zap, Compass, ArrowRi
 import ShareButton from '../components/ShareButton';
 import HexagramDisplay from '../components/HexagramDisplay';
 import TraditionalReading from '../components/TraditionalReading';
+import FeedbackBanner from '../components/FeedbackBanner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
