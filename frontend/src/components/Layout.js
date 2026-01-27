@@ -219,12 +219,53 @@ const Layout = ({ children }) => {
                     >
                       <User className="w-4 h-4" />
                       <span className="font-sans text-sm max-w-[100px] truncate">{user?.name}</span>
+                      <ChevronDown className="w-3 h-3" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-[#F9F7F2] border-[#D1CDC7]">
+                  <DropdownMenuContent align="end" className="w-56 bg-[#F9F7F2] border-[#D1CDC7]">
+                    <DropdownMenuLabel className="text-xs text-[#595959]">
+                      {user?.email}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-[#D1CDC7]/50" />
+                    
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile/astrology" className="flex items-center space-x-2 cursor-pointer">
+                        <Star className="w-4 h-4 text-purple-500" />
+                        <span>{language === 'it' ? 'Profilo Astrologico' : 'Astrological Profile'}</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem asChild>
+                      <Link to="/subscription" className="flex items-center space-x-2 cursor-pointer">
+                        <Crown className="w-4 h-4 text-amber-500" />
+                        <span>{language === 'it' ? 'Abbonamento' : 'Subscription'}</span>
+                        {!hasSubscription && (
+                          <span className="ml-auto text-xs bg-[#C44D38] text-white px-2 py-0.5 rounded">
+                            {language === 'it' ? 'Premium' : 'Premium'}
+                          </span>
+                        )}
+                      </Link>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem asChild>
+                      <Link to="/notifications" className="flex items-center space-x-2 cursor-pointer">
+                        <Bell className="w-4 h-4 text-blue-500" />
+                        <span>{language === 'it' ? 'Notifiche' : 'Notifications'}</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem asChild>
+                      <Link to="/statistics" className="flex items-center space-x-2 cursor-pointer">
+                        <BarChart3 className="w-4 h-4 text-green-500" />
+                        <span>{language === 'it' ? 'Statistiche' : 'Statistics'}</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuSeparator className="bg-[#D1CDC7]/50" />
+                    
                     <DropdownMenuItem 
                       onClick={handleLogout}
-                      className="text-[#2C2C2C] cursor-pointer"
+                      className="text-[#C44D38] cursor-pointer"
                       data-testid="logout-btn"
                     >
                       <LogOut className="w-4 h-4 mr-2" />
