@@ -410,12 +410,12 @@ const Layout = ({ children }) => {
       </nav>
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main className="flex-1 lg:pb-0">
         {children}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-[#D1CDC7] bg-[#F9F7F2]" data-testid="footer">
+      {/* Footer - Hidden on mobile when bottom nav is visible */}
+      <footer className="border-t border-[#D1CDC7] bg-[#F9F7F2] hidden lg:block" data-testid="footer">
         <div className="max-w-7xl mx-auto px-6 md:px-12 py-12">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="font-serif text-[#2C2C2C]">
@@ -435,6 +435,18 @@ const Layout = ({ children }) => {
             <div className="text-sm text-[#595959]">
               © {new Date().getFullYear()} — L'antica saggezza per il mondo moderno
             </div>
+          </div>
+        </div>
+      </footer>
+      
+      {/* Mobile Footer - Simplified version above bottom nav */}
+      <footer className="lg:hidden border-t border-[#D1CDC7] bg-[#F9F7F2] pb-20" data-testid="mobile-footer">
+        <div className="px-4 py-6 text-center">
+          <div className="font-serif text-sm text-[#2C2C2C] mb-2">
+            I Ching <span className="text-[#C44D38]">del Benessere</span>
+          </div>
+          <div className="text-xs text-[#595959]">
+            © {new Date().getFullYear()} — L'antica saggezza per il mondo moderno
           </div>
         </div>
       </footer>
