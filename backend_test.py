@@ -2498,6 +2498,315 @@ class IChingAPITester:
             self.log_test("Profile Completion Flow", False, f"Profile completion flow failed: {passed_checks}/{total_checks} checks passed")
             return False
 
+    # ============== PWA TESTING METHODS ==============
+    
+    def test_pwa_manifest(self):
+        """Test PWA manifest.json is accessible and valid"""
+        print("\n🔍 Testing PWA Manifest...")
+        
+        try:
+            url = f"{self.frontend_url}/manifest.json"
+            response = requests.get(url, timeout=30)
+            
+            if response.status_code != 200:
+                self.log_test("PWA Manifest", False, f"Manifest not accessible: {response.status_code}")
+                return False
+            
+            try:
+                manifest = response.json()
+            except:
+                self.log_test("PWA Manifest", False, "Manifest is not valid JSON")
+                return False
+            
+            # Check required PWA manifest fields
+            required_fields = ['name', 'short_name', 'start_url', 'display', 'theme_color']
+            missing_fields = [field for field in required_fields if field not in manifest]
+            
+            if missing_fields:
+                self.log_test("PWA Manifest", False, f"Missing required fields: {missing_fields}")
+                return False
+            
+            # Check icons array
+            if 'icons' not in manifest or not isinstance(manifest['icons'], list):
+                self.log_test("PWA Manifest", False, "Missing or invalid icons array")
+                return False
+            
+            # Check for required icon sizes
+            icon_sizes = [icon.get('sizes', '') for icon in manifest['icons']]
+            required_sizes = ['192x192', '512x512']
+            missing_sizes = [size for size in required_sizes if size not in icon_sizes]
+            
+            if missing_sizes:
+                self.log_test("PWA Manifest", False, f"Missing required icon sizes: {missing_sizes}")
+                return False
+            
+            print(f"   ✅ Manifest accessible at {url}")
+            print(f"   ✅ Required fields present: {required_fields}")
+            print(f"   ✅ Icons array with {len(manifest['icons'])} icons")
+            print(f"   ✅ Required icon sizes present: {required_sizes}")
+            print(f"   App name: {manifest.get('name', 'Unknown')}")
+            print(f"   Display mode: {manifest.get('display', 'Unknown')}")
+            print(f"   Theme color: {manifest.get('theme_color', 'Unknown')}")
+            
+            self.log_test("PWA Manifest", True)
+            return True
+            
+        except Exception as e:
+            self.log_test("PWA Manifest", False, f"Exception: {str(e)}")
+            return False
+
+    def test_pwa_service_worker(self):
+        """Test service worker is accessible and contains caching logic"""
+        print("\n🔍 Testing PWA Service Worker...")
+        
+        try:
+            url = f"{self.frontend_url}/service-worker.js"
+            response = requests.get(url, timeout=30)
+            
+            if response.status_code != 200:
+                self.log_test("PWA Service Worker", False, f"Service worker not accessible: {response.status_code}")
+                return False
+            
+            sw_content = response.text
+            
+            # Check for essential service worker features
+            required_features = [
+                'addEventListener',
+                'install',
+                'activate', 
+                'fetch',
+                'caches',
+                'cache'
+            ]
+            
+            missing_features = [feature for feature in required_features if feature not in sw_content]
+            
+            if missing_features:
+                self.log_test("PWA Service Worker", False, f"Missing SW features: {missing_features}")
+                return False
+            
+            # Check for caching strategies
+            caching_indicators = ['cache.put', 'cache.match', 'cache.add', 'networkFirst', 'cacheFirst']
+            found_caching = [indicator for indicator in caching_indicators if indicator in sw_content]
+            
+            if len(found_caching) < 2:
+                self.log_test("PWA Service Worker", False, f"Insufficient caching logic: {found_caching}")
+                return False
+            
+            print(f"   ✅ Service worker accessible at {url}")
+            print(f"   ✅ Essential SW features present: {required_features}")
+            print(f"   ✅ Caching logic found: {found_caching}")
+            print(f"   Service worker size: {len(sw_content)} characters")
+            
+            self.log_test("PWA Service Worker", True)
+            return True
+            
+        except Exception as e:
+            self.log_test("PWA Service Worker", False, f"Exception: {str(e)}")
+            return False
+
+    def test_pwa_icons(self):
+        """Test PWA icons are accessible"""
+        print("\n🔍 Testing PWA Icons...")
+        
+        required_icons = [
+            '/icons/icon-192x192.png',
+            '/icons/icon-512x512.png'
+        ]
+        
+        success_count = 0
+        
+        for icon_path in required_icons:
+            try:
+                url = f"{self.frontend_url}{icon_path}"
+                response = requests.get(url, timeout=30)
+                
+                if response.status_code == 200:
+                    print(f"   ✅ Icon accessible: {icon_path}")
+                    success_count += 1
+                else:
+                    print(f"   ❌ Icon not accessible: {icon_path} ({response.status_code})")
+                    
+            except Exception as e:
+                print(f"   ❌ Icon error: {icon_path} - {str(e)}")
+        
+        if success_count == len(required_icons):
+            self.log_test("PWA Icons", True)
+            return True
+        else:
+            self.log_test("PWA Icons", False, f"Only {success_count}/{len(required_icons)} icons accessible")
+            return False
+
+    def test_pwa_meta_tags(self):
+        """Test PWA meta tags in HTML"""
+        print("\n🔍 Testing PWA Meta Tags...")
+        
+        try:
+            url = self.frontend_url
+            response = requests.get(url, timeout=30)
+            
+            if response.status_code != 200:
+                self.log_test("PWA Meta Tags", False, f"Frontend not accessible: {response.status_code}")
+                return False
+            
+            html_content = response.text.lower()
+            
+            # Check for required PWA meta tags
+            required_meta_tags = [
+                'apple-mobile-web-app-capable',
+                'theme-color',
+                'manifest'
+            ]
+            
+            found_tags = []
+            missing_tags = []
+            
+            for tag in required_meta_tags:
+                if tag in html_content:
+                    found_tags.append(tag)
+                else:
+                    missing_tags.append(tag)
+            
+            if missing_tags:
+                self.log_test("PWA Meta Tags", False, f"Missing meta tags: {missing_tags}")
+                return False
+            
+            # Check for manifest link
+            if 'rel="manifest"' not in html_content and "rel='manifest'" not in html_content:
+                self.log_test("PWA Meta Tags", False, "Missing manifest link")
+                return False
+            
+            print(f"   ✅ Frontend accessible at {url}")
+            print(f"   ✅ Required meta tags found: {found_tags}")
+            print(f"   ✅ Manifest link present")
+            
+            self.log_test("PWA Meta Tags", True)
+            return True
+            
+        except Exception as e:
+            self.log_test("PWA Meta Tags", False, f"Exception: {str(e)}")
+            return False
+
+    def test_offline_page(self):
+        """Test offline.html page exists"""
+        print("\n🔍 Testing Offline Page...")
+        
+        try:
+            url = f"{self.frontend_url}/offline.html"
+            response = requests.get(url, timeout=30)
+            
+            if response.status_code != 200:
+                self.log_test("Offline Page", False, f"Offline page not accessible: {response.status_code}")
+                return False
+            
+            html_content = response.text
+            
+            # Check for basic offline page content
+            offline_indicators = ['offline', 'connection', 'internet']
+            found_indicators = [indicator for indicator in offline_indicators if indicator.lower() in html_content.lower()]
+            
+            if len(found_indicators) < 1:
+                self.log_test("Offline Page", False, "Offline page doesn't contain offline-related content")
+                return False
+            
+            print(f"   ✅ Offline page accessible at {url}")
+            print(f"   ✅ Contains offline indicators: {found_indicators}")
+            print(f"   Page size: {len(html_content)} characters")
+            
+            self.log_test("Offline Page", True)
+            return True
+            
+        except Exception as e:
+            self.log_test("Offline Page", False, f"Exception: {str(e)}")
+            return False
+
+    def test_existing_backend_functionality(self):
+        """Quick test of existing backend functionality to ensure it still works"""
+        print("\n🔍 Testing Existing Backend Functionality...")
+        
+        # Test 1: User registration
+        timestamp = datetime.now().strftime('%H%M%S')
+        test_user = {
+            "email": f"pwa_test_{timestamp}@test.com",
+            "password": "TestPass123!",
+            "name": f"PWA Test User {timestamp}",
+            "language": "it"
+        }
+        
+        success, response = self.run_test(
+            "Quick User Registration Test",
+            "POST",
+            "auth/register",
+            200,
+            data=test_user
+        )
+        
+        if not success:
+            self.log_test("Existing Backend Functionality", False, "User registration failed")
+            return False
+        
+        # Test 2: Get hexagrams library
+        success, response = self.run_test(
+            "Quick Hexagrams Library Test",
+            "GET",
+            "library/hexagrams",
+            200
+        )
+        
+        if not success:
+            self.log_test("Existing Backend Functionality", False, "Hexagrams library failed")
+            return False
+        
+        # Test 3: Get daily hexagram
+        success, response = self.run_test(
+            "Quick Daily Hexagram Test",
+            "GET",
+            "daily-hexagram",
+            200
+        )
+        
+        if not success:
+            self.log_test("Existing Backend Functionality", False, "Daily hexagram failed")
+            return False
+        
+        print("   ✅ User registration working")
+        print("   ✅ Hexagrams library working")
+        print("   ✅ Daily hexagram working")
+        
+        self.log_test("Existing Backend Functionality", True)
+        return True
+
+    def run_pwa_tests(self):
+        """Run PWA-specific tests"""
+        print("🚀 Starting PWA Mobile Conversion Tests")
+        print("=" * 50)
+        
+        pwa_tests = [
+            self.test_pwa_manifest,
+            self.test_pwa_service_worker,
+            self.test_pwa_icons,
+            self.test_pwa_meta_tags,
+            self.test_offline_page,
+            self.test_existing_backend_functionality
+        ]
+        
+        for test in pwa_tests:
+            try:
+                test()
+            except Exception as e:
+                print(f"❌ Test {test.__name__} failed with exception: {e}")
+                self.log_test(test.__name__, False, f"Exception: {str(e)}")
+        
+        print("\n" + "=" * 50)
+        print(f"📊 PWA Test Summary: {self.tests_passed}/{self.tests_run} passed")
+        
+        if self.tests_passed == self.tests_run:
+            print("🎉 All PWA tests passed!")
+            return 0
+        else:
+            print("⚠️  Some PWA tests failed")
+            return 1
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting I Ching API Tests")
