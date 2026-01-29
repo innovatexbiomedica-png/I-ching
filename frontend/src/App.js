@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from './components/ui/sonner';
 import Layout from './components/Layout';
+import { MobileNavProvider } from './components/MobileNavigation';
 import SplashScreen from './components/SplashScreen';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -25,6 +26,9 @@ import NotificationSettings from './pages/NotificationSettings';
 import AstrologicalProfile from './pages/AstrologicalProfile';
 import NatalChart from './pages/NatalChart';
 import GuidaTutorial from './pages/GuidaTutorial';
+import * as serviceWorkerRegistration from './serviceWorkerRegistration';
+import nativeService from './services/NativeService';
+import notificationService from './services/NotificationService';
 import './App.css';
 
 // Protected Route Component
