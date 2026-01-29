@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 class IChingAPITester:
-    def __init__(self, base_url="https://iching-analyzer.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://benessere-mobile-1.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.user_id = None
@@ -399,7 +399,7 @@ class IChingAPITester:
             return False
             
         checkout_data = {
-            "origin_url": "https://iching-analyzer.preview.emergentagent.com"
+            "origin_url": "https://benessere-mobile-1.preview.emergentagent.com"
         }
         
         success, response = self.run_test(
