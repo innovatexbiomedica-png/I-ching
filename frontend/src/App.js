@@ -199,6 +199,7 @@ function AppRouter() {
 function AppWithSplash() {
   const [showSplash, setShowSplash] = useState(true);
   const [hasSeenSplash, setHasSeenSplash] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
 
   useEffect(() => {
     // Check if user has already seen splash this session
@@ -207,6 +208,20 @@ function AppWithSplash() {
       setShowSplash(false);
       setHasSeenSplash(true);
     }
+
+    // Initialize native services
+    nativeService.initialize();
+    
+    // Initialize notification service
+    notificationService.initialize();
+
+    // Listen for service worker updates
+    const handleUpdate = () => setUpdateAvailable(true);
+    window.addEventListener('sw-update-available', handleUpdate);
+    
+    return () => {
+      window.removeEventListener('sw-update-available', handleUpdate);
+    };
   }, []);
 
   const handleSplashComplete = () => {
@@ -215,24 +230,48 @@ function AppWithSplash() {
     setHasSeenSplash(true);
   };
 
+  const handleUpdateApp = () => {
+    window.location.reload();
+  };
+
   if (showSplash && !hasSeenSplash) {
     return <SplashScreen onComplete={handleSplashComplete} />;
   }
 
   return (
     <BrowserRouter>
-      <AppRouter />
-      <Toaster 
-        position="top-center"
-        toastOptions={{
-          style: {
-            background: '#F9F7F2',
-            border: '1px solid #D1CDC7',
-            color: '#2C2C2C',
-            fontFamily: 'Manrope, sans-serif'
-          }
-        }}
-      />
+      <MobileNavProvider>
+        <AppRouter />
+        
+        {/* Update notification */}
+        {updateAvailable && (
+          <div className="fixed top-4 left-4 right-4 z-[100] bg-[#C44D38] text-white p-4 rounded-xl shadow-xl animate-slide-down">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">
+                🔄 Nuova versione disponibile!
+              </span>
+              <button
+                onClick={handleUpdateApp}
+                className="px-3 py-1 bg-white/20 rounded-lg text-sm font-medium hover:bg-white/30 transition-colors"
+              >
+                Aggiorna
+              </button>
+            </div>
+          </div>
+        )}
+        
+        <Toaster 
+          position="top-center"
+          toastOptions={{
+            style: {
+              background: '#F9F7F2',
+              border: '1px solid #D1CDC7',
+              color: '#2C2C2C',
+              fontFamily: 'Manrope, sans-serif'
+            }
+          }}
+        />
+      </MobileNavProvider>
     </BrowserRouter>
   );
 }
