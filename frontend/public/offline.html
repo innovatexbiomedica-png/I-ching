@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#C44D38">
+  <title>Offline - I Ching del Benessere</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #F9F7F2 0%, #EDE9E0 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      text-align: center;
+      max-width: 400px;
+    }
+    .yin-yang {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 30px;
+      animation: spin 20s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .yin-yang svg {
+      width: 100%;
+      height: 100%;
+    }
+    h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      color: #2C2C2C;
+      margin-bottom: 15px;
+    }
+    p {
+      color: #595959;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 14px 28px;
+      background-color: #C44D38;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+    .btn:hover {
+      background-color: #A33D2B;
+      transform: translateY(-2px);
+    }
+    .quote {
+      margin-top: 40px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 12px;
+      border-left: 3px solid #C44D38;
+    }
+    .quote p {
+      font-style: italic;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .quote cite {
+      font-size: 12px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="yin-yang">
+      <svg viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="48" fill="#2C2C2C"/>
+        <path d="M50 2 A48 48 0 0 1 50 98 A24 24 0 0 1 50 50 A24 24 0 0 0 50 2" fill="#F9F7F2"/>
+        <circle cx="50" cy="26" r="8" fill="#2C2C2C"/>
+        <circle cx="50" cy="74" r="8" fill="#F9F7F2"/>
+      </svg>
+    </div>
+    <h1>Sei Offline</h1>
+    <p>La connessione internet non è disponibile. Alcune funzionalità potrebbero essere limitate.</p>
+    <button class="btn" onclick="window.location.reload()">Riprova</button>
+    
+    <div class="quote">
+      <p>"Quando non c'è acqua nel pozzo, non è colpa del pozzo."</p>
+      <cite>— I Ching, Esagramma 48</cite>
+    </div>
+  </div>
+</body>
+</html>
