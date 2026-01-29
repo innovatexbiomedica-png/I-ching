@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "I Ching del Benessere - App di divinazione con abbonamenti. Test del nuovo sistema di tipi di consultazione (direct vs deep)."
+user_problem_statement: "I Ching del Benessere - App di divinazione con abbonamenti. Conversione in app mobile completa con PWA, Capacitor, notifiche push e supporto smartwatch."
 
 backend:
   - task: "User profile completion endpoint PUT /api/profile"
