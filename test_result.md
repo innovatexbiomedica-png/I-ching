@@ -499,3 +499,63 @@ agent_communication:
       - working: true
         agent: "testing"
         comment: "✅ CONVERSATION CONTINUATION TESTING COMPLETE: All core functionality working perfectly. Parent consultation ✅ (no parent_id, depth=0), Child consultation ✅ (correct parent_id, depth=1), Grandchild consultation ✅ (correct parent_id, depth=2), GET /api/consultations ✅ returns all conversation fields correctly. Conversation depth calculation working, parent_consultation_id properly saved and returned. Minor: AI interpretations don't explicitly reference conversation history in Italian tests, but this is a content generation issue, not a functional issue. Backend conversation continuation system fully functional and ready for production."
+
+  - task: "PWA Mobile App Conversion"
+    implemented: true
+    working: "NA"
+    file: "frontend/public/manifest.json, frontend/public/service-worker.js, frontend/src/serviceWorkerRegistration.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementata conversione completa in PWA mobile: manifest.json con icone, service worker per offline, registrazione SW automatica"
+
+  - task: "Capacitor Native App Support"
+    implemented: true
+    working: "NA"
+    file: "frontend/capacitor.config.json, frontend/src/services/NativeService.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Aggiunto supporto Capacitor per build app native iOS/Android con haptics, status bar, keyboard handling, share, clipboard"
+
+  - task: "Push Notifications System"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/services/NotificationService.js, frontend/src/components/InAppNotification.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementato sistema notifiche push per Web, iOS, Android con FCM. Include notifiche in-app, richiesta permessi, badge"
+
+  - task: "Smartwatch WearOS/Apple Watch Support"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/services/WearOSService.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementato supporto smartwatch: WearOS companion, Apple Watch connectivity, sync esagramma giorno, consultazione rapida"
+
+  - task: "Mobile Bottom Navigation"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/MobileNavigation.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Aggiunta bottom navigation bar mobile con quick actions, FAB centrale, scroll hide/show, safe area support"
