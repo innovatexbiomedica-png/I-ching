@@ -284,4 +284,14 @@ function App() {
   );
 }
 
+// Register Service Worker for PWA
+serviceWorkerRegistration.register({
+  onSuccess: (registration) => {
+    console.log('[App] Service Worker registered successfully');
+  },
+  onUpdate: (registration) => {
+    console.log('[App] New content available, will update on refresh');
+  }
+});
+
 export default App;
