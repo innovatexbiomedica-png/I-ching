@@ -802,6 +802,11 @@ async def register(user_data: UserCreate):
         raise HTTPException(status_code=400, detail="Email già registrata")
     
     user_id = str(uuid.uuid4())
+    
+    # AUTO PREMIUM: Tutti i nuovi utenti ricevono Premium gratuito per testing
+    # Premium per 1 anno per tutti gli utenti (testing mode)
+    premium_end = datetime.now(timezone.utc) + timedelta(days=365)
+    
     user_doc = {
         "id": user_id,
         "email": user_data.email,
@@ -809,8 +814,8 @@ async def register(user_data: UserCreate):
         "name": user_data.name,
         "phone": user_data.phone,
         "language": user_data.language,
-        "subscription_active": False,
-        "subscription_end": None,
+        "subscription_active": True,  # AUTO PREMIUM ENABLED
+        "subscription_end": premium_end.isoformat(),  # 1 anno di Premium
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user_doc)
@@ -821,7 +826,7 @@ async def register(user_data: UserCreate):
         name=user_data.name,
         phone=user_data.phone,
         language=user_data.language,
-        subscription_active=False
+        subscription_active=True  # AUTO PREMIUM ENABLED
     )
 
 @api_router.post("/auth/login")
