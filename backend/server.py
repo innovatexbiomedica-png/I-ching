@@ -906,6 +906,10 @@ async def google_oauth_callback(data: dict, response: Response):
     else:
         # Create new user from Google data
         user_id = str(uuid.uuid4())
+        
+        # AUTO PREMIUM: Anche utenti Google ricevono Premium gratuito per testing
+        premium_end = datetime.now(timezone.utc) + timedelta(days=365)
+        
         user_doc = {
             "id": user_id,
             "email": google_email,
@@ -915,8 +919,8 @@ async def google_oauth_callback(data: dict, response: Response):
             "language": "it",
             "google_picture": google_picture,
             "google_name": google_name,
-            "subscription_active": False,
-            "subscription_end": None,
+            "subscription_active": True,  # AUTO PREMIUM ENABLED
+            "subscription_end": premium_end.isoformat(),  # 1 anno di Premium
             "created_at": datetime.now(timezone.utc).isoformat(),
             "auth_provider": "google"
         }
