@@ -1826,6 +1826,60 @@ async def check_limit(request: Request):
     return result
 
 
+@api_router.post("/admin/activate-premium-all")
+async def activate_premium_for_all():
+    """
+    ADMIN ENDPOINT: Attiva Premium per TUTTI gli utenti esistenti.
+    Usare per testing - non richiede autenticazione.
+    """
+    premium_end = datetime.now(timezone.utc) + timedelta(days=365)
+    
+    result = await db.users.update_many(
+        {},  # Tutti gli utenti
+        {
+            "$set": {
+                "subscription_active": True,
+                "subscription_end": premium_end.isoformat()
+            }
+        }
+    )
+    
+    return {
+        "success": True,
+        "message": f"Premium attivato per {result.modified_count} utenti",
+        "modified_count": result.modified_count,
+        "premium_until": premium_end.isoformat()
+    }
+
+
+@api_router.post("/admin/activate-premium/{email}")
+async def activate_premium_for_user(email: str):
+    """
+    ADMIN ENDPOINT: Attiva Premium per un utente specifico.
+    """
+    premium_end = datetime.now(timezone.utc) + timedelta(days=365)
+    
+    result = await db.users.update_one(
+        {"email": email},
+        {
+            "$set": {
+                "subscription_active": True,
+                "subscription_end": premium_end.isoformat()
+            }
+        }
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail=f"Utente {email} non trovato")
+    
+    return {
+        "success": True,
+        "message": f"Premium attivato per {email}",
+        "email": email,
+        "premium_until": premium_end.isoformat()
+    }
+
+
 # ============== DAILY HEXAGRAM ==============
 
 @api_router.get("/daily-hexagram")
