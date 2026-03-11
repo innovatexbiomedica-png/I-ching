@@ -150,6 +150,79 @@ const MobileBottomNav = () => {
         </div>
       )}
 
+      {/* Profile Menu Overlay */}
+      {showProfileMenu && isAuthenticated && (
+        <div 
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setShowProfileMenu(false)}
+        >
+          <div 
+            className="absolute bottom-24 right-4 flex flex-col bg-white rounded-2xl shadow-xl overflow-hidden animate-fade-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* User info header */}
+            <div className="px-4 py-3 bg-[#F9F7F2] border-b border-[#D1CDC7]">
+              <p className="font-medium text-[#2C2C2C]">{user?.name || 'Utente'}</p>
+              <p className="text-xs text-[#595959]">{user?.email}</p>
+            </div>
+            
+            {/* Menu items */}
+            <button
+              onClick={() => { handleNavClick('/profile/astrology'); }}
+              className="flex items-center space-x-3 px-4 py-3 hover:bg-[#F9F7F2] transition-colors"
+            >
+              <Star className="w-5 h-5 text-purple-500" />
+              <span className="text-[#2C2C2C]">
+                {language === 'it' ? 'Profilo Astrologico' : 'Astrological Profile'}
+              </span>
+            </button>
+            
+            <button
+              onClick={() => { handleNavClick('/subscription'); }}
+              className="flex items-center space-x-3 px-4 py-3 hover:bg-[#F9F7F2] transition-colors"
+            >
+              <Crown className="w-5 h-5 text-amber-500" />
+              <span className="text-[#2C2C2C]">
+                {language === 'it' ? 'Abbonamento' : 'Subscription'}
+              </span>
+            </button>
+            
+            <button
+              onClick={() => { handleNavClick('/statistics'); }}
+              className="flex items-center space-x-3 px-4 py-3 hover:bg-[#F9F7F2] transition-colors"
+            >
+              <BarChart3 className="w-5 h-5 text-green-500" />
+              <span className="text-[#2C2C2C]">
+                {language === 'it' ? 'Statistiche' : 'Statistics'}
+              </span>
+            </button>
+            
+            <button
+              onClick={() => { handleNavClick('/notifications'); }}
+              className="flex items-center space-x-3 px-4 py-3 hover:bg-[#F9F7F2] transition-colors"
+            >
+              <Bell className="w-5 h-5 text-blue-500" />
+              <span className="text-[#2C2C2C]">
+                {language === 'it' ? 'Notifiche' : 'Notifications'}
+              </span>
+            </button>
+            
+            {/* Logout button */}
+            <div className="border-t border-[#D1CDC7]">
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-3 px-4 py-3 w-full text-[#C44D38] hover:bg-red-50 transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-medium">
+                  {language === 'it' ? 'Esci' : 'Logout'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bottom Navigation Bar */}
       <nav 
         className={`fixed bottom-0 left-0 right-0 z-50 lg:hidden transition-transform duration-300 ${
