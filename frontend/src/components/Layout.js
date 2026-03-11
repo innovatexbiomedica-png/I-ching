@@ -116,9 +116,13 @@ const Layout = ({ children }) => {
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F9F7F2]">
-      {/* Navigation */}
-      <nav className="backdrop-blur-md bg-[#F9F7F2]/95 border-b border-[#D1CDC7]/50 sticky top-0 z-50" data-testid="main-navigation">
+    <AnimatedBackground opacity={0.12} transitionDuration={15000}>
+      {/* Mist animation layer */}
+      <MistAnimation intensity={0.15} />
+      
+      <div className="min-h-screen flex flex-col">
+        {/* Navigation */}
+        <nav className="backdrop-blur-md bg-[#F9F7F2]/90 border-b border-[#D1CDC7]/50 sticky top-0 z-50" data-testid="main-navigation">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo with Icon */}
