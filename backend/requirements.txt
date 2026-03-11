@@ -129,3 +129,5 @@ aiohttp
 h3
 pyswisseph
 httpx
+kerykeion
+reportlab
