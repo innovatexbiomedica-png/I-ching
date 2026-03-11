@@ -3181,11 +3181,9 @@ async def generate_natal_chart_pdf(request: Request):
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
     from reportlab.lib.units import cm
     import io
-    import base64
-    import cairosvg
     
     user = await get_current_user(request)
     lang = user.get("language", "it")
@@ -3196,7 +3194,7 @@ async def generate_natal_chart_pdf(request: Request):
     
     # Create PDF buffer
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm, leftMargin=2*cm, rightMargin=2*cm)
     
     # Styles
     styles = getSampleStyleSheet()
@@ -3211,15 +3209,16 @@ async def generate_natal_chart_pdf(request: Request):
     subtitle_style = ParagraphStyle(
         'CustomSubtitle',
         parent=styles['Heading2'],
-        fontSize=16,
-        spaceAfter=20,
+        fontSize=14,
+        spaceBefore=20,
+        spaceAfter=10,
         textColor=colors.HexColor('#2C2C2C')
     )
     body_style = ParagraphStyle(
         'CustomBody',
         parent=styles['Normal'],
-        fontSize=11,
-        spaceAfter=10,
+        fontSize=10,
+        spaceAfter=8,
         textColor=colors.HexColor('#595959')
     )
     
@@ -3229,29 +3228,35 @@ async def generate_natal_chart_pdf(request: Request):
     title = "Tema Natale" if lang == "it" else "Natal Chart"
     elements.append(Paragraph(title, title_style))
     
-    # Birth info
-    birth_info = natal_chart.get("birth_info", {})
+    # Birth info - use 'subject' key from natal_chart
+    subject_info = natal_chart.get("subject", {})
+    name = subject_info.get("name", user.get("name", "N/A"))
+    birth_date = subject_info.get("birth_date", "N/A")
+    birth_time = subject_info.get("birth_time", "N/A")
+    birth_place = subject_info.get("birth_place", "N/A")
+    
     info_text = f"""
-    <b>{'Nome' if lang == 'it' else 'Name'}:</b> {birth_info.get('name', 'N/A')}<br/>
-    <b>{'Data di nascita' if lang == 'it' else 'Birth Date'}:</b> {birth_info.get('date', 'N/A')}<br/>
-    <b>{'Ora di nascita' if lang == 'it' else 'Birth Time'}:</b> {birth_info.get('time', 'N/A')}<br/>
-    <b>{'Luogo di nascita' if lang == 'it' else 'Birth Place'}:</b> {birth_info.get('place', 'N/A')}
+    <b>{'Nome' if lang == 'it' else 'Name'}:</b> {name}<br/>
+    <b>{'Data di nascita' if lang == 'it' else 'Birth Date'}:</b> {birth_date}<br/>
+    <b>{'Ora di nascita' if lang == 'it' else 'Birth Time'}:</b> {birth_time}<br/>
+    <b>{'Luogo di nascita' if lang == 'it' else 'Birth Place'}:</b> {birth_place}
     """
     elements.append(Paragraph(info_text, body_style))
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1, 15))
     
-    # Try to add SVG chart as image
-    svg_data = natal_chart.get("chart_svg")
-    if svg_data:
-        try:
-            # Convert SVG to PNG
-            png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'), output_width=400)
-            img_buffer = io.BytesIO(png_data)
-            img = Image(img_buffer, width=14*cm, height=14*cm)
-            elements.append(img)
-            elements.append(Spacer(1, 20))
-        except Exception as e:
-            logger.warning(f"Could not convert SVG to image: {e}")
+    # Ascendant info
+    ascendant = natal_chart.get("ascendant", {})
+    if ascendant:
+        asc_text = f"<b>{'Ascendente' if lang == 'it' else 'Ascendant'}:</b> {ascendant.get('sign', 'N/A')} {ascendant.get('sign_symbol', '')} ({ascendant.get('degree_formatted', '')})"
+        elements.append(Paragraph(asc_text, body_style))
+    
+    # Midheaven info
+    midheaven = natal_chart.get("midheaven", {})
+    if midheaven:
+        mc_text = f"<b>{'Medio Cielo' if lang == 'it' else 'Midheaven'}:</b> {midheaven.get('sign', 'N/A')} {midheaven.get('sign_symbol', '')} ({midheaven.get('degree_formatted', '')})"
+        elements.append(Paragraph(mc_text, body_style))
+    
+    elements.append(Spacer(1, 20))
     
     # Planets section
     planets_title = "Posizioni Planetarie" if lang == "it" else "Planetary Positions"
