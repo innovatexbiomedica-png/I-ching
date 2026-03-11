@@ -280,25 +280,23 @@ const NatalChart = () => {
                 <RefreshCw className="w-4 h-4" />
                 <span>{language === 'it' ? 'Rigenera' : 'Regenerate'}</span>
               </Button>
-              {chartData.chart_svg && (
-                <>
-                  <Button 
-                    variant="outline"
-                    onClick={downloadSVG}
-                    className="flex items-center space-x-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>{language === 'it' ? 'SVG' : 'SVG'}</span>
-                  </Button>
-                  <Button 
-                    onClick={downloadPDF}
-                    className="flex items-center space-x-2 bg-[#C44D38] text-white hover:bg-[#A33D2B]"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>{language === 'it' ? 'Scarica PDF' : 'Download PDF'}</span>
-                  </Button>
-                </>
+              {chartData?.chart_svg && (
+                <Button 
+                  variant="outline"
+                  onClick={downloadSVG}
+                  className="flex items-center space-x-2 border-green-500 text-green-600 hover:bg-green-50"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>{language === 'it' ? 'Scarica SVG' : 'Download SVG'}</span>
+                </Button>
               )}
+              <Button 
+                onClick={downloadPDF}
+                className="flex items-center space-x-2 bg-[#C44D38] text-white hover:bg-[#A33D2B]"
+              >
+                <Download className="w-4 h-4" />
+                <span>{language === 'it' ? 'Scarica PDF' : 'Download PDF'}</span>
+              </Button>
             </div>
           )}
         </div>
