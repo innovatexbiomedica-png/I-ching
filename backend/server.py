@@ -3066,6 +3066,198 @@ async def get_saved_natal_chart(request: Request):
     }
 
 
+@api_router.get("/natal-chart/pdf")
+async def generate_natal_chart_pdf(request: Request):
+    """Generate a PDF of the user's natal chart"""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+    from reportlab.lib.units import cm
+    import io
+    import base64
+    import cairosvg
+    
+    user = await get_current_user(request)
+    lang = user.get("language", "it")
+    
+    natal_chart = user.get("natal_chart")
+    if not natal_chart:
+        raise HTTPException(status_code=404, detail="Tema natale non trovato. Genera prima il tema natale.")
+    
+    # Create PDF buffer
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm)
+    
+    # Styles
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        spaceAfter=30,
+        textColor=colors.HexColor('#C44D38'),
+        alignment=1  # Center
+    )
+    subtitle_style = ParagraphStyle(
+        'CustomSubtitle',
+        parent=styles['Heading2'],
+        fontSize=16,
+        spaceAfter=20,
+        textColor=colors.HexColor('#2C2C2C')
+    )
+    body_style = ParagraphStyle(
+        'CustomBody',
+        parent=styles['Normal'],
+        fontSize=11,
+        spaceAfter=10,
+        textColor=colors.HexColor('#595959')
+    )
+    
+    elements = []
+    
+    # Title
+    title = "Tema Natale" if lang == "it" else "Natal Chart"
+    elements.append(Paragraph(title, title_style))
+    
+    # Birth info
+    birth_info = natal_chart.get("birth_info", {})
+    info_text = f"""
+    <b>{'Nome' if lang == 'it' else 'Name'}:</b> {birth_info.get('name', 'N/A')}<br/>
+    <b>{'Data di nascita' if lang == 'it' else 'Birth Date'}:</b> {birth_info.get('date', 'N/A')}<br/>
+    <b>{'Ora di nascita' if lang == 'it' else 'Birth Time'}:</b> {birth_info.get('time', 'N/A')}<br/>
+    <b>{'Luogo di nascita' if lang == 'it' else 'Birth Place'}:</b> {birth_info.get('place', 'N/A')}
+    """
+    elements.append(Paragraph(info_text, body_style))
+    elements.append(Spacer(1, 20))
+    
+    # Try to add SVG chart as image
+    svg_data = natal_chart.get("chart_svg")
+    if svg_data:
+        try:
+            # Convert SVG to PNG
+            png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'), output_width=400)
+            img_buffer = io.BytesIO(png_data)
+            img = Image(img_buffer, width=14*cm, height=14*cm)
+            elements.append(img)
+            elements.append(Spacer(1, 20))
+        except Exception as e:
+            logger.warning(f"Could not convert SVG to image: {e}")
+    
+    # Planets section
+    planets_title = "Posizioni Planetarie" if lang == "it" else "Planetary Positions"
+    elements.append(Paragraph(planets_title, subtitle_style))
+    
+    planets = natal_chart.get("planets", [])
+    if planets:
+        planet_data = [["Pianeta" if lang == "it" else "Planet", "Segno" if lang == "it" else "Sign", "Gradi" if lang == "it" else "Degrees", "Casa" if lang == "it" else "House"]]
+        for p in planets:
+            planet_data.append([
+                p.get("name", ""),
+                p.get("sign", ""),
+                f"{p.get('position', 0):.1f}°",
+                str(p.get("house", ""))
+            ])
+        
+        planet_table = Table(planet_data, colWidths=[4*cm, 4*cm, 3*cm, 2*cm])
+        planet_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#C44D38')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTSIZE', (0, 0), (-1, 0), 11),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F9F7F2')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1CDC7'))
+        ]))
+        elements.append(planet_table)
+        elements.append(Spacer(1, 20))
+    
+    # Houses section
+    houses_title = "Case Astrologiche" if lang == "it" else "Astrological Houses"
+    elements.append(Paragraph(houses_title, subtitle_style))
+    
+    houses = natal_chart.get("houses", [])
+    if houses:
+        house_data = [["Casa" if lang == "it" else "House", "Segno" if lang == "it" else "Sign", "Cuspide" if lang == "it" else "Cusp"]]
+        for h in houses:
+            house_data.append([
+                str(h.get("number", "")),
+                h.get("sign", ""),
+                f"{h.get('position', 0):.1f}°"
+            ])
+        
+        house_table = Table(house_data, colWidths=[3*cm, 5*cm, 4*cm])
+        house_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2C2C2C')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTSIZE', (0, 0), (-1, 0), 11),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F9F7F2')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1CDC7'))
+        ]))
+        elements.append(house_table)
+        elements.append(Spacer(1, 20))
+    
+    # Aspects section
+    aspects_title = "Aspetti Principali" if lang == "it" else "Main Aspects"
+    elements.append(Paragraph(aspects_title, subtitle_style))
+    
+    aspects = natal_chart.get("aspects", [])
+    if aspects:
+        aspect_data = [["Pianeta 1" if lang == "it" else "Planet 1", "Aspetto" if lang == "it" else "Aspect", "Pianeta 2" if lang == "it" else "Planet 2", "Orbe" if lang == "it" else "Orb"]]
+        for a in aspects[:15]:  # Limit to 15 aspects
+            aspect_data.append([
+                a.get("planet1", ""),
+                a.get("aspect", ""),
+                a.get("planet2", ""),
+                f"{a.get('orb', 0):.1f}°"
+            ])
+        
+        aspect_table = Table(aspect_data, colWidths=[3.5*cm, 4*cm, 3.5*cm, 2*cm])
+        aspect_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#8A9A5B')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTSIZE', (0, 0), (-1, 0), 11),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F9F7F2')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1CDC7'))
+        ]))
+        elements.append(aspect_table)
+    
+    # Footer
+    elements.append(Spacer(1, 30))
+    footer_text = "I Ching del Benessere - L'antica saggezza per il mondo moderno" if lang == "it" else "I Ching del Benessere - Ancient wisdom for the modern world"
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=9,
+        textColor=colors.HexColor('#888888'),
+        alignment=1
+    )
+    elements.append(Paragraph(footer_text, footer_style))
+    
+    # Build PDF
+    doc.build(elements)
+    
+    # Return PDF
+    buffer.seek(0)
+    pdf_content = buffer.getvalue()
+    
+    from fastapi.responses import Response
+    return Response(
+        content=pdf_content,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=tema_natale_{user.get('name', 'chart')}.pdf"
+        }
+    )
+
+
 @api_router.get("/geocode")
 async def geocode_city(city: str):
     """Geocode a city name to get coordinates"""
