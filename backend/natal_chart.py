@@ -437,16 +437,72 @@ def get_planet_interpretation(planet: str, sign: str, language: str = "it") -> s
 async def geocode_location(city: str) -> Optional[Dict]:
     """
     Geocodifica una città per ottenere le coordinate.
-    Usa l'API di Nominatim (OpenStreetMap)
+    Usa l'API di Nominatim (OpenStreetMap) con fallback a città comuni
     """
     import aiohttp
+    import asyncio
     
+    # Database città comuni italiane con coordinate
+    COMMON_CITIES = {
+        "roma": {"lat": 41.9028, "lng": 12.4964, "display_name": "Roma, Lazio, Italia"},
+        "milano": {"lat": 45.4642, "lng": 9.1900, "display_name": "Milano, Lombardia, Italia"},
+        "napoli": {"lat": 40.8518, "lng": 14.2681, "display_name": "Napoli, Campania, Italia"},
+        "torino": {"lat": 45.0703, "lng": 7.6869, "display_name": "Torino, Piemonte, Italia"},
+        "firenze": {"lat": 43.7696, "lng": 11.2558, "display_name": "Firenze, Toscana, Italia"},
+        "bologna": {"lat": 44.4949, "lng": 11.3426, "display_name": "Bologna, Emilia-Romagna, Italia"},
+        "genova": {"lat": 44.4056, "lng": 8.9463, "display_name": "Genova, Liguria, Italia"},
+        "venezia": {"lat": 45.4408, "lng": 12.3155, "display_name": "Venezia, Veneto, Italia"},
+        "palermo": {"lat": 38.1157, "lng": 13.3615, "display_name": "Palermo, Sicilia, Italia"},
+        "catania": {"lat": 37.5079, "lng": 15.0830, "display_name": "Catania, Sicilia, Italia"},
+        "bari": {"lat": 41.1171, "lng": 16.8719, "display_name": "Bari, Puglia, Italia"},
+        "verona": {"lat": 45.4384, "lng": 10.9916, "display_name": "Verona, Veneto, Italia"},
+        "padova": {"lat": 45.4064, "lng": 11.8768, "display_name": "Padova, Veneto, Italia"},
+        "trieste": {"lat": 45.6495, "lng": 13.7768, "display_name": "Trieste, Friuli-Venezia Giulia, Italia"},
+        "brescia": {"lat": 45.5416, "lng": 10.2118, "display_name": "Brescia, Lombardia, Italia"},
+        "parma": {"lat": 44.8015, "lng": 10.3279, "display_name": "Parma, Emilia-Romagna, Italia"},
+        "modena": {"lat": 44.6471, "lng": 10.9252, "display_name": "Modena, Emilia-Romagna, Italia"},
+        "reggio emilia": {"lat": 44.6989, "lng": 10.6297, "display_name": "Reggio Emilia, Emilia-Romagna, Italia"},
+        "reggio calabria": {"lat": 38.1112, "lng": 15.6467, "display_name": "Reggio Calabria, Calabria, Italia"},
+        "perugia": {"lat": 43.1107, "lng": 12.3908, "display_name": "Perugia, Umbria, Italia"},
+        "cagliari": {"lat": 39.2238, "lng": 9.1217, "display_name": "Cagliari, Sardegna, Italia"},
+        "livorno": {"lat": 43.5485, "lng": 10.3106, "display_name": "Livorno, Toscana, Italia"},
+        "pisa": {"lat": 43.7228, "lng": 10.4017, "display_name": "Pisa, Toscana, Italia"},
+        "siena": {"lat": 43.3188, "lng": 11.3308, "display_name": "Siena, Toscana, Italia"},
+        "ancona": {"lat": 43.6158, "lng": 13.5189, "display_name": "Ancona, Marche, Italia"},
+        "pescara": {"lat": 42.4618, "lng": 14.2161, "display_name": "Pescara, Abruzzo, Italia"},
+        "new york": {"lat": 40.7128, "lng": -74.0060, "display_name": "New York, USA"},
+        "london": {"lat": 51.5074, "lng": -0.1278, "display_name": "London, UK"},
+        "paris": {"lat": 48.8566, "lng": 2.3522, "display_name": "Paris, France"},
+        "berlin": {"lat": 52.5200, "lng": 13.4050, "display_name": "Berlin, Germany"},
+        "madrid": {"lat": 40.4168, "lng": -3.7038, "display_name": "Madrid, Spain"},
+        "barcelona": {"lat": 41.3851, "lng": 2.1734, "display_name": "Barcelona, Spain"},
+        "amsterdam": {"lat": 52.3676, "lng": 4.9041, "display_name": "Amsterdam, Netherlands"},
+        "vienna": {"lat": 48.2082, "lng": 16.3738, "display_name": "Vienna, Austria"},
+        "zurich": {"lat": 47.3769, "lng": 8.5417, "display_name": "Zurich, Switzerland"},
+        "los angeles": {"lat": 34.0522, "lng": -118.2437, "display_name": "Los Angeles, USA"},
+        "chicago": {"lat": 41.8781, "lng": -87.6298, "display_name": "Chicago, USA"},
+        "tokyo": {"lat": 35.6762, "lng": 139.6503, "display_name": "Tokyo, Japan"},
+        "beijing": {"lat": 39.9042, "lng": 116.4074, "display_name": "Beijing, China"},
+        "sydney": {"lat": -33.8688, "lng": 151.2093, "display_name": "Sydney, Australia"},
+    }
+    
+    # Normalizza il nome della città
+    city_lower = city.lower().strip()
+    
+    # Controlla prima nel database locale
+    if city_lower in COMMON_CITIES:
+        return COMMON_CITIES[city_lower]
+    
+    # Prova con l'API Nominatim
     try:
         async with aiohttp.ClientSession() as session:
-            url = f"https://nominatim.openstreetmap.org/search?q={city}&format=json&limit=1"
-            headers = {"User-Agent": "IChing-App/1.0"}
+            # Aggiungi delay per evitare rate limiting
+            await asyncio.sleep(1)
             
-            async with session.get(url, headers=headers) as response:
+            url = f"https://nominatim.openstreetmap.org/search?q={city}&format=json&limit=1"
+            headers = {"User-Agent": "IChing-Benessere-App/2.0 (contact@ichingbenessere.com)"}
+            
+            async with session.get(url, headers=headers, timeout=10) as response:
                 if response.status == 200:
                     data = await response.json()
                     if data:
@@ -455,7 +511,14 @@ async def geocode_location(city: str) -> Optional[Dict]:
                             "lng": float(data[0]["lon"]),
                             "display_name": data[0]["display_name"]
                         }
+                elif response.status == 429:
+                    print(f"Nominatim rate limited, checking common cities for: {city}")
     except Exception as e:
         print(f"Geocoding error: {e}")
+    
+    # Ultimo tentativo: cerca parzialmente nel database locale
+    for city_name, coords in COMMON_CITIES.items():
+        if city_lower in city_name or city_name in city_lower:
+            return coords
     
     return None
