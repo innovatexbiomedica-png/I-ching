@@ -183,6 +183,36 @@ const NatalChart = () => {
     }
   };
 
+  const downloadPDF = async () => {
+    try {
+      toast.loading(language === 'it' ? 'Generazione PDF in corso...' : 'Generating PDF...', { id: 'pdf-loading' });
+      
+      const response = await axios.get(`${API}/natal-chart/pdf`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+        responseType: 'blob'
+      });
+      
+      // Create download link
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tema_natale_${formData.name || 'chart'}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      toast.success(language === 'it' ? 'PDF scaricato!' : 'PDF downloaded!', { id: 'pdf-loading' });
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast.error(
+        language === 'it' 
+          ? 'Errore nella generazione del PDF' 
+          : 'Error generating PDF',
+        { id: 'pdf-loading' }
+      );
+    }
+  };
+
   if (loading || generating) {
     return (
       <div className="page-container">
