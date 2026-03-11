@@ -172,14 +172,29 @@ const NatalChart = () => {
   };
 
   const downloadSVG = () => {
+    console.log('downloadSVG called, chartData:', chartData);
+    console.log('chart_svg exists:', !!chartData?.chart_svg);
+    
     if (chartData?.chart_svg) {
-      const blob = new Blob([chartData.chart_svg], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `tema_natale_${formData.name || 'chart'}.svg`;
-      a.click();
-      URL.revokeObjectURL(url);
+      try {
+        const svgContent = chartData.chart_svg;
+        const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `tema_natale_${formData.name || chartData?.subject?.name || 'chart'}.svg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success(language === 'it' ? 'SVG scaricato!' : 'SVG downloaded!');
+      } catch (error) {
+        console.error('Error downloading SVG:', error);
+        toast.error(language === 'it' ? 'Errore nel download SVG' : 'Error downloading SVG');
+      }
+    } else {
+      console.error('No SVG data available');
+      toast.error(language === 'it' ? 'Nessun grafico SVG disponibile' : 'No SVG chart available');
     }
   };
 
