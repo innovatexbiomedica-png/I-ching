@@ -74,16 +74,31 @@ const MobileBottomNav = () => {
   const handleNavClick = (path) => {
     nativeService.haptic('light');
     setShowQuickActions(false);
+    setShowProfileMenu(false);
     navigate(path);
   };
 
   const handleCenterClick = () => {
     nativeService.haptic('medium');
+    setShowProfileMenu(false);
     if (showQuickActions) {
       setShowQuickActions(false);
     } else {
       setShowQuickActions(true);
     }
+  };
+
+  const handleProfileClick = () => {
+    nativeService.haptic('light');
+    setShowQuickActions(false);
+    setShowProfileMenu(!showProfileMenu);
+  };
+
+  const handleLogout = () => {
+    nativeService.haptic('medium');
+    setShowProfileMenu(false);
+    logout();
+    navigate('/');
   };
 
   const isActive = (path) => {
