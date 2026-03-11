@@ -3266,11 +3266,14 @@ async def generate_natal_chart_pdf(request: Request):
     if planets:
         planet_data = [["Pianeta" if lang == "it" else "Planet", "Segno" if lang == "it" else "Sign", "Gradi" if lang == "it" else "Degrees", "Casa" if lang == "it" else "House"]]
         for p in planets:
+            # Use 'degree' field instead of 'position'
+            degree = p.get("degree", p.get("position", 0))
+            degree_str = p.get("degree_formatted", f"{degree:.1f}°")
             planet_data.append([
-                p.get("name", ""),
-                p.get("sign", ""),
-                f"{p.get('position', 0):.1f}°",
-                str(p.get("house", ""))
+                f"{p.get('name', '')} {p.get('symbol', '')}",
+                f"{p.get('sign', '')} {p.get('sign_symbol', '')}",
+                degree_str,
+                str(p.get("house", "-"))
             ])
         
         planet_table = Table(planet_data, colWidths=[4*cm, 4*cm, 3*cm, 2*cm])
@@ -3278,14 +3281,14 @@ async def generate_natal_chart_pdf(request: Request):
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#C44D38')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTSIZE', (0, 0), (-1, 0), 11),
-            ('FONTSIZE', (0, 1), (-1, -1), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
             ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F9F7F2')),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1CDC7'))
         ]))
         elements.append(planet_table)
-        elements.append(Spacer(1, 20))
+        elements.append(Spacer(1, 15))
     
     # Houses section
     houses_title = "Case Astrologiche" if lang == "it" else "Astrological Houses"
@@ -3295,25 +3298,27 @@ async def generate_natal_chart_pdf(request: Request):
     if houses:
         house_data = [["Casa" if lang == "it" else "House", "Segno" if lang == "it" else "Sign", "Cuspide" if lang == "it" else "Cusp"]]
         for h in houses:
+            degree = h.get("degree", h.get("position", 0))
+            degree_str = h.get("degree_formatted", f"{degree:.1f}°")
             house_data.append([
                 str(h.get("number", "")),
-                h.get("sign", ""),
-                f"{h.get('position', 0):.1f}°"
+                f"{h.get('sign', '')} {h.get('sign_symbol', '')}",
+                degree_str
             ])
         
-        house_table = Table(house_data, colWidths=[3*cm, 5*cm, 4*cm])
+        house_table = Table(house_data, colWidths=[2.5*cm, 5*cm, 4*cm])
         house_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2C2C2C')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTSIZE', (0, 0), (-1, 0), 11),
-            ('FONTSIZE', (0, 1), (-1, -1), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
             ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F9F7F2')),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1CDC7'))
         ]))
         elements.append(house_table)
-        elements.append(Spacer(1, 20))
+        elements.append(Spacer(1, 15))
     
     # Aspects section
     aspects_title = "Aspetti Principali" if lang == "it" else "Main Aspects"
@@ -3322,22 +3327,22 @@ async def generate_natal_chart_pdf(request: Request):
     aspects = natal_chart.get("aspects", [])
     if aspects:
         aspect_data = [["Pianeta 1" if lang == "it" else "Planet 1", "Aspetto" if lang == "it" else "Aspect", "Pianeta 2" if lang == "it" else "Planet 2", "Orbe" if lang == "it" else "Orb"]]
-        for a in aspects[:15]:  # Limit to 15 aspects
+        for a in aspects[:12]:  # Limit to 12 aspects
             aspect_data.append([
-                a.get("planet1", ""),
-                a.get("aspect", ""),
-                a.get("planet2", ""),
+                a.get("planet1", a.get("p1_name", "")),
+                a.get("aspect", a.get("aspect_name", "")),
+                a.get("planet2", a.get("p2_name", "")),
                 f"{a.get('orb', 0):.1f}°"
             ])
         
-        aspect_table = Table(aspect_data, colWidths=[3.5*cm, 4*cm, 3.5*cm, 2*cm])
+        aspect_table = Table(aspect_data, colWidths=[3.5*cm, 3.5*cm, 3.5*cm, 2*cm])
         aspect_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#8A9A5B')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTSIZE', (0, 0), (-1, 0), 11),
-            ('FONTSIZE', (0, 1), (-1, -1), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
             ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F9F7F2')),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1CDC7'))
         ]))
