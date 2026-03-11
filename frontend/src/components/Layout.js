@@ -455,7 +455,8 @@ const Layout = ({ children }) => {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </AnimatedBackground>
   );
 };
 
