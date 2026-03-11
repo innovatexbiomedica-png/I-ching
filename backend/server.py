@@ -600,66 +600,109 @@ This indicates WHERE the situation is evolving and what to expect in the future.
             conversation_context += "\nIMPORTANT: The current response must CONNECT to previous readings, creating a COHERENT NARRATIVE. Reference what emerged before.\n"
 
     if language == "it":
-        user_prompt = f"""La domanda del consultante è: "{question}"
+        user_prompt = f"""
+╔══════════════════════════════════════════════════════════════╗
+║  DOMANDA DEL CONSULTANTE                                      ║
+╚══════════════════════════════════════════════════════════════╝
+
+"{question}"
+
+⚠️ ANALISI DEL SOGGETTO DELLA DOMANDA:
+Prima di tutto, IDENTIFICA con precisione:
+- Chi è il SOGGETTO della domanda? (il consultante stesso? un'altra persona? una relazione?)
+- Cosa viene REALMENTE chiesto? (una previsione? un consiglio? comprensione di una situazione?)
+- C'è un TEMPO specifico menzionato? (ora? futuro? passato?)
+
 {conversation_context}
-=== ESAGRAMMA PRINCIPALE ===
-Nome: {primary_chinese} - {primary_name}
-Numero: {hexagram_data["primary_hexagram"]}
 
-TRIGRAMMA SUPERIORE: {trigramma_sup}
-TRIGRAMMA INFERIORE: {trigramma_inf}
+╔══════════════════════════════════════════════════════════════╗
+║  ESAGRAMMA PRIMARIO: {hexagram_data["primary_hexagram"]}. {primary_chinese} - {primary_name}
+╚══════════════════════════════════════════════════════════════╝
 
-IL GIUDIZIO (SENTENZA TRADIZIONALE):
+TRIGRAMMA SUPERIORE (Esterno/Visibile): {trigramma_sup}
+TRIGRAMMA INFERIORE (Interno/Nascosto): {trigramma_inf}
+
+📜 IL GIUDIZIO DEL RE WEN:
 "{giudizio}"
 
-L'IMMAGINE:
+🎋 L'IMMAGINE:
 "{immagine}"
 
-COMMENTO TRADIZIONALE:
+📖 COMMENTO TRADIZIONALE:
 {commento}
 {moving_lines_details}{derived_details}
 
-ISTRUZIONI:
-Genera un'interpretazione RICCA, PROFONDA e DETTAGLIATA (600-900 parole) che:
-1. Apra con una connessione poetica tra la domanda e il flusso del Tao
-2. Spieghi in dettaglio il significato dell'esagramma e dei suoi trigrammi
-3. Citi e spieghi il Giudizio e l'Immagine in relazione alla domanda specifica
-4. SE CI SONO LINEE MUTEVOLI: dedica un paragrafo COMPLETO a ciascuna, spiegando il testo tradizionale e il suo significato per la situazione del consultante
-5. SE C'È ESAGRAMMA DERIVATO: spiega la trasformazione e cosa indica per il futuro
-6. Concludi con saggezza pratica e un consiglio applicabile
-{"7. SE C'È STORIA DELLA CONVERSAZIONE: collega questa risposta alle stese precedenti, creando una narrazione fluida" if conversation_context else ""}
+╔══════════════════════════════════════════════════════════════╗
+║  ISTRUZIONI PER L'INTERPRETAZIONE                             ║
+╚══════════════════════════════════════════════════════════════╝
 
-Scrivi come un antico maestro taoista, con poesia, profondità e compassione."""
+1. INIZIA identificando CHIARAMENTE il soggetto della domanda
+2. COLLEGA il simbolismo dell'esagramma alla situazione SPECIFICA
+3. SPIEGA il Giudizio: cosa significa PER QUESTA DOMANDA?
+4. ANALIZZA l'Immagine: quale insegnamento pratico ne deriva?
+{"5. LINEE MUTEVOLI - Per OGNI linea che muta, spiega:" if hexagram_data['moving_lines'] else ""}
+{"   - Il testo tradizionale e il suo significato ORIGINALE" if hexagram_data['moving_lines'] else ""}
+{"   - Come si applica CONCRETAMENTE alla situazione del consultante" if hexagram_data['moving_lines'] else ""}
+{"   - Quale AZIONE suggerisce" if hexagram_data['moving_lines'] else ""}
+{"6. TRASFORMAZIONE - L'esagramma derivato indica DOVE PORTA questa situazione. Spiega la direzione." if derived else ""}
+{"7. STORIA - Collega questa risposta alle consultazioni precedenti." if conversation_context else ""}
+
+FINALE: Concludi con un CONSIGLIO PRATICO e SPECIFICO. 
+Non dire "dipende da te" - di' cosa l'I Ching CONSIGLIA di fare.
+
+Lunghezza: 700-1000 parole. Scrivi in modo coinvolgente, NON banale."""
     else:
-        user_prompt = f"""The querent's question is: "{question}"
+        user_prompt = f"""
+╔══════════════════════════════════════════════════════════════╗
+║  QUERENT'S QUESTION                                           ║
+╚══════════════════════════════════════════════════════════════╝
+
+"{question}"
+
+⚠️ QUESTION SUBJECT ANALYSIS:
+First of all, IDENTIFY precisely:
+- Who is the SUBJECT of the question? (the querent? another person? a relationship?)
+- What is REALLY being asked? (a prediction? advice? understanding of a situation?)
+- Is there a SPECIFIC TIME mentioned? (now? future? past?)
+
 {conversation_context}
-=== PRIMARY HEXAGRAM ===
-Name: {primary_chinese} - {primary_name}
-Number: {hexagram_data["primary_hexagram"]}
 
-UPPER TRIGRAM: {trigramma_sup}
-LOWER TRIGRAM: {trigramma_inf}
+╔══════════════════════════════════════════════════════════════╗
+║  PRIMARY HEXAGRAM: {hexagram_data["primary_hexagram"]}. {primary_chinese} - {primary_name}
+╚══════════════════════════════════════════════════════════════╝
 
-THE JUDGMENT (TRADITIONAL SENTENCE):
+UPPER TRIGRAM (External/Visible): {trigramma_sup}
+LOWER TRIGRAM (Internal/Hidden): {trigramma_inf}
+
+📜 KING WEN'S JUDGMENT:
 "{giudizio}"
 
-THE IMAGE:
+🎋 THE IMAGE:
 "{immagine}"
 
-TRADITIONAL COMMENTARY:
+📖 TRADITIONAL COMMENTARY:
 {commento}
 {moving_lines_details}{derived_details}
 
-INSTRUCTIONS:
-Generate a RICH, PROFOUND and DETAILED interpretation (600-900 words) that:
-1. Opens with a poetic connection between the question and the flow of Tao
-2. Explains in detail the meaning of the hexagram and its trigrams
-3. Quotes and explains the Judgment and Image in relation to the specific question
-4. IF THERE ARE MOVING LINES: dedicate a COMPLETE paragraph to each, explaining the traditional text and its meaning for the querent's situation
-5. IF THERE IS A DERIVED HEXAGRAM: explain the transformation and what it indicates for the future
-6. Conclude with practical wisdom and applicable advice
+╔══════════════════════════════════════════════════════════════╗
+║  INTERPRETATION INSTRUCTIONS                                  ║
+╚══════════════════════════════════════════════════════════════╝
 
-Write as an ancient Taoist master, with poetry, depth, and compassion."""
+1. BEGIN by CLEARLY identifying the subject of the question
+2. CONNECT the hexagram's symbolism to the SPECIFIC situation
+3. EXPLAIN the Judgment: what does it mean FOR THIS QUESTION?
+4. ANALYZE the Image: what practical teaching derives from it?
+{"5. MOVING LINES - For EACH changing line, explain:" if hexagram_data['moving_lines'] else ""}
+{"   - The traditional text and its ORIGINAL meaning" if hexagram_data['moving_lines'] else ""}
+{"   - How it applies CONCRETELY to the querent's situation" if hexagram_data['moving_lines'] else ""}
+{"   - What ACTION it suggests" if hexagram_data['moving_lines'] else ""}
+{"6. TRANSFORMATION - The derived hexagram indicates WHERE this situation LEADS. Explain the direction." if derived else ""}
+{"7. HISTORY - Connect this response to previous consultations." if conversation_context else ""}
+
+FINAL: Conclude with PRACTICAL and SPECIFIC advice.
+Don't say "it depends on you" - say what the I Ching ADVISES to do.
+
+Length: 700-1000 words. Write engagingly, NOT banally."""
 
     try:
         chat = LlmChat(
