@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../lib/translations';
+import AnimatedBackground, { MistAnimation } from './AnimatedBackground';
 import { 
   Menu, X, User, LogOut, Globe, ChevronDown, 
   BookOpen, Compass, History, BarChart3, Map, 
