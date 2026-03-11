@@ -13,7 +13,12 @@ import {
   Plus,
   Sparkles,
   Bell,
-  Settings
+  Settings,
+  LogOut,
+  X,
+  Crown,
+  Star,
+  BarChart3
 } from 'lucide-react';
 
 // Mobile Navigation Context
@@ -23,13 +28,14 @@ export const useMobileNav = () => useContext(MobileNavContext);
 
 // Mobile Bottom Navigation Bar Component
 const MobileBottomNav = () => {
-  const { isAuthenticated, language } = useAuth();
+  const { isAuthenticated, language, logout, user } = useAuth();
   const t = useTranslation(language);
   const location = useLocation();
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   // Hide on scroll down, show on scroll up
   useEffect(() => {
