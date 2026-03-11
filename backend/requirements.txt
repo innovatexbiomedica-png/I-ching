@@ -131,3 +131,4 @@ pyswisseph
 httpx
 kerykeion
 reportlab
+cairosvg
