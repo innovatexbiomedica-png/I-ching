@@ -1,5 +1,95 @@
 /* I Ching del Benessere - App Styles */
 
+/* ============================================
+   ANIMATED BACKGROUND STYLES
+   ============================================ */
+
+/* Mist drift animation */
+@keyframes mist-drift {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Float particle animation */
+@keyframes float-particle {
+  0%, 100% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-20px) translateX(10px) rotate(90deg);
+  }
+  50% {
+    transform: translateY(-10px) translateX(-10px) rotate(180deg);
+  }
+  75% {
+    transform: translateY(-30px) translateX(5px) rotate(270deg);
+  }
+}
+
+/* Ken Burns effect for background images */
+@keyframes ken-burns {
+  0% {
+    transform: scale(1) translateX(0);
+  }
+  50% {
+    transform: scale(1.1) translateX(-2%);
+  }
+  100% {
+    transform: scale(1) translateX(0);
+  }
+}
+
+/* Ink brush stroke animation */
+@keyframes brush-stroke {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Fade in with slight rise */
+@keyframes fade-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-ken-burns {
+  animation: ken-burns 30s ease-in-out infinite;
+}
+
+.animate-brush-stroke {
+  animation: brush-stroke 1.5s ease-out forwards;
+}
+
+.animate-fade-rise {
+  animation: fade-rise 0.6s ease-out forwards;
+}
+
+/* Traditional paper texture overlay */
+.paper-texture {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.02;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+/* Ink wash effect for images */
+.ink-wash {
+  filter: grayscale(100%) sepia(15%) contrast(0.95) brightness(1.05);
+}
+
 /* Container utilities */
 .container-zen {
   @apply max-w-7xl mx-auto px-6 md:px-12;
