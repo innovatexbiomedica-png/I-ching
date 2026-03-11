@@ -247,6 +247,28 @@ const MobileBottomNav = () => {
                   {/* Ripple effect */}
                   <span className="absolute inset-0 rounded-full bg-white opacity-0 hover:opacity-20 transition-opacity" />
                 </button>
+              ) : item.path === '/profile/astrology' && isAuthenticated ? (
+                // Profile button opens menu instead of navigating
+                <button
+                  key={item.path}
+                  onClick={handleProfileClick}
+                  className={`flex flex-col items-center justify-center py-2 px-3 rounded-xl transition-all duration-200 ${
+                    showProfileMenu || isActive(item.path)
+                      ? 'text-[#C44D38]'
+                      : 'text-[#595959] hover:text-[#2C2C2C]'
+                  }`}
+                >
+                  <item.icon 
+                    className={`w-6 h-6 mb-1 transition-transform duration-200 ${
+                      showProfileMenu || isActive(item.path) ? 'scale-110' : ''
+                    }`} 
+                  />
+                  <span className={`text-xs font-medium ${
+                    showProfileMenu || isActive(item.path) ? 'font-semibold' : ''
+                  }`}>
+                    {item.label}
+                  </span>
+                </button>
               ) : (
                 <button
                   key={item.path}
