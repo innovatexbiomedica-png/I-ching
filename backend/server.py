@@ -850,27 +850,45 @@ STRUCTURE (350-450 words):
 5. RECOMMENDED ACTION - what to do CONCRETELY"""
 
     if language == "it":
-        user_prompt = f"""Domanda del consultante: "{question}"
+        user_prompt = f"""DOMANDA: "{question}"
 {conversation_context}
+
+⚠️ PRIMA DI TUTTO: Identifica CHI è il soggetto della domanda. La risposta riguarda il consultante stesso o un'altra persona/situazione?
+
 ESAGRAMMA: {hexagram_data["primary_hexagram"]}. {primary_chinese} ({primary_name})
-Sentenza: "{giudizio}"
-{f"Linee mutevoli: {moving_lines_text}" if moving_lines_text else "Nessuna linea mutevole"}
+Sentenza dell'I Ching: "{giudizio}"
+{f"Linee che mutano: {moving_lines_text}" if moving_lines_text else "Nessuna linea mutevole - situazione stabile"}
 {derived_text}
 
-Genera un'interpretazione DIRETTA e D'IMPATTO (300-400 parole) che risponda chiaramente alla domanda.
-Vai dritto al punto. Di' al consultante quello che ha bisogno di sapere.
-{"Collega questa risposta alle domande precedenti nella conversazione." if conversation_context else ""}"""
+ISTRUZIONI:
+1. RISPONDI DIRETTAMENTE alla domanda - niente giri di parole
+2. Basa la risposta sull'esagramma - non su luoghi comuni
+3. Se la domanda chiede "posso avere successo?" → rispondi SE l'esagramma indica successo o meno
+4. DAI UN CONSIGLIO PRATICO alla fine - cosa fare concretamente
+5. NON dire mai "dipende da te" o "solo tu puoi decidere"
+
+Lunghezza: 350-450 parole. Sii CONCRETO e UTILE.
+{"Collega questa risposta alle domande precedenti." if conversation_context else ""}"""
     else:
-        user_prompt = f"""Querent's question: "{question}"
+        user_prompt = f"""QUESTION: "{question}"
 {conversation_context}
+
+⚠️ FIRST OF ALL: Identify WHO is the subject of the question. Does the answer concern the querent or another person/situation?
+
 HEXAGRAM: {hexagram_data["primary_hexagram"]}. {primary_chinese} ({primary_name})
-Judgment: "{giudizio}"
-{f"Moving lines: {moving_lines_text}" if moving_lines_text else "No moving lines"}
+I Ching Judgment: "{giudizio}"
+{f"Changing lines: {moving_lines_text}" if moving_lines_text else "No moving lines - stable situation"}
 {derived_text}
 
-Generate a DIRECT and IMPACTFUL interpretation (300-400 words) that clearly answers the question.
-Get straight to the point. Tell the querent what they need to know.
-{"Connect this response to the previous questions in the conversation." if conversation_context else ""}"""
+INSTRUCTIONS:
+1. ANSWER DIRECTLY the question - no beating around the bush
+2. Base the answer on the hexagram - not on clichés
+3. If the question asks "can I be successful?" → answer IF the hexagram indicates success or not
+4. GIVE PRACTICAL ADVICE at the end - what to do concretely
+5. NEVER say "it depends on you" or "only you can decide"
+
+Length: 350-450 words. Be CONCRETE and USEFUL.
+{"Connect this response to the previous questions." if conversation_context else ""}"""
 
     try:
         chat = LlmChat(
