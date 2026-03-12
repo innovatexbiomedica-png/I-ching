@@ -3550,6 +3550,49 @@ async def generate_natal_chart_pdf(request: Request):
         ]))
         elements.append(aspect_table)
     
+    # AI Interpretation section
+    ai_interpretation = natal_chart.get("ai_interpretation")
+    if ai_interpretation:
+        elements.append(Spacer(1, 25))
+        interp_title = "Interpretazione Personalizzata" if lang == "it" else "Personalized Interpretation"
+        elements.append(Paragraph(interp_title, subtitle_style))
+        
+        # Style per interpretazione
+        interp_style = ParagraphStyle(
+            'Interpretation',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceAfter=10,
+            textColor=colors.HexColor('#2C2C2C'),
+            leading=14
+        )
+        
+        interp_heading_style = ParagraphStyle(
+            'InterpHeading',
+            parent=styles['Heading3'],
+            fontSize=12,
+            spaceBefore=15,
+            spaceAfter=8,
+            textColor=colors.HexColor('#C44D38')
+        )
+        
+        # Processa l'interpretazione
+        lines = ai_interpretation.split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            # Rimuovi markdown
+            clean_line = line.replace('**', '').replace('##', '').replace('###', '').strip()
+            
+            if line.startswith('## ') or line.startswith('### ') or (line.startswith('**') and line.endswith('**')):
+                elements.append(Paragraph(clean_line, interp_heading_style))
+            else:
+                # Escape caratteri HTML
+                clean_line = clean_line.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                elements.append(Paragraph(clean_line, interp_style))
+    
     # Footer
     elements.append(Spacer(1, 30))
     footer_text = "I Ching del Benessere - L'antica saggezza per il mondo moderno" if lang == "it" else "I Ching del Benessere - Ancient wisdom for the modern world"
