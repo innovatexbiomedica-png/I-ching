@@ -3376,12 +3376,13 @@ async def get_saved_natal_chart(request: Request):
 
 @api_router.get("/natal-chart/pdf")
 async def generate_natal_chart_pdf(request: Request):
-    """Generate a PDF of the user's natal chart"""
+    """Generate a complete PDF of the user's natal chart - includes everything visible on page"""
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
     from reportlab.lib.units import cm
+    from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
     import io
     
     user = await get_current_user(request)
@@ -3393,69 +3394,348 @@ async def generate_natal_chart_pdf(request: Request):
     
     # Create PDF buffer
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm, leftMargin=2*cm, rightMargin=2*cm)
+    doc = SimpleDocTemplate(
+        buffer, 
+        pagesize=A4, 
+        topMargin=1.5*cm, 
+        bottomMargin=1.5*cm, 
+        leftMargin=1.5*cm, 
+        rightMargin=1.5*cm
+    )
     
     # Styles
     styles = getSampleStyleSheet()
+    
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
-        fontSize=24,
-        spaceAfter=30,
+        fontSize=28,
+        spaceAfter=20,
         textColor=colors.HexColor('#C44D38'),
-        alignment=1  # Center
+        alignment=TA_CENTER
     )
+    
     subtitle_style = ParagraphStyle(
         'CustomSubtitle',
         parent=styles['Heading2'],
-        fontSize=14,
-        spaceBefore=20,
-        spaceAfter=10,
+        fontSize=16,
+        spaceBefore=25,
+        spaceAfter=12,
+        textColor=colors.HexColor('#C44D38'),
+        borderColor=colors.HexColor('#C44D38'),
+        borderWidth=0,
+        borderPadding=5
+    )
+    
+    section_style = ParagraphStyle(
+        'SectionTitle',
+        parent=styles['Heading3'],
+        fontSize=13,
+        spaceBefore=15,
+        spaceAfter=8,
         textColor=colors.HexColor('#2C2C2C')
     )
+    
     body_style = ParagraphStyle(
         'CustomBody',
         parent=styles['Normal'],
         fontSize=10,
+        spaceAfter=6,
+        textColor=colors.HexColor('#595959'),
+        leading=14
+    )
+    
+    info_style = ParagraphStyle(
+        'InfoStyle',
+        parent=styles['Normal'],
+        fontSize=11,
+        spaceAfter=4,
+        textColor=colors.HexColor('#2C2C2C'),
+        leading=16
+    )
+    
+    planet_desc_style = ParagraphStyle(
+        'PlanetDesc',
+        parent=styles['Normal'],
+        fontSize=9,
         spaceAfter=8,
-        textColor=colors.HexColor('#595959')
+        textColor=colors.HexColor('#595959'),
+        leading=12,
+        alignment=TA_JUSTIFY
     )
     
     elements = []
     
-    # Title
-    title = "Tema Natale" if lang == "it" else "Natal Chart"
+    # ========== TITLE PAGE ==========
+    elements.append(Spacer(1, 2*cm))
+    title = "☯ TEMA NATALE ☯" if lang == "it" else "☯ NATAL CHART ☯"
     elements.append(Paragraph(title, title_style))
     
-    # Birth info - use 'subject' key from natal_chart
-    subject_info = natal_chart.get("subject", {})
-    name = subject_info.get("name", user.get("name", "N/A"))
-    birth_date = subject_info.get("birth_date", "N/A")
-    birth_time = subject_info.get("birth_time", "N/A")
-    birth_place = subject_info.get("birth_place", "N/A")
+    # Subtitle with name
+    subject = natal_chart.get("subject", {})
+    name = subject.get("name", user.get("name", ""))
+    if name:
+        name_style = ParagraphStyle(
+            'NameStyle',
+            parent=styles['Heading2'],
+            fontSize=20,
+            spaceAfter=30,
+            textColor=colors.HexColor('#2C2C2C'),
+            alignment=TA_CENTER
+        )
+        elements.append(Paragraph(name, name_style))
     
-    info_text = f"""
-    <b>{'Nome' if lang == 'it' else 'Name'}:</b> {name}<br/>
-    <b>{'Data di nascita' if lang == 'it' else 'Birth Date'}:</b> {birth_date}<br/>
-    <b>{'Ora di nascita' if lang == 'it' else 'Birth Time'}:</b> {birth_time}<br/>
-    <b>{'Luogo di nascita' if lang == 'it' else 'Birth Place'}:</b> {birth_place}
+    elements.append(Spacer(1, 1*cm))
+    
+    # Birth info box
+    birth_date = subject.get("birth_date", "N/A")
+    birth_time = subject.get("birth_time", "N/A")
+    birth_place = subject.get("birth_place", "N/A")
+    
+    birth_info = f"""
+    <b>📅 {'Data di Nascita' if lang == 'it' else 'Birth Date'}:</b> {birth_date}<br/>
+    <b>🕐 {'Ora di Nascita' if lang == 'it' else 'Birth Time'}:</b> {birth_time}<br/>
+    <b>📍 {'Luogo di Nascita' if lang == 'it' else 'Birth Place'}:</b> {birth_place}
     """
-    elements.append(Paragraph(info_text, body_style))
-    elements.append(Spacer(1, 15))
+    elements.append(Paragraph(birth_info, info_style))
+    elements.append(Spacer(1, 1*cm))
     
-    # Ascendant info
+    # Key positions
     ascendant = natal_chart.get("ascendant", {})
-    if ascendant:
-        asc_text = f"<b>{'Ascendente' if lang == 'it' else 'Ascendant'}:</b> {ascendant.get('sign', 'N/A')} {ascendant.get('sign_symbol', '')} ({ascendant.get('degree_formatted', '')})"
-        elements.append(Paragraph(asc_text, body_style))
-    
-    # Midheaven info
     midheaven = natal_chart.get("midheaven", {})
-    if midheaven:
-        mc_text = f"<b>{'Medio Cielo' if lang == 'it' else 'Midheaven'}:</b> {midheaven.get('sign', 'N/A')} {midheaven.get('sign_symbol', '')} ({midheaven.get('degree_formatted', '')})"
-        elements.append(Paragraph(mc_text, body_style))
     
-    elements.append(Spacer(1, 20))
+    key_positions = f"""
+    <b>⬆️ {'Ascendente' if lang == 'it' else 'Ascendant'}:</b> {ascendant.get('sign', 'N/A')} {ascendant.get('sign_symbol', '')} ({ascendant.get('degree_formatted', '')})<br/>
+    <b>🎯 {'Medio Cielo (MC)' if lang == 'it' else 'Midheaven (MC)'}:</b> {midheaven.get('sign', 'N/A')} {midheaven.get('sign_symbol', '')} ({midheaven.get('degree_formatted', '')})
+    """
+    elements.append(Paragraph(key_positions, info_style))
+    
+    # ========== CHART IMAGE ==========
+    svg_data = natal_chart.get("chart_svg")
+    if svg_data:
+        try:
+            import cairosvg
+            # Convert SVG to PNG
+            png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'), output_width=500, output_height=500)
+            img_buffer = io.BytesIO(png_data)
+            img = Image(img_buffer, width=14*cm, height=14*cm)
+            img.hAlign = 'CENTER'
+            elements.append(Spacer(1, 0.5*cm))
+            elements.append(img)
+            elements.append(Spacer(1, 0.5*cm))
+        except Exception as e:
+            logger.warning(f"Could not convert SVG to image: {e}")
+            elements.append(Paragraph(f"<i>({'Grafico non disponibile' if lang == 'it' else 'Chart not available'})</i>", body_style))
+    
+    elements.append(PageBreak())
+    
+    # ========== PLANETS SECTION ==========
+    planets_title = "🪐 POSIZIONI PLANETARIE" if lang == "it" else "🪐 PLANETARY POSITIONS"
+    elements.append(Paragraph(planets_title, subtitle_style))
+    
+    planets = natal_chart.get("planets", [])
+    
+    # Descrizioni dei pianeti
+    planet_meanings_it = {
+        "Sun": ("☀️ SOLE - L'Essenza dell'Io", "Il Sole rappresenta la tua identità fondamentale, il tuo ego e la tua vitalità. Indica chi sei veramente nel profondo, la tua volontà e il tuo scopo di vita."),
+        "Moon": ("🌙 LUNA - Il Mondo Emotivo", "La Luna governa le tue emozioni, l'intuizione e il subconscio. Rappresenta come reagisci emotivamente, i tuoi bisogni di sicurezza e il rapporto con la figura materna."),
+        "Mercury": ("☿️ MERCURIO - La Mente", "Mercurio governa la comunicazione, il pensiero e l'intelletto. Indica come pensi, parli, scrivi e come elabori le informazioni."),
+        "Venus": ("♀️ VENERE - L'Amore e la Bellezza", "Venere rappresenta l'amore, la bellezza, i valori e il piacere. Indica come ami, cosa trovi attraente e come ti relazioni negli affetti."),
+        "Mars": ("♂️ MARTE - L'Azione e l'Energia", "Marte governa l'energia, l'azione, l'aggressività e il desiderio sessuale. Indica come agisci, combatti per i tuoi obiettivi e esprimi la rabbia."),
+        "Jupiter": ("♃ GIOVE - L'Espansione", "Giove rappresenta la fortuna, l'espansione, l'ottimismo e la crescita. Indica dove trovi abbondanza, opportunità e come ti espandi."),
+        "Saturn": ("♄ SATURNO - La Struttura", "Saturno governa la disciplina, la responsabilità, i limiti e le lezioni karmiche. Indica dove devi lavorare duramente e maturare."),
+        "Uranus": ("♅ URANO - Il Cambiamento", "Urano rappresenta l'innovazione, la ribellione, l'originalità e i cambiamenti improvvisi. Indica dove sei unico e anticonvenzionale."),
+        "Neptune": ("♆ NETTUNO - L'Ispirazione", "Nettuno governa i sogni, l'intuizione, la spiritualità e l'illusione. Indica dove cerchi trascendenza e connessione spirituale."),
+        "Pluto": ("♇ PLUTONE - La Trasformazione", "Plutone rappresenta la trasformazione profonda, il potere, la rinascita e l'inconscio collettivo. Indica dove vivi trasformazioni intense.")
+    }
+    
+    planet_meanings_en = {
+        "Sun": ("☀️ SUN - The Essence of Self", "The Sun represents your fundamental identity, ego and vitality. It indicates who you truly are, your will and life purpose."),
+        "Moon": ("🌙 MOON - The Emotional World", "The Moon governs your emotions, intuition and subconscious. It represents how you react emotionally and your security needs."),
+        "Mercury": ("☿️ MERCURY - The Mind", "Mercury governs communication, thought and intellect. It indicates how you think, speak and process information."),
+        "Venus": ("♀️ VENUS - Love and Beauty", "Venus represents love, beauty, values and pleasure. It indicates how you love and what you find attractive."),
+        "Mars": ("♂️ MARS - Action and Energy", "Mars governs energy, action, aggression and sexual desire. It indicates how you act and fight for your goals."),
+        "Jupiter": ("♃ JUPITER - Expansion", "Jupiter represents fortune, expansion, optimism and growth. It indicates where you find abundance and opportunities."),
+        "Saturn": ("♄ SATURN - Structure", "Saturn governs discipline, responsibility, limits and karmic lessons. It indicates where you must work hard and mature."),
+        "Uranus": ("♅ URANUS - Change", "Uranus represents innovation, rebellion, originality and sudden changes. It indicates where you are unique."),
+        "Neptune": ("♆ NEPTUNE - Inspiration", "Neptune governs dreams, intuition, spirituality and illusion. It indicates where you seek transcendence."),
+        "Pluto": ("♇ PLUTO - Transformation", "Pluto represents deep transformation, power, rebirth and the collective unconscious.")
+    }
+    
+    planet_meanings = planet_meanings_it if lang == "it" else planet_meanings_en
+    
+    for p in planets:
+        planet_name = p.get("name", "")
+        meaning = planet_meanings.get(planet_name, (planet_name, ""))
+        
+        # Planet header with position
+        retro = " ℞" if p.get("retrograde") else ""
+        header = f"<b>{meaning[0]}</b>"
+        elements.append(Paragraph(header, section_style))
+        
+        position_info = f"<b>Posizione:</b> {p.get('sign', '')} {p.get('sign_symbol', '')} a {p.get('degree_formatted', '')} - Casa {p.get('house', 'N/A')}{retro}"
+        elements.append(Paragraph(position_info, body_style))
+        
+        if meaning[1]:
+            elements.append(Paragraph(meaning[1], planet_desc_style))
+        
+        elements.append(Spacer(1, 0.3*cm))
+    
+    elements.append(PageBreak())
+    
+    # ========== HOUSES SECTION ==========
+    houses_title = "🏠 CASE ASTROLOGICHE" if lang == "it" else "🏠 ASTROLOGICAL HOUSES"
+    elements.append(Paragraph(houses_title, subtitle_style))
+    
+    house_meanings_it = {
+        1: ("Casa 1 - L'Io", "Personalità, aspetto fisico, come ti presenti al mondo"),
+        2: ("Casa 2 - I Valori", "Denaro, possedimenti, autostima, sicurezza materiale"),
+        3: ("Casa 3 - La Comunicazione", "Comunicazione, fratelli, viaggi brevi, apprendimento"),
+        4: ("Casa 4 - La Casa", "Famiglia, radici, casa, vita privata, il padre"),
+        5: ("Casa 5 - La Creatività", "Creatività, figli, romanticismo, piaceri, gioco"),
+        6: ("Casa 6 - Il Servizio", "Salute, lavoro quotidiano, routine, servizio agli altri"),
+        7: ("Casa 7 - Le Relazioni", "Matrimonio, partnership, contratti, nemici dichiarati"),
+        8: ("Casa 8 - La Trasformazione", "Morte, rinascita, sessualità, eredità, occulto"),
+        9: ("Casa 9 - L'Espansione", "Filosofia, viaggi lunghi, istruzione superiore, spiritualità"),
+        10: ("Casa 10 - La Carriera", "Carriera, reputazione, status sociale, la madre"),
+        11: ("Casa 11 - Gli Ideali", "Amicizie, gruppi, speranze, sogni, progetti futuri"),
+        12: ("Casa 12 - L'Inconscio", "Inconscio, karma, isolamento, spiritualità, nemici nascosti")
+    }
+    
+    house_meanings_en = {
+        1: ("House 1 - The Self", "Personality, physical appearance, how you present yourself"),
+        2: ("House 2 - Values", "Money, possessions, self-esteem, material security"),
+        3: ("House 3 - Communication", "Communication, siblings, short trips, learning"),
+        4: ("House 4 - Home", "Family, roots, home, private life, father"),
+        5: ("House 5 - Creativity", "Creativity, children, romance, pleasures, play"),
+        6: ("House 6 - Service", "Health, daily work, routine, service to others"),
+        7: ("House 7 - Relationships", "Marriage, partnerships, contracts, open enemies"),
+        8: ("House 8 - Transformation", "Death, rebirth, sexuality, inheritance, occult"),
+        9: ("House 9 - Expansion", "Philosophy, long trips, higher education, spirituality"),
+        10: ("House 10 - Career", "Career, reputation, social status, mother"),
+        11: ("House 11 - Ideals", "Friendships, groups, hopes, dreams, future projects"),
+        12: ("House 12 - Unconscious", "Unconscious, karma, isolation, spirituality, hidden enemies")
+    }
+    
+    house_meanings = house_meanings_it if lang == "it" else house_meanings_en
+    houses = natal_chart.get("houses", [])
+    
+    for h in houses:
+        house_num = h.get("number", 0)
+        meaning = house_meanings.get(house_num, (f"Casa {house_num}", ""))
+        
+        header = f"<b>{meaning[0]}</b>"
+        elements.append(Paragraph(header, section_style))
+        
+        position_info = f"<b>Cuspide:</b> {h.get('sign', '')} {h.get('sign_symbol', '')} a {h.get('degree_formatted', '')}"
+        elements.append(Paragraph(position_info, body_style))
+        
+        if meaning[1]:
+            elements.append(Paragraph(f"<i>{meaning[1]}</i>", planet_desc_style))
+        
+        elements.append(Spacer(1, 0.2*cm))
+    
+    elements.append(PageBreak())
+    
+    # ========== ASPECTS SECTION ==========
+    aspects_title = "✨ ASPETTI PRINCIPALI" if lang == "it" else "✨ MAIN ASPECTS"
+    elements.append(Paragraph(aspects_title, subtitle_style))
+    
+    aspect_meanings_it = {
+        "Conjunction": ("Congiunzione (0°)", "Fusione di energie - intensità e concentrazione"),
+        "Congiunzione": ("Congiunzione (0°)", "Fusione di energie - intensità e concentrazione"),
+        "Opposition": ("Opposizione (180°)", "Tensione e polarità - necessità di equilibrio"),
+        "Opposizione": ("Opposizione (180°)", "Tensione e polarità - necessità di equilibrio"),
+        "Trine": ("Trigono (120°)", "Armonia e fluidità - talenti naturali"),
+        "Trigono": ("Trigono (120°)", "Armonia e fluidità - talenti naturali"),
+        "Square": ("Quadrato (90°)", "Sfida e tensione - crescita attraverso ostacoli"),
+        "Quadrato": ("Quadrato (90°)", "Sfida e tensione - crescita attraverso ostacoli"),
+        "Sextile": ("Sestile (60°)", "Opportunità e cooperazione - potenziale da sviluppare"),
+        "Sestile": ("Sestile (60°)", "Opportunità e cooperazione - potenziale da sviluppare")
+    }
+    
+    aspects = natal_chart.get("aspects", [])
+    major_aspects = [a for a in aspects if a.get('aspect_name') in aspect_meanings_it.keys()][:15]
+    
+    for a in major_aspects:
+        aspect_name = a.get('aspect_name', '')
+        meaning = aspect_meanings_it.get(aspect_name, (aspect_name, ""))
+        
+        aspect_text = f"<b>{a.get('p1_name', '')} {meaning[0]} {a.get('p2_name', '')}</b> (orbe: {a.get('orb', 0):.1f}°)"
+        elements.append(Paragraph(aspect_text, body_style))
+        
+        if meaning[1]:
+            elements.append(Paragraph(f"<i>{meaning[1]}</i>", planet_desc_style))
+    
+    # ========== AI INTERPRETATION ==========
+    ai_interpretation = natal_chart.get("ai_interpretation")
+    if ai_interpretation:
+        elements.append(PageBreak())
+        
+        interp_title = "🔮 INTERPRETAZIONE PERSONALIZZATA" if lang == "it" else "🔮 PERSONALIZED INTERPRETATION"
+        elements.append(Paragraph(interp_title, subtitle_style))
+        
+        interp_body_style = ParagraphStyle(
+            'InterpBody',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceAfter=8,
+            textColor=colors.HexColor('#2C2C2C'),
+            leading=14,
+            alignment=TA_JUSTIFY
+        )
+        
+        interp_heading_style = ParagraphStyle(
+            'InterpHeading',
+            parent=styles['Heading3'],
+            fontSize=12,
+            spaceBefore=12,
+            spaceAfter=6,
+            textColor=colors.HexColor('#C44D38')
+        )
+        
+        lines = ai_interpretation.split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            clean_line = line.replace('**', '').replace('##', '').replace('###', '').strip()
+            clean_line = clean_line.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            
+            if line.startswith('## ') or line.startswith('### ') or (line.startswith('**') and line.endswith('**')):
+                elements.append(Paragraph(clean_line, interp_heading_style))
+            else:
+                elements.append(Paragraph(clean_line, interp_body_style))
+    
+    # ========== FOOTER ==========
+    elements.append(Spacer(1, 1*cm))
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.HexColor('#888888'),
+        alignment=TA_CENTER
+    )
+    
+    from datetime import datetime
+    footer_text = f"I Ching del Benessere • {datetime.now().strftime('%d/%m/%Y %H:%M')} • L'antica saggezza per il mondo moderno"
+    elements.append(Paragraph(footer_text, footer_style))
+    
+    # Build PDF
+    doc.build(elements)
+    
+    buffer.seek(0)
+    pdf_content = buffer.getvalue()
+    
+    from fastapi.responses import Response
+    return Response(
+        content=pdf_content,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=tema_natale_{name or 'chart'}.pdf"
+        }
+    )
     
     # Planets section
     planets_title = "Posizioni Planetarie" if lang == "it" else "Planetary Positions"
