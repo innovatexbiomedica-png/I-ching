@@ -3329,17 +3329,14 @@ MAIN ASPECTS:
 Generate a COMPLETE and PERSONALIZED interpretation following the indicated structure."""
 
     try:
-        llm = LlmChat(
+        chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
-            model="gemini-2.0-flash"
-        )
+            session_id=f"natal-chart-{uuid.uuid4()}",
+            system_message=system_prompt
+        ).with_model("gemini", "gemini-2.0-flash")
         
-        response = await llm.send_async(
-            system_prompt=system_prompt,
-            messages=[UserMessage(content=user_prompt)]
-        )
-        
-        interpretation = response.content if hasattr(response, 'content') else str(response)
+        response = await chat.send_message(UserMessage(text=user_prompt))
+        interpretation = response if isinstance(response, str) else str(response)
         
         # Salva l'interpretazione nel profilo utente
         await db.users.update_one(
