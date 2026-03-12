@@ -3330,7 +3330,7 @@ Generate a COMPLETE and PERSONALIZED interpretation following the indicated stru
 
     try:
         llm = LlmChat(
-            api_key=EMERGENT_API_KEY,
+            api_key=EMERGENT_LLM_KEY,
             model="gemini-2.0-flash"
         )
         
