@@ -3159,6 +3159,208 @@ async def generate_natal_chart(request: Request, chart_request: NatalChartReques
     return result
 
 
+@api_router.post("/natal-chart/interpret")
+async def generate_natal_chart_interpretation(request: Request):
+    """
+    Genera un'interpretazione AI completa e personalizzata del tema natale.
+    Analizza pianeti, case, aspetti e crea una lettura profonda.
+    """
+    user = await get_current_user(request)
+    lang = user.get("language", "it")
+    
+    natal_chart = user.get("natal_chart")
+    if not natal_chart:
+        raise HTTPException(status_code=404, detail="Genera prima il tema natale")
+    
+    # Prepara i dati per l'interpretazione
+    subject = natal_chart.get("subject", {})
+    ascendant = natal_chart.get("ascendant", {})
+    midheaven = natal_chart.get("midheaven", {})
+    planets = natal_chart.get("planets", [])
+    houses = natal_chart.get("houses", [])
+    aspects = natal_chart.get("aspects", [])
+    
+    # Costruisci il prompt per l'AI
+    planets_text = "\n".join([
+        f"- {p.get('name')} {p.get('symbol', '')} in {p.get('sign')} {p.get('sign_symbol', '')} a {p.get('degree_formatted', '')} (Casa {p.get('house', 'N/A')}){' - RETROGRADO' if p.get('retrograde') else ''}"
+        for p in planets
+    ])
+    
+    houses_text = "\n".join([
+        f"- Casa {h.get('number')}: {h.get('sign')} {h.get('sign_symbol', '')} a {h.get('degree_formatted', '')}"
+        for h in houses
+    ])
+    
+    # Seleziona gli aspetti più importanti
+    major_aspects = [a for a in aspects if a.get('aspect_name') in ['Conjunction', 'Opposition', 'Trine', 'Square', 'Sextile', 'Congiunzione', 'Opposizione', 'Trigono', 'Quadrato', 'Sestile']][:12]
+    aspects_text = "\n".join([
+        f"- {a.get('p1_name', '')} {a.get('aspect_name', '')} {a.get('p2_name', '')} (orbe: {a.get('orb', 0):.1f}°)"
+        for a in major_aspects
+    ])
+    
+    if lang == "it":
+        system_prompt = """Sei un astrologo professionista con 30 anni di esperienza nell'interpretazione dei temi natali.
+Il tuo compito è fornire un'interpretazione COMPLETA, PROFONDA e PERSONALIZZATA del tema natale.
+
+STILE:
+- Scrivi in modo coinvolgente e personale, rivolgendoti direttamente alla persona
+- Usa un linguaggio chiaro ma evocativo
+- Ogni sezione deve essere ricca di significato, non superficiale
+- Collega gli elementi tra loro per creare un quadro coerente della personalità
+
+STRUTTURA DELL'INTERPRETAZIONE:
+
+1. **PANORAMICA GENERALE** (2-3 paragrafi)
+   - Sintesi dell'energia complessiva del tema
+   - I temi principali della vita
+   - Il "filo conduttore" della personalità
+
+2. **L'ASCENDENTE E LA MASCHERA SOCIALE** (1-2 paragrafi)
+   - Come la persona si presenta al mondo
+   - Prime impressioni che dà agli altri
+   - Il suo approccio alla vita
+
+3. **IL SOLE: L'ESSENZA DELL'IO** (1-2 paragrafi)
+   - L'identità profonda
+   - Cosa la motiva veramente
+   - Il suo scopo di vita
+
+4. **LA LUNA: IL MONDO EMOTIVO** (1-2 paragrafi)
+   - Come vive e processa le emozioni
+   - Bisogni emotivi profondi
+   - Rapporto con la figura materna e il nutrimento
+
+5. **MERCURIO, VENERE E MARTE: COMUNICAZIONE, AMORE E AZIONE** (2-3 paragrafi)
+   - Stile comunicativo e mentale
+   - Come ama e cosa cerca nelle relazioni
+   - Come agisce e persegue i suoi obiettivi
+
+6. **GIOVE E SATURNO: ESPANSIONE E STRUTTURA** (1-2 paragrafi)
+   - Dove trova fortuna e crescita
+   - Le sue sfide karmiche e lezioni di vita
+   - Il rapporto con l'autorità
+
+7. **I PIANETI GENERAZIONALI: URANO, NETTUNO, PLUTONE** (1 paragrafo)
+   - Influenze collettive sulla generazione
+   - Trasformazioni profonde
+
+8. **GLI ASPETTI PRINCIPALI** (2-3 paragrafi)
+   - I talenti naturali (trigoni, sestili)
+   - Le sfide da superare (quadrati, opposizioni)
+   - Le energie concentrate (congiunzioni)
+
+9. **LE CASE PIÙ IMPORTANTI** (1-2 paragrafi)
+   - Dove si concentra l'energia
+   - Aree di vita in focus
+
+10. **SINTESI FINALE E CONSIGLI** (1-2 paragrafi)
+    - Il messaggio principale del tema
+    - Consigli pratici per la crescita personale
+
+IMPORTANTE:
+- Lunghezza totale: 1500-2500 parole
+- Sii SPECIFICO, non generico
+- Ogni affermazione deve basarsi sui dati astrologici forniti
+- Crea connessioni tra i vari elementi"""
+
+        user_prompt = f"""Analizza e interpreta questo TEMA NATALE:
+
+DATI DI NASCITA:
+- Nome: {subject.get('name', 'N/A')}
+- Data: {subject.get('birth_date', 'N/A')}
+- Ora: {subject.get('birth_time', 'N/A')}
+- Luogo: {subject.get('birth_place', 'N/A')}
+
+ASCENDENTE: {ascendant.get('sign', 'N/A')} {ascendant.get('sign_symbol', '')} a {ascendant.get('degree_formatted', '')}
+
+MEDIO CIELO (MC): {midheaven.get('sign', 'N/A')} {midheaven.get('sign_symbol', '')} a {midheaven.get('degree_formatted', '')}
+
+POSIZIONI PLANETARIE:
+{planets_text}
+
+CASE ASTROLOGICHE:
+{houses_text}
+
+ASPETTI PRINCIPALI:
+{aspects_text}
+
+Genera un'interpretazione COMPLETA e PERSONALIZZATA seguendo la struttura indicata.
+Ricorda: questa persona leggerà l'interpretazione cercando di capire se stessa. Sii profondo, accurato e utile."""
+
+    else:
+        system_prompt = """You are a professional astrologer with 30 years of experience in natal chart interpretation.
+Your task is to provide a COMPLETE, DEEP and PERSONALIZED interpretation of the natal chart.
+
+STYLE:
+- Write in an engaging and personal way, addressing the person directly
+- Use clear but evocative language
+- Each section must be rich in meaning, not superficial
+- Connect elements together to create a coherent picture of personality
+
+[Similar structure as Italian version...]
+
+IMPORTANT:
+- Total length: 1500-2500 words
+- Be SPECIFIC, not generic
+- Every statement must be based on the astrological data provided
+- Create connections between various elements"""
+
+        user_prompt = f"""Analyze and interpret this NATAL CHART:
+
+BIRTH DATA:
+- Name: {subject.get('name', 'N/A')}
+- Date: {subject.get('birth_date', 'N/A')}
+- Time: {subject.get('birth_time', 'N/A')}
+- Place: {subject.get('birth_place', 'N/A')}
+
+ASCENDANT: {ascendant.get('sign', 'N/A')} {ascendant.get('sign_symbol', '')} at {ascendant.get('degree_formatted', '')}
+
+MIDHEAVEN (MC): {midheaven.get('sign', 'N/A')} {midheaven.get('sign_symbol', '')} at {midheaven.get('degree_formatted', '')}
+
+PLANETARY POSITIONS:
+{planets_text}
+
+ASTROLOGICAL HOUSES:
+{houses_text}
+
+MAIN ASPECTS:
+{aspects_text}
+
+Generate a COMPLETE and PERSONALIZED interpretation following the indicated structure."""
+
+    try:
+        llm = LlmChat(
+            api_key=EMERGENT_API_KEY,
+            model="gemini-2.0-flash"
+        )
+        
+        response = await llm.send_async(
+            system_prompt=system_prompt,
+            messages=[UserMessage(content=user_prompt)]
+        )
+        
+        interpretation = response.content if hasattr(response, 'content') else str(response)
+        
+        # Salva l'interpretazione nel profilo utente
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {
+                "natal_chart.ai_interpretation": interpretation,
+                "natal_chart.interpretation_generated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        return {
+            "success": True,
+            "interpretation": interpretation,
+            "generated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error generating natal chart interpretation: {e}")
+        raise HTTPException(status_code=500, detail=f"Errore nella generazione dell'interpretazione: {str(e)}")
+
+
 @api_router.get("/natal-chart")
 async def get_saved_natal_chart(request: Request):
     """Get user's saved natal chart if available"""
