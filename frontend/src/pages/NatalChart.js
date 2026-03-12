@@ -280,6 +280,36 @@ const NatalChart = () => {
     }
   };
 
+  // Download DOCX (editabile)
+  const downloadDOCX = async () => {
+    try {
+      toast.loading(language === 'it' ? 'Generazione documento Word...' : 'Generating Word document...', { id: 'docx-loading' });
+      
+      const response = await axios.get(`${API}/natal-chart/docx`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+        responseType: 'blob'
+      });
+      
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tema_natale_${chartData?.subject?.name || formData.name || 'chart'}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      toast.success(language === 'it' ? 'Documento Word scaricato!' : 'Word document downloaded!', { id: 'docx-loading' });
+    } catch (error) {
+      console.error('Error downloading DOCX:', error);
+      toast.error(
+        language === 'it' 
+          ? 'Errore nella generazione del documento' 
+          : 'Error generating document',
+        { id: 'docx-loading' }
+      );
+    }
+  };
+
   if (loading || generating) {
     return (
       <div className="page-container">
