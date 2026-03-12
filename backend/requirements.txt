@@ -132,3 +132,4 @@ httpx
 kerykeion
 reportlab
 cairosvg
+python-docx
