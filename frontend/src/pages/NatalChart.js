@@ -17,7 +17,9 @@ import {
   ChevronDown,
   ChevronUp,
   Sun,
-  Moon
+  Moon,
+  Wand2,
+  FileText
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import InteractiveNatalChart from '../components/InteractiveNatalChart';
@@ -28,13 +30,16 @@ const NatalChart = () => {
   const { language, getToken, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [generatingInterpretation, setGeneratingInterpretation] = useState(false);
   const [chartData, setChartData] = useState(null);
+  const [aiInterpretation, setAiInterpretation] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [profileData, setProfileData] = useState(null);
   const [expandedSections, setExpandedSections] = useState({
     planets: true,
     houses: false,
-    aspects: true
+    aspects: true,
+    interpretation: true
   });
   
   const [formData, setFormData] = useState({
