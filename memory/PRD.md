@@ -25,7 +25,7 @@ Creare un sito "I Ching del Benessere" basato sulla divinazione cinese + astrolo
 - [x] Tema Natale (natal chart) generation with Kerykeion
 - [x] Interactive zodiac wheel (SVG)
 - [x] AI interpretation of natal chart
-- [x] Export: SVG download, PDF with chart image, DOCX editable
+- [x] Export: SVG download (with resolved CSS vars), PDF with colorful chart image, DOCX editable with chart
 - [x] PWA (manifest, service worker)
 - [x] Animated background (Chinese art)
 - [x] Mobile navigation with logout
@@ -39,17 +39,24 @@ Creare un sito "I Ching del Benessere" basato sulla divinazione cinese + astrolo
 - Deep + Direct AI interpretation styles
 - Natal chart generation, interactive SVG wheel
 - AI interpretation of natal chart
-- Export: SVG, PDF (with chart image + aspects), DOCX (editable, with chart image + aspects)
+- Export: SVG (CSS vars resolved), PDF (colorful chart 800x800 + aspects + interpretations), DOCX (editable, colorful chart + all data)
+- CSS Variable Resolution: resolve_svg_css_variables() function converts Kerykeion SVG with CSS custom properties to inline colors for CairoSVG compatibility
 - PWA manifest + service worker
 - Animated Chinese art background
 - Mobile navigation with logout
 - Auto-premium for all users (testing mode)
 
+## Key Technical Fix (March 2026)
+- Kerykeion SVG uses 98 CSS custom properties (var(--kerykeion-chart-color-*))
+- CairoSVG does not support CSS variables - was rendering everything as black
+- Created resolve_svg_css_variables() in server.py to parse and inline all CSS vars before conversion
+- New /api/natal-chart/svg endpoint serves resolved SVG for standalone download
+
 ## Prioritized Backlog
 
 ### P0 - DONE
-- [x] All three natal chart exports (SVG, PDF, DOCX) working correctly
-- [x] Chart image visible in PDF and DOCX
+- [x] All three natal chart exports (SVG, PDF, DOCX) working correctly with colorful chart
+- [x] Chart image visible in PDF and DOCX (was black circle, now resolved)
 - [x] Aspect names (planet1_name/planet2_name) correct in exports
 - [x] DOCX download button added to frontend
 

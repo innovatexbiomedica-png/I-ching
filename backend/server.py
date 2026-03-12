@@ -51,6 +51,64 @@ api_router = APIRouter(prefix="/api")
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# ============== SVG CSS VARIABLE RESOLVER ==============
+import re
+
+def resolve_svg_css_variables(svg_content: str) -> str:
+    """
+    Resolve CSS custom properties (var(--name)) in SVG content.
+    CairoSVG does not support CSS variables, so we must inline them.
+    """
+    # Extract CSS variables from <style> blocks
+    css_vars = {}
+    style_match = re.search(r'<style[^>]*>(.*?)</style>', svg_content, re.DOTALL)
+    if not style_match:
+        return svg_content
+    
+    style_content = style_match.group(1)
+    
+    # Parse all variable definitions
+    for match in re.finditer(r'--([\w-]+)\s*:\s*([^;]+);', style_content):
+        var_name = match.group(1)
+        var_value = match.group(2).strip()
+        css_vars[var_name] = var_value
+    
+    if not css_vars:
+        return svg_content
+    
+    # Resolve variables that reference other variables (e.g., --a: var(--b))
+    max_iterations = 5
+    for _ in range(max_iterations):
+        changed = False
+        for var_name, var_value in css_vars.items():
+            ref_match = re.search(r'var\(--([\w-]+)\)', var_value)
+            if ref_match:
+                ref_name = ref_match.group(1)
+                if ref_name in css_vars:
+                    css_vars[var_name] = var_value.replace(f'var(--{ref_name})', css_vars[ref_name])
+                    changed = True
+        if not changed:
+            break
+    
+    # Replace all var(--name) usages in the SVG with their resolved values
+    def replace_var(match):
+        var_name = match.group(1)
+        return css_vars.get(var_name, '#000000')
+    
+    resolved_svg = re.sub(r'var\(--([\w-]+)\)', replace_var, svg_content)
+    
+    # Also replace the background-color style on the root SVG element
+    resolved_svg = re.sub(
+        r"style='background-color:\s*var\(--[\w-]+\)'",
+        "style='background-color: #ffffff'",
+        resolved_svg
+    )
+    
+    logger.info(f"Resolved {len(css_vars)} CSS variables in SVG ({len(svg_content)} -> {len(resolved_svg)} bytes)")
+    return resolved_svg
+
+
+
 # ============== I CHING DATA ==============
 HEXAGRAMS = {
     1: {"name": "乾 Qián", "name_it": "Il Creativo", "name_en": "The Creative", "trigram_top": "☰", "trigram_bottom": "☰"},
@@ -3374,6 +3432,25 @@ async def get_saved_natal_chart(request: Request):
     }
 
 
+@api_router.get("/natal-chart/svg")
+async def get_natal_chart_svg(request: Request):
+    """Get the natal chart SVG with CSS variables resolved for standalone viewing"""
+    user = await get_current_user(request)
+    natal_chart = user.get("natal_chart")
+    if not natal_chart or not natal_chart.get("chart_svg"):
+        raise HTTPException(status_code=404, detail="Tema natale non trovato")
+    
+    resolved_svg = resolve_svg_css_variables(natal_chart["chart_svg"])
+    
+    from fastapi.responses import Response
+    return Response(
+        content=resolved_svg,
+        media_type="image/svg+xml",
+        headers={"Content-Disposition": f"attachment; filename=tema_natale_{natal_chart.get('subject', {}).get('name', 'chart')}.svg"}
+    )
+
+
+
 @api_router.get("/natal-chart/pdf")
 async def generate_natal_chart_pdf(request: Request):
     """Generate a complete PDF of the user's natal chart - includes everything visible on page"""
@@ -3515,13 +3592,12 @@ async def generate_natal_chart_pdf(request: Request):
     if svg_data and len(svg_data) > 100:
         try:
             import cairosvg
-            # Sanitize SVG: ensure it has proper xmlns attribute
-            if 'xmlns=' not in svg_data:
-                svg_data = svg_data.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"', 1)
+            # Resolve CSS custom properties (CairoSVG doesn't support var())
+            resolved_svg = resolve_svg_css_variables(svg_data)
             
             # Convert SVG to PNG with high quality
             png_data = cairosvg.svg2png(
-                bytestring=svg_data.encode('utf-8'), 
+                bytestring=resolved_svg.encode('utf-8'), 
                 output_width=800, 
                 output_height=800,
                 background_color='white'
@@ -3836,11 +3912,10 @@ async def generate_natal_chart_docx(request: Request):
     if svg_data and len(svg_data) > 100:
         try:
             import cairosvg
-            # Sanitize SVG
-            if 'xmlns=' not in svg_data:
-                svg_data = svg_data.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"', 1)
+            # Resolve CSS custom properties (CairoSVG doesn't support var())
+            resolved_svg = resolve_svg_css_variables(svg_data)
             
-            png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'), output_width=800, output_height=800, background_color='white')
+            png_data = cairosvg.svg2png(bytestring=resolved_svg.encode('utf-8'), output_width=800, output_height=800, background_color='white')
             if png_data and len(png_data) > 100:
                 img_buffer = io.BytesIO(png_data)
                 img_buffer.seek(0)

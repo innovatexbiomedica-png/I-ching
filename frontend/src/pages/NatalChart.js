@@ -204,49 +204,33 @@ const NatalChart = () => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  // Download SVG - Fixed version
+  // Download SVG - Uses backend endpoint for resolved CSS variables
   const downloadSVG = async () => {
     try {
-      // Prova prima a usare chartData locale
-      let svgContent = chartData?.chart_svg;
+      toast.loading(language === 'it' ? 'Preparazione SVG...' : 'Preparing SVG...', { id: 'svg-loading' });
       
-      // Se non c'è, ricarica dal server
-      if (!svgContent) {
-        toast.loading(language === 'it' ? 'Caricamento SVG...' : 'Loading SVG...', { id: 'svg-loading' });
-        const response = await axios.get(`${API}/natal-chart`, {
-          headers: { Authorization: `Bearer ${getToken()}` }
-        });
-        if (response.data.has_chart && response.data.chart.chart_svg) {
-          svgContent = response.data.chart.chart_svg;
-        }
-        toast.dismiss('svg-loading');
-      }
+      const response = await axios.get(`${API}/natal-chart/svg`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+        responseType: 'blob'
+      });
       
-      if (!svgContent) {
-        toast.error(language === 'it' ? 'Nessun grafico disponibile' : 'No chart available');
-        return;
-      }
-      
-      // Crea e scarica il file
-      const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
-      const url = window.URL.createObjectURL(blob);
+      const blob = new Blob([response.data], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.style.display = 'none';
       a.href = url;
       a.download = `tema_natale_${chartData?.subject?.name || formData.name || 'chart'}.svg`;
       document.body.appendChild(a);
       a.click();
       
-      // Cleanup
       setTimeout(() => {
-        window.URL.revokeObjectURL(url);
+        URL.revokeObjectURL(url);
         document.body.removeChild(a);
       }, 100);
       
-      toast.success(language === 'it' ? 'SVG scaricato!' : 'SVG downloaded!');
+      toast.success(language === 'it' ? 'SVG scaricato!' : 'SVG downloaded!', { id: 'svg-loading' });
     } catch (error) {
       console.error('Error downloading SVG:', error);
-      toast.error(language === 'it' ? 'Errore nel download' : 'Download error');
+      toast.error(language === 'it' ? 'Errore nel download SVG' : 'SVG download error', { id: 'svg-loading' });
     }
   };
 
