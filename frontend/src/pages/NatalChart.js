@@ -734,6 +734,111 @@ const NatalChart = () => {
                 )}
               </div>
             )}
+
+            {/* Interpretazione AI Completa */}
+            <div className="zen-card">
+              <button
+                onClick={() => toggleSection('interpretation')}
+                className="w-full flex items-center justify-between text-left"
+              >
+                <h3 className="font-serif text-xl text-[#2C2C2C] flex items-center space-x-2">
+                  <Wand2 className="w-5 h-5 text-[#C44D38]" />
+                  <span>{language === 'it' ? 'Interpretazione Completa AI' : 'Complete AI Interpretation'}</span>
+                </h3>
+                {expandedSections.interpretation ? (
+                  <ChevronUp className="w-5 h-5 text-[#595959]" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-[#595959]" />
+                )}
+              </button>
+
+              {expandedSections.interpretation && (
+                <div className="mt-4">
+                  {!aiInterpretation ? (
+                    <div className="text-center py-8">
+                      <Wand2 className="w-12 h-12 text-[#C44D38]/30 mx-auto mb-4" />
+                      <p className="text-[#595959] mb-4">
+                        {language === 'it' 
+                          ? 'Genera un\'interpretazione personalizzata e approfondita del tuo tema natale utilizzando l\'intelligenza artificiale.'
+                          : 'Generate a personalized and in-depth interpretation of your natal chart using artificial intelligence.'}
+                      </p>
+                      <Button
+                        onClick={generateAIInterpretation}
+                        disabled={generatingInterpretation}
+                        className="bg-gradient-to-r from-[#C44D38] to-[#A33D2B] text-white"
+                      >
+                        {generatingInterpretation ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            {language === 'it' ? 'Generazione in corso...' : 'Generating...'}
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="w-4 h-4 mr-2" />
+                            {language === 'it' ? 'Genera Interpretazione AI' : 'Generate AI Interpretation'}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Pulsante per rigenerare */}
+                      <div className="flex justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={generateAIInterpretation}
+                          disabled={generatingInterpretation}
+                        >
+                          {generatingInterpretation ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                          )}
+                          {language === 'it' ? 'Rigenera' : 'Regenerate'}
+                        </Button>
+                      </div>
+                      
+                      {/* Contenuto interpretazione */}
+                      <div className="bg-gradient-to-br from-[#F9F7F2] to-white rounded-xl p-6 border border-[#D1CDC7]">
+                        <div className="prose prose-sm max-w-none">
+                          {aiInterpretation.split('\n').map((paragraph, idx) => {
+                            // Gestisci i titoli markdown
+                            if (paragraph.startsWith('## ')) {
+                              return (
+                                <h2 key={idx} className="font-serif text-xl text-[#C44D38] mt-6 mb-3 first:mt-0">
+                                  {paragraph.replace('## ', '').replace(/\*\*/g, '')}
+                                </h2>
+                              );
+                            }
+                            if (paragraph.startsWith('### ')) {
+                              return (
+                                <h3 key={idx} className="font-serif text-lg text-[#2C2C2C] mt-4 mb-2">
+                                  {paragraph.replace('### ', '').replace(/\*\*/g, '')}
+                                </h3>
+                              );
+                            }
+                            if (paragraph.startsWith('**') && paragraph.endsWith('**')) {
+                              return (
+                                <h3 key={idx} className="font-serif text-lg text-[#2C2C2C] mt-4 mb-2">
+                                  {paragraph.replace(/\*\*/g, '')}
+                                </h3>
+                              );
+                            }
+                            if (paragraph.trim() === '') return null;
+                            return (
+                              <p key={idx} className="text-[#595959] leading-relaxed mb-3">
+                                {paragraph.replace(/\*\*/g, '')}
+                              </p>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
