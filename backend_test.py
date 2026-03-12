@@ -4,9 +4,9 @@ import json
 from datetime import datetime
 
 class IChingAPITester:
-    def __init__(self, base_url="https://benessere-mobile-1.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://wellness-iching.preview.emergentagent.com/api"):
         self.base_url = base_url
-        self.frontend_url = "https://benessere-mobile-1.preview.emergentagent.com"  # Frontend URL for PWA testing
+        self.frontend_url = "https://wellness-iching.preview.emergentagent.com"  # Frontend URL for PWA testing
         self.token = None
         self.user_id = None
         self.tests_run = 0
@@ -400,7 +400,7 @@ class IChingAPITester:
             return False
             
         checkout_data = {
-            "origin_url": "https://benessere-mobile-1.preview.emergentagent.com"
+            "origin_url": "https://wellness-iching.preview.emergentagent.com"
         }
         
         success, response = self.run_test(

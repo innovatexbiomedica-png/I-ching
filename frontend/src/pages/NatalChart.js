@@ -367,6 +367,7 @@ const NatalChart = () => {
                   variant="outline"
                   onClick={downloadSVG}
                   className="flex items-center space-x-2 border-green-500 text-green-600 hover:bg-green-50"
+                  data-testid="download-svg-btn"
                 >
                   <Download className="w-4 h-4" />
                   <span>{language === 'it' ? 'Scarica SVG' : 'Download SVG'}</span>
@@ -375,9 +376,19 @@ const NatalChart = () => {
               <Button 
                 onClick={downloadPDF}
                 className="flex items-center space-x-2 bg-[#C44D38] text-white hover:bg-[#A33D2B]"
+                data-testid="download-pdf-btn"
               >
                 <Download className="w-4 h-4" />
                 <span>{language === 'it' ? 'Scarica PDF' : 'Download PDF'}</span>
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={downloadDOCX}
+                className="flex items-center space-x-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+                data-testid="download-docx-btn"
+              >
+                <FileText className="w-4 h-4" />
+                <span>{language === 'it' ? 'Scarica Word' : 'Download Word'}</span>
               </Button>
             </div>
           )}

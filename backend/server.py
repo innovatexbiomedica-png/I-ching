@@ -1794,7 +1794,7 @@ async def create_checkout(data: CheckoutRequest, request: Request, user: dict = 
 
 @api_router.get("/payments/status/{session_id}")
 async def get_payment_status(session_id: str, user: dict = Depends(get_current_user)):
-    host_url = "https://benessere-mobile-1.preview.emergentagent.com"
+    host_url = "https://wellness-iching.preview.emergentagent.com"
     webhook_url = f"{host_url}/api/webhook/stripe"
     
     stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
@@ -3512,31 +3512,41 @@ async def generate_natal_chart_pdf(request: Request):
     
     # ========== CHART IMAGE ==========
     svg_data = natal_chart.get("chart_svg")
-    if svg_data:
+    if svg_data and len(svg_data) > 100:
         try:
             import cairosvg
+            # Sanitize SVG: ensure it has proper xmlns attribute
+            if 'xmlns=' not in svg_data:
+                svg_data = svg_data.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"', 1)
+            
             # Convert SVG to PNG with high quality
             png_data = cairosvg.svg2png(
                 bytestring=svg_data.encode('utf-8'), 
-                output_width=600, 
-                output_height=600,
+                output_width=800, 
+                output_height=800,
                 background_color='white'
             )
             
-            # Create image from PNG data
-            img_buffer = io.BytesIO(png_data)
-            img_buffer.seek(0)
-            
-            chart_img = Image(img_buffer, width=16*cm, height=16*cm)
-            chart_img.hAlign = 'CENTER'
-            
-            elements.append(Spacer(1, 0.5*cm))
-            elements.append(chart_img)
-            elements.append(Spacer(1, 0.5*cm))
-            
-            logger.info("Chart image added to PDF successfully")
+            if png_data and len(png_data) > 100:
+                # Create image from PNG data
+                img_buffer = io.BytesIO(png_data)
+                img_buffer.seek(0)
+                
+                chart_img = Image(img_buffer, width=16*cm, height=16*cm)
+                chart_img.hAlign = 'CENTER'
+                
+                elements.append(Spacer(1, 0.5*cm))
+                elements.append(chart_img)
+                elements.append(Spacer(1, 0.5*cm))
+                
+                logger.info(f"Chart image added to PDF successfully ({len(png_data)} bytes)")
+            else:
+                logger.warning("PNG conversion produced empty or too small image")
+                elements.append(Paragraph(f"<i>({'Grafico non disponibile nel PDF' if lang == 'it' else 'Chart not available in PDF'})</i>", body_style))
         except Exception as e:
             logger.error(f"Could not convert SVG to image: {e}")
+            import traceback
+            traceback.print_exc()
             error_style = ParagraphStyle('Error', parent=styles['Normal'], fontSize=10, textColor=colors.red)
             elements.append(Paragraph(f"<i>({'Errore nel caricamento del grafico' if lang == 'it' else 'Error loading chart'})</i>", error_style))
     else:
@@ -3663,8 +3673,9 @@ async def generate_natal_chart_pdf(request: Request):
         "Opposizione": ("Opposizione (180°)", "Tensione e polarità - necessità di equilibrio"),
         "Trine": ("Trigono (120°)", "Armonia e fluidità - talenti naturali"),
         "Trigono": ("Trigono (120°)", "Armonia e fluidità - talenti naturali"),
-        "Square": ("Quadrato (90°)", "Sfida e tensione - crescita attraverso ostacoli"),
-        "Quadrato": ("Quadrato (90°)", "Sfida e tensione - crescita attraverso ostacoli"),
+        "Square": ("Quadratura (90°)", "Sfida e tensione - crescita attraverso ostacoli"),
+        "Quadrato": ("Quadratura (90°)", "Sfida e tensione - crescita attraverso ostacoli"),
+        "Quadratura": ("Quadratura (90°)", "Sfida e tensione - crescita attraverso ostacoli"),
         "Sextile": ("Sestile (60°)", "Opportunità e cooperazione - potenziale da sviluppare"),
         "Sestile": ("Sestile (60°)", "Opportunità e cooperazione - potenziale da sviluppare")
     }
@@ -3676,7 +3687,7 @@ async def generate_natal_chart_pdf(request: Request):
         aspect_name = a.get('aspect_name', '')
         meaning = aspect_meanings_it.get(aspect_name, (aspect_name, ""))
         
-        aspect_text = f"<b>{a.get('p1_name', '')} {meaning[0]} {a.get('p2_name', '')}</b> (orbe: {a.get('orb', 0):.1f}°)"
+        aspect_text = f"<b>{a.get('planet1_name', '')} {meaning[0]} {a.get('planet2_name', '')}</b> (orbe: {a.get('orb', 0):.1f}°)"
         elements.append(Paragraph(aspect_text, body_style))
         
         if meaning[1]:
@@ -3822,20 +3833,30 @@ async def generate_natal_chart_docx(request: Request):
     
     # ===== CHART IMAGE =====
     svg_data = natal_chart.get("chart_svg")
-    if svg_data:
+    if svg_data and len(svg_data) > 100:
         try:
             import cairosvg
-            png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'), output_width=600, output_height=600, background_color='white')
-            img_buffer = io.BytesIO(png_data)
-            img_buffer.seek(0)
+            # Sanitize SVG
+            if 'xmlns=' not in svg_data:
+                svg_data = svg_data.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"', 1)
             
-            doc.add_paragraph()
-            img_para = doc.add_paragraph()
-            img_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            run = img_para.add_run()
-            run.add_picture(img_buffer, width=Inches(5))
+            png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'), output_width=800, output_height=800, background_color='white')
+            if png_data and len(png_data) > 100:
+                img_buffer = io.BytesIO(png_data)
+                img_buffer.seek(0)
+                
+                doc.add_paragraph()
+                img_para = doc.add_paragraph()
+                img_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                run = img_para.add_run()
+                run.add_picture(img_buffer, width=Inches(5))
+                logger.info(f"Chart image added to DOCX successfully ({len(png_data)} bytes)")
+            else:
+                logger.warning("PNG conversion produced empty image for DOCX")
         except Exception as e:
             logger.error(f"Could not add chart image to DOCX: {e}")
+            import traceback
+            traceback.print_exc()
     
     doc.add_page_break()
     
@@ -3918,6 +3939,7 @@ async def generate_natal_chart_docx(request: Request):
         "Trigono": "Armonia e fluidità - talenti naturali",
         "Square": "Sfida e crescita - superare ostacoli",
         "Quadrato": "Sfida e crescita - superare ostacoli",
+        "Quadratura": "Sfida e crescita - superare ostacoli",
         "Sextile": "Opportunità e cooperazione",
         "Sestile": "Opportunità e cooperazione"
     }
@@ -3929,9 +3951,9 @@ async def generate_natal_chart_docx(request: Request):
         meaning = aspect_meanings.get(aspect_name, "")
         
         asp_para = doc.add_paragraph()
-        asp_para.add_run(f"{a.get('p1_name', '')} ").bold = True
+        asp_para.add_run(f"{a.get('planet1_name', '')} ").bold = True
         asp_para.add_run(f"{aspect_name} ")
-        asp_para.add_run(f"{a.get('p2_name', '')}").bold = True
+        asp_para.add_run(f"{a.get('planet2_name', '')}").bold = True
         asp_para.add_run(f" (orbe: {a.get('orb', 0):.1f}°)")
         
         if meaning:
