@@ -3753,6 +3753,232 @@ async def generate_natal_chart_pdf(request: Request):
     )
 
 
+@api_router.get("/natal-chart/docx")
+async def generate_natal_chart_docx(request: Request):
+    """Generate an editable DOCX of the user's natal chart"""
+    from docx import Document
+    from docx.shared import Inches, Pt, Cm, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.enum.style import WD_STYLE_TYPE
+    import io
+    
+    user = await get_current_user(request)
+    lang = user.get("language", "it")
+    
+    natal_chart = user.get("natal_chart")
+    if not natal_chart:
+        raise HTTPException(status_code=404, detail="Tema natale non trovato. Genera prima il tema natale.")
+    
+    # Create document
+    doc = Document()
+    
+    # Set margins
+    for section in doc.sections:
+        section.top_margin = Cm(2)
+        section.bottom_margin = Cm(2)
+        section.left_margin = Cm(2)
+        section.right_margin = Cm(2)
+    
+    # Get data
+    subject = natal_chart.get("subject", {})
+    name = subject.get("name", user.get("name", ""))
+    ascendant = natal_chart.get("ascendant", {})
+    midheaven = natal_chart.get("midheaven", {})
+    planets = natal_chart.get("planets", [])
+    houses = natal_chart.get("houses", [])
+    aspects = natal_chart.get("aspects", [])
+    ai_interpretation = natal_chart.get("ai_interpretation", "")
+    
+    # ===== TITLE =====
+    title = doc.add_heading("☯ TEMA NATALE ☯", 0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    if name:
+        name_para = doc.add_paragraph()
+        name_run = name_para.add_run(name)
+        name_run.bold = True
+        name_run.font.size = Pt(18)
+        name_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    doc.add_paragraph()
+    
+    # ===== BIRTH INFO =====
+    info_para = doc.add_paragraph()
+    info_para.add_run(f"📅 {'Data di Nascita' if lang == 'it' else 'Birth Date'}: ").bold = True
+    info_para.add_run(f"{subject.get('birth_date', 'N/A')}\n")
+    info_para.add_run(f"🕐 {'Ora di Nascita' if lang == 'it' else 'Birth Time'}: ").bold = True
+    info_para.add_run(f"{subject.get('birth_time', 'N/A')}\n")
+    info_para.add_run(f"📍 {'Luogo di Nascita' if lang == 'it' else 'Birth Place'}: ").bold = True
+    info_para.add_run(f"{subject.get('birth_place', 'N/A')}")
+    
+    doc.add_paragraph()
+    
+    # ===== KEY POSITIONS =====
+    key_para = doc.add_paragraph()
+    key_para.add_run(f"⬆️ {'Ascendente' if lang == 'it' else 'Ascendant'}: ").bold = True
+    key_para.add_run(f"{ascendant.get('sign', 'N/A')} {ascendant.get('sign_symbol', '')} ({ascendant.get('degree_formatted', '')})\n")
+    key_para.add_run(f"🎯 {'Medio Cielo' if lang == 'it' else 'Midheaven'}: ").bold = True
+    key_para.add_run(f"{midheaven.get('sign', 'N/A')} {midheaven.get('sign_symbol', '')} ({midheaven.get('degree_formatted', '')})")
+    
+    # ===== CHART IMAGE =====
+    svg_data = natal_chart.get("chart_svg")
+    if svg_data:
+        try:
+            import cairosvg
+            png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'), output_width=600, output_height=600, background_color='white')
+            img_buffer = io.BytesIO(png_data)
+            img_buffer.seek(0)
+            
+            doc.add_paragraph()
+            img_para = doc.add_paragraph()
+            img_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = img_para.add_run()
+            run.add_picture(img_buffer, width=Inches(5))
+        except Exception as e:
+            logger.error(f"Could not add chart image to DOCX: {e}")
+    
+    doc.add_page_break()
+    
+    # ===== PLANETS SECTION =====
+    doc.add_heading("🪐 " + ("POSIZIONI PLANETARIE" if lang == "it" else "PLANETARY POSITIONS"), 1)
+    
+    planet_meanings = {
+        "Sun": ("Sole - L'Essenza dell'Io", "Identità, ego, vitalità, scopo di vita"),
+        "Moon": ("Luna - Il Mondo Emotivo", "Emozioni, intuizione, bisogni di sicurezza"),
+        "Mercury": ("Mercurio - La Mente", "Comunicazione, pensiero, intelletto"),
+        "Venus": ("Venere - L'Amore", "Amore, bellezza, valori, relazioni"),
+        "Mars": ("Marte - L'Azione", "Energia, azione, desiderio, assertività"),
+        "Jupiter": ("Giove - L'Espansione", "Fortuna, crescita, ottimismo"),
+        "Saturn": ("Saturno - La Struttura", "Disciplina, responsabilità, lezioni karmiche"),
+        "Uranus": ("Urano - Il Cambiamento", "Innovazione, originalità, ribellione"),
+        "Neptune": ("Nettuno - L'Ispirazione", "Sogni, spiritualità, intuizione"),
+        "Pluto": ("Plutone - La Trasformazione", "Trasformazione profonda, potere, rinascita")
+    }
+    
+    for p in planets:
+        planet_name = p.get("name", "")
+        meaning = planet_meanings.get(planet_name, (planet_name, ""))
+        
+        p_heading = doc.add_heading(meaning[0], 2)
+        
+        pos_para = doc.add_paragraph()
+        pos_para.add_run("Posizione: ").bold = True
+        retro = " (Retrogrado)" if p.get("retrograde") else ""
+        pos_para.add_run(f"{p.get('sign', '')} {p.get('sign_symbol', '')} a {p.get('degree_formatted', '')} - Casa {p.get('house', 'N/A')}{retro}")
+        
+        if meaning[1]:
+            desc_para = doc.add_paragraph()
+            desc_para.add_run(meaning[1]).italic = True
+    
+    doc.add_page_break()
+    
+    # ===== HOUSES SECTION =====
+    doc.add_heading("🏠 " + ("CASE ASTROLOGICHE" if lang == "it" else "ASTROLOGICAL HOUSES"), 1)
+    
+    house_meanings = {
+        1: ("Casa 1 - L'Io", "Personalità, aspetto fisico, prima impressione"),
+        2: ("Casa 2 - I Valori", "Denaro, possedimenti, autostima"),
+        3: ("Casa 3 - Comunicazione", "Comunicazione, fratelli, viaggi brevi"),
+        4: ("Casa 4 - La Casa", "Famiglia, radici, vita privata"),
+        5: ("Casa 5 - Creatività", "Creatività, figli, romanticismo"),
+        6: ("Casa 6 - Servizio", "Salute, lavoro quotidiano, routine"),
+        7: ("Casa 7 - Relazioni", "Matrimonio, partnership, contratti"),
+        8: ("Casa 8 - Trasformazione", "Morte, rinascita, sessualità, eredità"),
+        9: ("Casa 9 - Espansione", "Filosofia, viaggi lunghi, spiritualità"),
+        10: ("Casa 10 - Carriera", "Carriera, reputazione, status sociale"),
+        11: ("Casa 11 - Ideali", "Amicizie, gruppi, speranze, progetti"),
+        12: ("Casa 12 - Inconscio", "Inconscio, karma, isolamento, spiritualità")
+    }
+    
+    for h in houses:
+        house_num = h.get("number", 0)
+        meaning = house_meanings.get(house_num, (f"Casa {house_num}", ""))
+        
+        h_heading = doc.add_heading(meaning[0], 2)
+        
+        pos_para = doc.add_paragraph()
+        pos_para.add_run("Cuspide: ").bold = True
+        pos_para.add_run(f"{h.get('sign', '')} {h.get('sign_symbol', '')} a {h.get('degree_formatted', '')}")
+        
+        if meaning[1]:
+            desc_para = doc.add_paragraph()
+            desc_para.add_run(meaning[1]).italic = True
+    
+    doc.add_page_break()
+    
+    # ===== ASPECTS SECTION =====
+    doc.add_heading("✨ " + ("ASPETTI PRINCIPALI" if lang == "it" else "MAIN ASPECTS"), 1)
+    
+    aspect_meanings = {
+        "Conjunction": "Fusione di energie - intensità",
+        "Congiunzione": "Fusione di energie - intensità",
+        "Opposition": "Tensione e polarità - equilibrio necessario",
+        "Opposizione": "Tensione e polarità - equilibrio necessario",
+        "Trine": "Armonia e fluidità - talenti naturali",
+        "Trigono": "Armonia e fluidità - talenti naturali",
+        "Square": "Sfida e crescita - superare ostacoli",
+        "Quadrato": "Sfida e crescita - superare ostacoli",
+        "Sextile": "Opportunità e cooperazione",
+        "Sestile": "Opportunità e cooperazione"
+    }
+    
+    major_aspects = [a for a in aspects if a.get('aspect_name') in aspect_meanings.keys()][:15]
+    
+    for a in major_aspects:
+        aspect_name = a.get('aspect_name', '')
+        meaning = aspect_meanings.get(aspect_name, "")
+        
+        asp_para = doc.add_paragraph()
+        asp_para.add_run(f"{a.get('p1_name', '')} ").bold = True
+        asp_para.add_run(f"{aspect_name} ")
+        asp_para.add_run(f"{a.get('p2_name', '')}").bold = True
+        asp_para.add_run(f" (orbe: {a.get('orb', 0):.1f}°)")
+        
+        if meaning:
+            desc_para = doc.add_paragraph()
+            desc_para.add_run(meaning).italic = True
+    
+    # ===== AI INTERPRETATION =====
+    if ai_interpretation:
+        doc.add_page_break()
+        doc.add_heading("🔮 " + ("INTERPRETAZIONE PERSONALIZZATA" if lang == "it" else "PERSONALIZED INTERPRETATION"), 1)
+        
+        lines = ai_interpretation.split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            clean_line = line.replace('**', '').replace('##', '').replace('###', '').strip()
+            
+            if line.startswith('## ') or line.startswith('### ') or (line.startswith('**') and line.endswith('**')):
+                doc.add_heading(clean_line, 2)
+            else:
+                doc.add_paragraph(clean_line)
+    
+    # ===== FOOTER =====
+    doc.add_paragraph()
+    footer = doc.add_paragraph()
+    footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    footer_run = footer.add_run(f"I Ching del Benessere • {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M')} • L'antica saggezza per il mondo moderno")
+    footer_run.font.size = Pt(9)
+    footer_run.font.color.rgb = RGBColor(128, 128, 128)
+    
+    # Save to buffer
+    docx_buffer = io.BytesIO()
+    doc.save(docx_buffer)
+    docx_buffer.seek(0)
+    
+    from fastapi.responses import Response
+    return Response(
+        content=docx_buffer.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f"attachment; filename=tema_natale_{name or 'chart'}.docx"
+        }
+    )
+
+
 @api_router.get("/geocode")
 async def geocode_city(city: str):
     """Geocode a city name to get coordinates"""
