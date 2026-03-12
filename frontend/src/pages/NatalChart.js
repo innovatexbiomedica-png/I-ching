@@ -136,6 +136,10 @@ const NatalChart = () => {
       });
       if (response.data.has_chart) {
         setChartData(response.data.chart);
+        // Carica anche l'interpretazione AI se presente
+        if (response.data.chart.ai_interpretation) {
+          setAiInterpretation(response.data.chart.ai_interpretation);
+        }
       } else {
         setShowForm(true);
       }
@@ -144,6 +148,30 @@ const NatalChart = () => {
       setShowForm(true);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Genera interpretazione AI
+  const generateAIInterpretation = async () => {
+    setGeneratingInterpretation(true);
+    try {
+      const response = await axios.post(
+        `${API}/natal-chart/interpret`,
+        {},
+        { headers: { Authorization: `Bearer ${getToken()}` }}
+      );
+      
+      if (response.data.success) {
+        setAiInterpretation(response.data.interpretation);
+        toast.success(language === 'it' 
+          ? 'Interpretazione generata con successo!' 
+          : 'Interpretation generated successfully!');
+      }
+    } catch (error) {
+      console.error('Error generating interpretation:', error);
+      toast.error(error.response?.data?.detail || 'Error generating interpretation');
+    } finally {
+      setGeneratingInterpretation(false);
     }
   };
 
