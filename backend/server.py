@@ -3515,17 +3515,32 @@ async def generate_natal_chart_pdf(request: Request):
     if svg_data:
         try:
             import cairosvg
-            # Convert SVG to PNG
-            png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'), output_width=500, output_height=500)
+            # Convert SVG to PNG with high quality
+            png_data = cairosvg.svg2png(
+                bytestring=svg_data.encode('utf-8'), 
+                output_width=600, 
+                output_height=600,
+                background_color='white'
+            )
+            
+            # Create image from PNG data
             img_buffer = io.BytesIO(png_data)
-            img = Image(img_buffer, width=14*cm, height=14*cm)
-            img.hAlign = 'CENTER'
+            img_buffer.seek(0)
+            
+            chart_img = Image(img_buffer, width=16*cm, height=16*cm)
+            chart_img.hAlign = 'CENTER'
+            
             elements.append(Spacer(1, 0.5*cm))
-            elements.append(img)
+            elements.append(chart_img)
             elements.append(Spacer(1, 0.5*cm))
+            
+            logger.info("Chart image added to PDF successfully")
         except Exception as e:
-            logger.warning(f"Could not convert SVG to image: {e}")
-            elements.append(Paragraph(f"<i>({'Grafico non disponibile' if lang == 'it' else 'Chart not available'})</i>", body_style))
+            logger.error(f"Could not convert SVG to image: {e}")
+            error_style = ParagraphStyle('Error', parent=styles['Normal'], fontSize=10, textColor=colors.red)
+            elements.append(Paragraph(f"<i>({'Errore nel caricamento del grafico' if lang == 'it' else 'Error loading chart'})</i>", error_style))
+    else:
+        elements.append(Paragraph(f"<i>({'Grafico non disponibile' if lang == 'it' else 'Chart not available'})</i>", body_style))
     
     elements.append(PageBreak())
     
