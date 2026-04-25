@@ -849,30 +849,17 @@ async def login(credentials: UserLogin):
 @api_router.post("/auth/google/callback")
 async def google_oauth_callback(data: dict, response: Response):
     """
-    Handle Google OAuth callback from Emergent Auth.
-    Exchanges session_id for user data and creates/updates user.
+    Google OAuth callback - currently disabled.
+    To enable, integrate directly with Google Identity Services
+    and exchange the ID token here.
     """
-    import httpx
-    
-    session_id = data.get("session_id")
-    if not session_id:
-        raise HTTPException(status_code=400, detail="session_id richiesto")
-    
-    try:
-        # Exchange session_id for user data via Emergent Auth
-        async with httpx.AsyncClient() as client:
-            auth_response = await client.get(
-                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
-                headers={"X-Session-ID": session_id}
-            )
-            
-            if auth_response.status_code != 200:
-                raise HTTPException(status_code=401, detail="Sessione non valida")
-            
-            auth_data = auth_response.json()
-    except Exception as e:
-        logger.error(f"Google OAuth error: {e}")
-        raise HTTPException(status_code=500, detail="Errore di autenticazione con Google")
+    raise HTTPException(
+        status_code=501,
+        detail="Google OAuth non ancora configurato. Usa email/password."
+    )
+
+    # Legacy code below (unreachable) - kept for future Google OAuth integration
+    auth_data = {}
     
     # Extract user info from Google
     google_email = auth_data.get("email")

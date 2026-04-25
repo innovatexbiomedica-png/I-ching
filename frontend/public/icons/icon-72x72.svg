@@ -1,0 +1,9 @@
+<!-- SVG Icon for PWA (72x72) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72">
+  <rect width="72" height="72" fill="#F9F7F2"/>
+  <circle cx="36" cy="36" r="30" fill="#2C2C2C"/>
+  <path d="M36 6 A30 30 0 0 1 36 66 A15 15 0 0 1 36 36 A15 15 0 0 0 36 6" fill="#F9F7F2"/>
+  <circle cx="36" cy="21" r="5" fill="#2C2C2C"/>
+  <circle cx="36" cy="51" r="5" fill="#F9F7F2"/>
+  <circle cx="36" cy="36" r="4" fill="#C44D38"/>
+</svg>
