@@ -9,7 +9,7 @@ import { Label } from '../components/ui/label';
 import { Loader2, Mail, Phone, ArrowLeft, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = `${(process.env.REACT_APP_BACKEND_URL || "https://iching-backend-ac3n.onrender.com")}/api`;
 
 const ForgotPassword = () => {
   const { language } = useAuth();

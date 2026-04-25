@@ -17,7 +17,7 @@ import {
   Heart
 } from 'lucide-react';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = `${(process.env.REACT_APP_BACKEND_URL || "https://iching-backend-ac3n.onrender.com")}/api`;
 
 const CompletedPaths = () => {
   const { language, getToken } = useAuth();

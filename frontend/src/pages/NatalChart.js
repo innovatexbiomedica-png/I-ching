@@ -22,7 +22,7 @@ import {
 import { Button } from '../components/ui/button';
 import InteractiveNatalChart from '../components/InteractiveNatalChart';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = `${(process.env.REACT_APP_BACKEND_URL || "https://iching-backend-ac3n.onrender.com")}/api`;
 
 const NatalChart = () => {
   const { language, getToken, user } = useAuth();

@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API = process.env.REACT_APP_BACKEND_URL;
+const API = (process.env.REACT_APP_BACKEND_URL || "https://iching-backend-ac3n.onrender.com");
 
 const FeedbackBanner = ({ consultationId, language, getToken, onFeedbackSubmitted }) => {
   const [selectedOption, setSelectedOption] = useState(null); // 'yes', 'no', 'other'

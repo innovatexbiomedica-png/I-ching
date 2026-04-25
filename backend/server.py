@@ -2828,16 +2828,249 @@ async def generate_natal_chart(request: Request, chart_request: NatalChartReques
 async def get_saved_natal_chart(request: Request):
     """Get user's saved natal chart if available"""
     user = await get_current_user(request)
-    
+
     natal_chart = user.get("natal_chart")
     if not natal_chart:
         return {"has_chart": False}
-    
+
     return {
         "has_chart": True,
         "chart": natal_chart,
         "generated_at": user.get("natal_chart_generated_at")
     }
+
+
+@api_router.get("/natal-chart/svg")
+async def get_natal_chart_svg(request: Request):
+    """Download natal chart as SVG file"""
+    user = await get_current_user(request)
+    natal_chart = user.get("natal_chart")
+    if not natal_chart or not natal_chart.get("chart_svg"):
+        raise HTTPException(status_code=404, detail="Tema natale non trovato")
+
+    name = natal_chart.get("subject", {}).get("name", "tema_natale")
+    return Response(
+        content=natal_chart["chart_svg"],
+        media_type="image/svg+xml",
+        headers={"Content-Disposition": f'attachment; filename="tema_natale_{name}.svg"'}
+    )
+
+
+@api_router.get("/natal-chart/pdf")
+async def get_natal_chart_pdf(request: Request):
+    """Download natal chart as PDF with chart image and details"""
+    user = await get_current_user(request)
+    natal_chart = user.get("natal_chart")
+    if not natal_chart:
+        raise HTTPException(status_code=404, detail="Tema natale non trovato")
+
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, PageBreak
+        from reportlab.lib import colors
+        from reportlab.lib.units import cm
+        import io
+    except ImportError:
+        raise HTTPException(status_code=500, detail="reportlab non disponibile")
+
+    subject = natal_chart.get("subject", {})
+    name = subject.get("name", "Tema Natale")
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm)
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('Title', parent=styles['Title'], fontSize=20, textColor=colors.HexColor('#C44D38'), alignment=1)
+    h2 = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=14, textColor=colors.HexColor('#2C2C2C'))
+
+    story = []
+    story.append(Paragraph(f"Tema Natale di {name}", title_style))
+    story.append(Spacer(1, 0.5*cm))
+
+    # Subject info
+    info = [
+        ["Nome", subject.get("name", "")],
+        ["Data di nascita", subject.get("birth_date", "")],
+        ["Ora di nascita", subject.get("birth_time", "")],
+        ["Luogo", subject.get("birth_place", "")],
+    ]
+    t = Table(info, colWidths=[5*cm, 11*cm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#F9F7F2')),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CCCCCC')),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('PADDING', (0, 0), (-1, -1), 8),
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 0.5*cm))
+
+    # SVG chart image
+    svg_content = natal_chart.get("chart_svg")
+    if svg_content:
+        try:
+            import cairosvg
+            svg_resolved = resolve_svg_css_variables(svg_content)
+            png_bytes = cairosvg.svg2png(bytestring=svg_resolved.encode("utf-8"), output_width=1000)
+            img = Image(io.BytesIO(png_bytes), width=15*cm, height=15*cm)
+            story.append(img)
+            story.append(PageBreak())
+        except Exception as e:
+            logger.error(f"Error converting SVG to PNG: {e}")
+
+    # Ascendant
+    asc = natal_chart.get("ascendant", {})
+    if asc:
+        story.append(Paragraph(f"Ascendente: {asc.get('sign','')} {asc.get('degree_formatted','')}", h2))
+        story.append(Paragraph(asc.get("interpretation", ""), styles['BodyText']))
+        story.append(Spacer(1, 0.3*cm))
+
+    # Planets
+    story.append(Paragraph("Pianeti", h2))
+    planets = natal_chart.get("planets", [])
+    planet_data = [["Pianeta", "Segno", "Grado", "Casa"]]
+    for p in planets:
+        planet_data.append([
+            p.get("name_it", p.get("name", "")),
+            p.get("sign", ""),
+            p.get("degree_formatted", ""),
+            p.get("house", "").replace("_House", "")
+        ])
+    pt = Table(planet_data, colWidths=[4*cm, 4*cm, 4*cm, 4*cm])
+    pt.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#C44D38')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CCCCCC')),
+        ('PADDING', (0, 0), (-1, -1), 6),
+    ]))
+    story.append(pt)
+    story.append(Spacer(1, 0.5*cm))
+
+    # Houses
+    houses = natal_chart.get("houses", [])
+    if houses:
+        story.append(Paragraph("Case Astrologiche", h2))
+        house_data = [["Casa", "Segno", "Grado"]]
+        for h in houses:
+            house_data.append([
+                str(h.get("number", "")),
+                h.get("sign", ""),
+                h.get("degree_formatted", "")
+            ])
+        ht = Table(house_data, colWidths=[3*cm, 6*cm, 6*cm])
+        ht.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#7A4F8F')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CCCCCC')),
+            ('PADDING', (0, 0), (-1, -1), 6),
+        ]))
+        story.append(ht)
+
+    doc.build(story)
+    buffer.seek(0)
+
+    return Response(
+        content=buffer.read(),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="tema_natale_{name}.pdf"'}
+    )
+
+
+@api_router.get("/natal-chart/docx")
+async def get_natal_chart_docx(request: Request):
+    """Download natal chart as DOCX (Word) document"""
+    user = await get_current_user(request)
+    natal_chart = user.get("natal_chart")
+    if not natal_chart:
+        raise HTTPException(status_code=404, detail="Tema natale non trovato")
+
+    try:
+        from docx import Document
+        from docx.shared import Inches, Pt, RGBColor
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        import io
+    except ImportError:
+        raise HTTPException(status_code=500, detail="python-docx non disponibile")
+
+    subject = natal_chart.get("subject", {})
+    name = subject.get("name", "Tema Natale")
+
+    document = Document()
+
+    # Title
+    title = document.add_heading(f"Tema Natale di {name}", level=0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # Subject info
+    document.add_heading("Dati di Nascita", level=2)
+    table = document.add_table(rows=4, cols=2)
+    table.style = "Light Grid Accent 1"
+    info = [
+        ("Nome", subject.get("name", "")),
+        ("Data", subject.get("birth_date", "")),
+        ("Ora", subject.get("birth_time", "")),
+        ("Luogo", subject.get("birth_place", "")),
+    ]
+    for i, (k, v) in enumerate(info):
+        table.cell(i, 0).text = k
+        table.cell(i, 1).text = v
+
+    # SVG → PNG → image
+    svg_content = natal_chart.get("chart_svg")
+    if svg_content:
+        try:
+            import cairosvg
+            svg_resolved = resolve_svg_css_variables(svg_content)
+            png_bytes = cairosvg.svg2png(bytestring=svg_resolved.encode("utf-8"), output_width=1000)
+            document.add_paragraph()
+            document.add_picture(io.BytesIO(png_bytes), width=Inches(6))
+        except Exception as e:
+            logger.error(f"Error converting SVG to PNG: {e}")
+
+    # Ascendant
+    asc = natal_chart.get("ascendant", {})
+    if asc:
+        document.add_heading(f"Ascendente: {asc.get('sign', '')} {asc.get('degree_formatted', '')}", level=2)
+        document.add_paragraph(asc.get("interpretation", ""))
+
+    # Planets
+    document.add_heading("Pianeti", level=2)
+    planets = natal_chart.get("planets", [])
+    ptable = document.add_table(rows=len(planets) + 1, cols=4)
+    ptable.style = "Light Grid Accent 2"
+    headers = ["Pianeta", "Segno", "Grado", "Casa"]
+    for i, h in enumerate(headers):
+        ptable.cell(0, i).text = h
+    for i, p in enumerate(planets, 1):
+        ptable.cell(i, 0).text = p.get("name_it", p.get("name", ""))
+        ptable.cell(i, 1).text = p.get("sign", "")
+        ptable.cell(i, 2).text = p.get("degree_formatted", "")
+        ptable.cell(i, 3).text = p.get("house", "").replace("_House", "")
+
+    # Houses
+    houses = natal_chart.get("houses", [])
+    if houses:
+        document.add_heading("Case Astrologiche", level=2)
+        htable = document.add_table(rows=len(houses) + 1, cols=3)
+        htable.style = "Light Grid Accent 3"
+        headers = ["Casa", "Segno", "Grado"]
+        for i, h in enumerate(headers):
+            htable.cell(0, i).text = h
+        for i, h in enumerate(houses, 1):
+            htable.cell(i, 0).text = str(h.get("number", ""))
+            htable.cell(i, 1).text = h.get("sign", "")
+            htable.cell(i, 2).text = h.get("degree_formatted", "")
+
+    buffer = io.BytesIO()
+    document.save(buffer)
+    buffer.seek(0)
+
+    return Response(
+        content=buffer.read(),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="tema_natale_{name}.docx"'}
+    )
 
 
 @api_router.get("/geocode")

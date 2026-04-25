@@ -11,7 +11,7 @@ import DailyHexagram from '../components/DailyHexagram';
 import DailyAdvice from '../components/DailyAdvice';
 import ProfileCompletionPrompt from '../components/ProfileCompletionPrompt';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = `${(process.env.REACT_APP_BACKEND_URL || "https://iching-backend-ac3n.onrender.com")}/api`;
 
 const Dashboard = () => {
   const { user, language, getToken, hasSubscription } = useAuth();

@@ -1,7 +1,7 @@
 // I Ching del Benessere - Push Notification Service
 // Supports Web Push, iOS, Android, and WearOS
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = (process.env.REACT_APP_BACKEND_URL || "https://iching-backend-ac3n.onrender.com");
 
 class NotificationService {
   constructor() {

@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = `${(process.env.REACT_APP_BACKEND_URL || "https://iching-backend-ac3n.onrender.com")}/api`;
 
 const NotificationSettings = () => {
   const { language, getToken, hasSubscription } = useAuth();

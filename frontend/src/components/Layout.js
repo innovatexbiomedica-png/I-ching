@@ -14,7 +14,7 @@ import { Button } from './ui/button';
 import Logo from './Logo';
 import axios from 'axios';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = `${(process.env.REACT_APP_BACKEND_URL || "https://iching-backend-ac3n.onrender.com")}/api`;
 
 const Layout = ({ children }) => {
   const { user, logout, language, updateLanguage, isAuthenticated, getToken } = useAuth();

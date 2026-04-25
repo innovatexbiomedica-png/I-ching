@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Map, ChevronRight, Check, Lock, Play, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = `${(process.env.REACT_APP_BACKEND_URL || "https://iching-backend-ac3n.onrender.com")}/api`;
 
 const Paths = () => {
   const { language, getToken } = useAuth();

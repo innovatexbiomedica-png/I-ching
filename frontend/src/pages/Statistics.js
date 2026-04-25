@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { BarChart3, Trophy, Star, TrendingUp, Lock, Crown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = `${(process.env.REACT_APP_BACKEND_URL || "https://iching-backend-ac3n.onrender.com")}/api`;
 
 const Statistics = () => {
   const { language, getToken } = useAuth();

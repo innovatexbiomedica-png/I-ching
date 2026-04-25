@@ -1,7 +1,7 @@
 // I Ching del Benessere - WearOS & Apple Watch Support
 // Provides smartwatch integration for quick consultations and daily hexagram
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = (process.env.REACT_APP_BACKEND_URL || "https://iching-backend-ac3n.onrender.com");
 
 class WearOSService {
   constructor() {

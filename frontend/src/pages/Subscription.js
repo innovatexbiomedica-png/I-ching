@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Crown, Check, X, Zap, Compass, BookOpen, BarChart3, StickyNote, Moon, Bell, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = `${(process.env.REACT_APP_BACKEND_URL || "https://iching-backend-ac3n.onrender.com")}/api`;
 
 const Subscription = () => {
   const { language, getToken, user, refreshUser } = useAuth();
