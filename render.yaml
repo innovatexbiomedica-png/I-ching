@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: iching-backend
+    runtime: python
+    region: frankfurt
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MONGO_URL
+        sync: false
+      - key: DB_NAME
+        value: iching_db
+      - key: JWT_SECRET
+        sync: false
+      - key: EMERGENT_LLM_KEY
+        sync: false
+      - key: STRIPE_API_KEY
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.11.0
