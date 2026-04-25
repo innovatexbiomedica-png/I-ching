@@ -129,3 +129,6 @@ aiohttp
 h3
 pyswisseph
 httpx
+reportlab
+cairosvg
+python-docx
