@@ -26,14 +26,16 @@ GEMINI_DEEP_CONFIG = {
     "temperature": 0.95,
     "top_p": 0.95,
     "top_k": 40,
-    "max_output_tokens": 2048,
+    # Gemini 2.5 uses internal "thinking tokens" that count against this limit.
+    # Need a large budget so the visible output isn't truncated to a few hundred chars.
+    "max_output_tokens": 8192,
 }
 
 GEMINI_DIRECT_CONFIG = {
     "temperature": 0.85,
     "top_p": 0.92,
     "top_k": 40,
-    "max_output_tokens": 1200,
+    "max_output_tokens": 4096,
 }
 
 # Permissive safety settings: I Ching interpretations discuss life choices,
