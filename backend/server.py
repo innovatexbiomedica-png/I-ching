@@ -13,6 +13,69 @@ import jwt
 import bcrypt
 import google.generativeai as genai
 import stripe as stripe_lib
+import asyncio
+
+
+# ============== GEMINI AI CONFIGURATION ==============
+
+# Generation config tuned for I Ching interpretations:
+# - Higher temperature → more creative, poetic responses
+# - top_p kept high to allow vivid metaphors typical of I Ching
+# - max_output_tokens generous for "deep" interpretations (700-1000 words)
+GEMINI_DEEP_CONFIG = {
+    "temperature": 0.95,
+    "top_p": 0.95,
+    "top_k": 40,
+    "max_output_tokens": 2048,
+}
+
+GEMINI_DIRECT_CONFIG = {
+    "temperature": 0.85,
+    "top_p": 0.92,
+    "top_k": 40,
+    "max_output_tokens": 1200,
+}
+
+# Permissive safety settings: I Ching interpretations discuss life choices,
+# relationships, death, spiritual symbols — all of which can trigger overly
+# strict default filters. We still block CSAM and dangerous instructions.
+GEMINI_SAFETY_SETTINGS = [
+    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"},
+]
+
+
+async def _gemini_generate_with_retry(model, prompt, max_retries: int = 3):
+    """Call Gemini with exponential backoff on rate limit / transient errors."""
+    last_error = None
+    for attempt in range(max_retries):
+        try:
+            response = await model.generate_content_async(prompt)
+            # Some safety blocks return empty text — fall back gracefully
+            if response and getattr(response, "text", None):
+                return response.text
+            if response and response.candidates:
+                # Try to extract text from candidates anyway
+                for cand in response.candidates:
+                    if cand.content and cand.content.parts:
+                        joined = "".join(p.text for p in cand.content.parts if hasattr(p, "text"))
+                        if joined:
+                            return joined
+            raise RuntimeError("Empty response from Gemini")
+        except Exception as e:
+            last_error = e
+            err_str = str(e).lower()
+            # Retry on transient errors (rate limit, network, server)
+            if any(s in err_str for s in ("429", "rate", "quota", "timeout", "503", "504", "500")):
+                wait = 2 ** attempt  # 1s, 2s, 4s
+                logger.warning(f"Gemini transient error (attempt {attempt+1}/{max_retries}), retrying in {wait}s: {e}")
+                await asyncio.sleep(wait)
+                continue
+            # Non-transient errors: stop retrying
+            raise
+    raise last_error if last_error else RuntimeError("Gemini retry exhausted")
 from iching_data import get_hexagram_traditional_data, get_trigram_info, get_moving_lines_text, get_all_lines_text, TRIGRAMS
 from iching_extended import ICHING_EXTENDED, get_extended_hexagram_data, get_moving_line_extended
 from subscription_manager import (
@@ -621,12 +684,13 @@ Write as an ancient Taoist master, with poetry, depth, and compassion."""
     try:
         model = genai.GenerativeModel(
             model_name="gemini-2.5-flash",
-            system_instruction=system_prompt
+            system_instruction=system_prompt,
+            generation_config=GEMINI_DEEP_CONFIG,
+            safety_settings=GEMINI_SAFETY_SETTINGS,
         )
-        response = await model.generate_content_async(user_prompt)
-        return response.text
+        return await _gemini_generate_with_retry(model, user_prompt)
     except Exception as e:
-        logger.error(f"Error generating interpretation: {e}")
+        logger.error(f"Error generating deep interpretation: {e}")
         return f"L'interpretazione non è disponibile al momento. Il tuo esagramma è {primary.get(name_key, primary['name'])}."
 
 async def generate_direct_interpretation(hexagram_data: dict, question: str, language: str, 
@@ -787,10 +851,11 @@ Get straight to the point. Tell the querent what they need to know.
     try:
         model = genai.GenerativeModel(
             model_name="gemini-2.5-flash",
-            system_instruction=system_prompt
+            system_instruction=system_prompt,
+            generation_config=GEMINI_DIRECT_CONFIG,
+            safety_settings=GEMINI_SAFETY_SETTINGS,
         )
-        response = await model.generate_content_async(user_prompt)
-        return response.text
+        return await _gemini_generate_with_retry(model, user_prompt)
     except Exception as e:
         logger.error(f"Error generating direct interpretation: {e}")
         return f"L'interpretazione non è disponibile al momento. Il tuo esagramma è {primary.get(name_key, primary['name'])}."
@@ -1331,7 +1396,9 @@ Il tuo compito è analizzare MULTIPLE consultazioni fatte dallo stesso consultan
 - Mantiene un tono rispettoso, profondo ma accessibile
 
 Non usare elenchi puntati. Scrivi in modo fluido e narrativo.
-Parla sempre in seconda persona al consultante."""
+Parla sempre in seconda persona al consultante.""",
+            generation_config=GEMINI_DEEP_CONFIG,
+            safety_settings=GEMINI_SAFETY_SETTINGS,
         )
         
         # Build the consultation summaries
@@ -1401,8 +1468,7 @@ Write a DIVINATORY SYNTHESIS (300-500 words) that:
 
 Conclude with practical advice based on the synthesis."""
         
-        response = await model.generate_content_async(prompt)
-        return response.text
+        return await _gemini_generate_with_retry(model, prompt)
 
     except Exception as e:
         logger.error(f"Error generating synthesis: {e}")
@@ -2259,9 +2325,12 @@ Write in a deep but accessible way, like a wise master guiding a student. Don't 
 """
     
     try:
-        model = genai.GenerativeModel(model_name="gemini-2.5-flash")
-        response = await model.generate_content_async(synthesis_prompt)
-        synthesis_text = response.text
+        model = genai.GenerativeModel(
+            model_name="gemini-2.5-flash",
+            generation_config=GEMINI_DEEP_CONFIG,
+            safety_settings=GEMINI_SAFETY_SETTINGS,
+        )
+        synthesis_text = await _gemini_generate_with_retry(model, synthesis_prompt)
     except Exception as e:
         logger.error(f"Error generating path synthesis: {e}")
         synthesis_text = "Sintesi non disponibile al momento." if lang == "it" else "Synthesis not available at the moment."
