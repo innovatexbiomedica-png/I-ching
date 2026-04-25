@@ -842,7 +842,7 @@ EXAMPLE TONE:
     wilhelm_direct_context = ""
     if language == "it":
         from wilhelm_source import get_wilhelm_text
-        primary_wilhelm = get_wilhelm_text(hexagram_data["primary_hexagram"], max_chars=3500)
+        primary_wilhelm = get_wilhelm_text(hexagram_data["primary_hexagram"], max_chars=2000)
         if primary_wilhelm:
             wilhelm_direct_context = f"""
 === TESTO ORIGINALE WILHELM (FONTE AUTORITATIVA) ===

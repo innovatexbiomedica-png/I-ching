@@ -26,7 +26,7 @@ except Exception:
     _WILHELM_TEXTS = {}
 
 
-def get_wilhelm_text(hexagram_number: int, max_chars: int = 6000) -> Optional[str]:
+def get_wilhelm_text(hexagram_number: int, max_chars: int = 3000) -> Optional[str]:
     """
     Return the authoritative Wilhelm text for a given hexagram (1-64).
     Truncates to max_chars to keep prompt size manageable.
@@ -60,7 +60,7 @@ def build_authoritative_context(
         # (the AI still has the iching_extended built-in data in english)
         return ""
 
-    primary_text = get_wilhelm_text(primary_number, max_chars=5500)
+    primary_text = get_wilhelm_text(primary_number, max_chars=2800)
     if not primary_text:
         return ""
 
@@ -78,7 +78,7 @@ def build_authoritative_context(
     ]
 
     if derived_number and derived_number != primary_number:
-        derived_text = get_wilhelm_text(derived_number, max_chars=3000)
+        derived_text = get_wilhelm_text(derived_number, max_chars=1500)
         if derived_text:
             parts.extend([
                 "",
