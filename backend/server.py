@@ -92,6 +92,7 @@ from astrology_profile import (
     calculate_chinese_zodiac, calculate_western_zodiac
 )
 from natal_chart import calculate_natal_chart, geocode_location, KERYKEION_AVAILABLE
+from wilhelm_source import build_authoritative_context, is_loaded as wilhelm_loaded
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -619,9 +620,19 @@ This indicates WHERE the situation is evolving and what to expect in the future.
                 conversation_context += f"Response summary: {prev_interp}...\n"
             conversation_context += "\nIMPORTANT: The current response must CONNECT to previous readings, creating a COHERENT NARRATIVE. Reference what emerged before.\n"
 
+    # Build authoritative source context (Wilhelm Italian translation)
+    wilhelm_context = build_authoritative_context(
+        primary_number=hexagram_data["primary_hexagram"],
+        derived_number=hexagram_data.get("derived_hexagram"),
+        moving_lines=hexagram_data.get("moving_lines"),
+        language="it",
+    ) if language == "it" else ""
+
     if language == "it":
         user_prompt = f"""La domanda del consultante è: "{question}"
 {conversation_context}
+{wilhelm_context}
+
 === ESAGRAMMA PRINCIPALE ===
 Nome: {primary_chinese} - {primary_name}
 Numero: {hexagram_data["primary_hexagram"]}
@@ -642,14 +653,16 @@ COMMENTO TRADIZIONALE:
 ISTRUZIONI:
 Genera un'interpretazione RICCA, PROFONDA e DETTAGLIATA (600-900 parole) che:
 1. Apra con una connessione poetica tra la domanda e il flusso del Tao
-2. Spieghi in dettaglio il significato dell'esagramma e dei suoi trigrammi
-3. Citi e spieghi il Giudizio e l'Immagine in relazione alla domanda specifica
-4. SE CI SONO LINEE MUTEVOLI: dedica un paragrafo COMPLETO a ciascuna, spiegando il testo tradizionale e il suo significato per la situazione del consultante
-5. SE C'È ESAGRAMMA DERIVATO: spiega la trasformazione e cosa indica per il futuro
-6. Concludi con saggezza pratica e un consiglio applicabile
+2. Spieghi in dettaglio il significato dell'esagramma e dei suoi trigrammi BASANDOTI sul testo Wilhelm sopra riportato
+3. Citi LETTERALMENTE la Sentenza e l'Immagine dal testo originale Wilhelm e spiegale in relazione alla domanda specifica
+4. SE CI SONO LINEE MUTEVOLI: dedica un paragrafo COMPLETO a ciascuna, riportando il TESTO TRADIZIONALE WILHELM («Nove al ...» o «Sei al ...») e analizzandolo per la situazione del consultante
+5. SE C'È ESAGRAMMA DERIVATO: spiega la trasformazione usando il testo Wilhelm dell'esagramma derivato sopra, e cosa indica per il futuro
+6. Concludi con saggezza pratica e un consiglio applicabile, ancorato al testo classico
 {"7. SE C'È STORIA DELLA CONVERSAZIONE: collega questa risposta alle stese precedenti, creando una narrazione fluida" if conversation_context else ""}
 
-Scrivi come un antico maestro taoista, con poesia, profondità e compassione."""
+CRITICO: Le tue interpretazioni devono essere FEDELI al testo Wilhelm sopra riportato.
+Quando citi Sentenza, Immagine o linee mutevoli, USA LE PAROLE ESATTE di Wilhelm.
+Scrivi come un antico maestro taoista, con poesia, profondità e compassione, ma sempre ANCORATO alla tradizione autentica."""
     else:
         user_prompt = f"""The querent's question is: "{question}"
 {conversation_context}
@@ -825,6 +838,17 @@ EXAMPLE TONE:
 "This is the time to..."
 """
 
+    # Build authoritative Wilhelm context for direct mode (shorter excerpt)
+    wilhelm_direct_context = ""
+    if language == "it":
+        from wilhelm_source import get_wilhelm_text
+        primary_wilhelm = get_wilhelm_text(hexagram_data["primary_hexagram"], max_chars=3500)
+        if primary_wilhelm:
+            wilhelm_direct_context = f"""
+=== TESTO ORIGINALE WILHELM (FONTE AUTORITATIVA) ===
+{primary_wilhelm}
+=== FINE TESTO WILHELM ==="""
+
     if language == "it":
         user_prompt = f"""Domanda del consultante: "{question}"
 {conversation_context}
@@ -832,9 +856,12 @@ ESAGRAMMA: {hexagram_data["primary_hexagram"]}. {primary_chinese} ({primary_name
 Sentenza: "{giudizio}"
 {f"Linee mutevoli: {moving_lines_text}" if moving_lines_text else "Nessuna linea mutevole"}
 {derived_text}
+{wilhelm_direct_context}
 
 Genera un'interpretazione DIRETTA e D'IMPATTO (300-400 parole) che risponda chiaramente alla domanda.
-Vai dritto al punto. Di' al consultante quello che ha bisogno di sapere.
+USA il testo Wilhelm sopra come riferimento autorevole per il significato dell'esagramma e delle linee.
+Quando rilevante, cita brevemente la Sentenza Wilhelm o la formula tradizionale di una linea mutevole.
+Vai dritto al punto. Di' al consultante quello che ha bisogno di sapere — ancorato alla tradizione, non inventato.
 {"Collega questa risposta alle domande precedenti nella conversazione." if conversation_context else ""}"""
     else:
         user_prompt = f"""Querent's question: "{question}"
