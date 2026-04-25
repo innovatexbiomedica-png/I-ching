@@ -620,7 +620,7 @@ Write as an ancient Taoist master, with poetry, depth, and compassion."""
 
     try:
         model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
+            model_name="gemini-2.5-flash",
             system_instruction=system_prompt
         )
         response = await model.generate_content_async(user_prompt)
@@ -786,7 +786,7 @@ Get straight to the point. Tell the querent what they need to know.
 
     try:
         model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
+            model_name="gemini-2.5-flash",
             system_instruction=system_prompt
         )
         response = await model.generate_content_async(user_prompt)
@@ -1322,7 +1322,7 @@ async def generate_synthesis_interpretation(consultations: List[dict], synthesis
 
     try:
         model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
+            model_name="gemini-2.5-flash",
             system_instruction="""Sei un maestro di I Ching con profonda saggezza taoista.
 Il tuo compito è analizzare MULTIPLE consultazioni fatte dallo stesso consultante e creare una SINTESI che:
 - Trova il filo conduttore tra le diverse stese
@@ -2259,7 +2259,7 @@ Write in a deep but accessible way, like a wise master guiding a student. Don't 
 """
     
     try:
-        model = genai.GenerativeModel(model_name="gemini-2.0-flash")
+        model = genai.GenerativeModel(model_name="gemini-2.5-flash")
         response = await model.generate_content_async(synthesis_prompt)
         synthesis_text = response.text
     except Exception as e:
