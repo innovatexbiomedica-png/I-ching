@@ -11,8 +11,8 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import jwt
 import bcrypt
-from emergentintegrations.llm.chat import LlmChat, UserMessage
-from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest, CheckoutSessionResponse
+import google.generativeai as genai
+import stripe as stripe_lib
 from iching_data import get_hexagram_traditional_data, get_trigram_info, get_moving_lines_text, get_all_lines_text, TRIGRAMS
 from iching_extended import ICHING_EXTENDED, get_extended_hexagram_data, get_moving_line_extended
 from subscription_manager import (
@@ -40,8 +40,13 @@ db = client[os.environ['DB_NAME']]
 
 # Config
 JWT_SECRET = os.environ.get('JWT_SECRET', 'iching-secret')
-EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
+
+# Configure Gemini
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 # Create the main app
 app = FastAPI(title="I Ching del Benessere API")
@@ -614,14 +619,12 @@ Generate a RICH, PROFOUND and DETAILED interpretation (600-900 words) that:
 Write as an ancient Taoist master, with poetry, depth, and compassion."""
 
     try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"iching-{uuid.uuid4()}",
-            system_message=system_prompt
-        ).with_model("gemini", "gemini-2.0-flash")
-        
-        response = await chat.send_message(UserMessage(text=user_prompt))
-        return response
+        model = genai.GenerativeModel(
+            model_name="gemini-2.0-flash",
+            system_instruction=system_prompt
+        )
+        response = await model.generate_content_async(user_prompt)
+        return response.text
     except Exception as e:
         logger.error(f"Error generating interpretation: {e}")
         return f"L'interpretazione non è disponibile al momento. Il tuo esagramma è {primary.get(name_key, primary['name'])}."
@@ -782,14 +785,12 @@ Get straight to the point. Tell the querent what they need to know.
 {"Connect this response to the previous questions in the conversation." if conversation_context else ""}"""
 
     try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"iching-direct-{uuid.uuid4()}",
-            system_message=system_prompt
-        ).with_model("gemini", "gemini-2.0-flash")
-        
-        response = await chat.send_message(UserMessage(text=user_prompt))
-        return response
+        model = genai.GenerativeModel(
+            model_name="gemini-2.0-flash",
+            system_instruction=system_prompt
+        )
+        response = await model.generate_content_async(user_prompt)
+        return response.text
     except Exception as e:
         logger.error(f"Error generating direct interpretation: {e}")
         return f"L'interpretazione non è disponibile al momento. Il tuo esagramma è {primary.get(name_key, primary['name'])}."
@@ -1329,14 +1330,13 @@ async def create_synthesis_consultation(data: SynthesisRequest, user: dict = Dep
 
 async def generate_synthesis_interpretation(consultations: List[dict], synthesis_type: str, language: str) -> str:
     """Generate AI interpretation that synthesizes multiple consultations"""
-    if not EMERGENT_LLM_KEY:
+    if not GEMINI_API_KEY:
         return "Interpretazione di sintesi non disponibile."
-    
+
     try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"synthesis-{uuid.uuid4()}",
-            system_message="""Sei un maestro di I Ching con profonda saggezza taoista. 
+        model = genai.GenerativeModel(
+            model_name="gemini-2.0-flash",
+            system_instruction="""Sei un maestro di I Ching con profonda saggezza taoista.
 Il tuo compito è analizzare MULTIPLE consultazioni fatte dallo stesso consultante e creare una SINTESI che:
 - Trova il filo conduttore tra le diverse stese
 - Identifica conferme, contraddizioni o approfondimenti
@@ -1345,7 +1345,7 @@ Il tuo compito è analizzare MULTIPLE consultazioni fatte dallo stesso consultan
 
 Non usare elenchi puntati. Scrivi in modo fluido e narrativo.
 Parla sempre in seconda persona al consultante."""
-        ).with_model("gemini", "gemini-2.0-flash")
+        )
         
         # Build the consultation summaries
         summaries = []
@@ -1414,9 +1414,9 @@ Write a DIVINATORY SYNTHESIS (300-500 words) that:
 
 Conclude with practical advice based on the synthesis."""
         
-        response = await chat.send_message(UserMessage(text=prompt))
-        return response
-        
+        response = await model.generate_content_async(prompt)
+        return response.text
+
     except Exception as e:
         logger.error(f"Error generating synthesis: {e}")
         if language == "it":
@@ -1540,17 +1540,22 @@ SUBSCRIPTION_PRICE = 9.99  # Monthly price in EUR
 
 @api_router.post("/payments/checkout")
 async def create_checkout(data: CheckoutRequest, request: Request, user: dict = Depends(get_current_user)):
-    host_url = str(request.base_url).rstrip("/")
-    webhook_url = f"{host_url}/api/webhook/stripe"
-    
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-    
+    stripe_lib.api_key = STRIPE_API_KEY
+
     success_url = f"{data.origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{data.origin_url}/pricing"
-    
-    checkout_request = CheckoutSessionRequest(
-        amount=SUBSCRIPTION_PRICE,
-        currency="eur",
+
+    session = stripe_lib.checkout.Session.create(
+        payment_method_types=["card"],
+        line_items=[{
+            "price_data": {
+                "currency": "eur",
+                "product_data": {"name": "I Ching del Benessere - Premium"},
+                "unit_amount": int(SUBSCRIPTION_PRICE * 100),
+            },
+            "quantity": 1,
+        }],
+        mode="payment",
         success_url=success_url,
         cancel_url=cancel_url,
         metadata={
@@ -1559,13 +1564,11 @@ async def create_checkout(data: CheckoutRequest, request: Request, user: dict = 
             "type": "monthly_subscription"
         }
     )
-    
-    session = await stripe_checkout.create_checkout_session(checkout_request)
-    
+
     # Create payment transaction record
     transaction_doc = {
         "id": str(uuid.uuid4()),
-        "session_id": session.session_id,
+        "session_id": session.id,
         "user_id": user["id"],
         "amount": SUBSCRIPTION_PRICE,
         "currency": "eur",
@@ -1574,37 +1577,32 @@ async def create_checkout(data: CheckoutRequest, request: Request, user: dict = 
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.payment_transactions.insert_one(transaction_doc)
-    
-    return {"url": session.url, "session_id": session.session_id}
+
+    return {"url": session.url, "session_id": session.id}
 
 @api_router.get("/payments/status/{session_id}")
 async def get_payment_status(session_id: str, user: dict = Depends(get_current_user)):
-    host_url = "https://connect-user-form.preview.emergentagent.com"
-    webhook_url = f"{host_url}/api/webhook/stripe"
-    
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-    
-    status = await stripe_checkout.get_checkout_status(session_id)
-    
+    stripe_lib.api_key = STRIPE_API_KEY
+
+    session = stripe_lib.checkout.Session.retrieve(session_id)
+
     # Update transaction record
-    if status.payment_status == "paid":
-        # Check if already processed
+    if session.payment_status == "paid":
         existing = await db.payment_transactions.find_one({
             "session_id": session_id,
             "payment_status": "paid"
         })
-        
+
         if not existing:
-            # Update transaction
             await db.payment_transactions.update_one(
                 {"session_id": session_id},
                 {"$set": {
-                    "status": status.status,
-                    "payment_status": status.payment_status,
+                    "status": session.status,
+                    "payment_status": session.payment_status,
                     "updated_at": datetime.now(timezone.utc).isoformat()
                 }}
             )
-            
+
             # Activate subscription for 30 days
             subscription_end = datetime.now(timezone.utc) + timedelta(days=30)
             await db.users.update_one(
@@ -1614,12 +1612,12 @@ async def get_payment_status(session_id: str, user: dict = Depends(get_current_u
                     "subscription_end": subscription_end.isoformat()
                 }}
             )
-    
+
     return {
-        "status": status.status,
-        "payment_status": status.payment_status,
-        "amount_total": status.amount_total,
-        "currency": status.currency
+        "status": session.status,
+        "payment_status": session.payment_status,
+        "amount_total": session.amount_total,
+        "currency": session.currency
     }
 
 @api_router.post("/webhook/stripe")
@@ -1628,42 +1626,44 @@ async def stripe_webhook(request: Request):
     sig_header = request.headers.get("Stripe-Signature", "")
     
     try:
-        host_url = str(request.base_url).rstrip("/")
-        webhook_url = f"{host_url}/api/webhook/stripe"
-        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-        
-        webhook_response = await stripe_checkout.handle_webhook(body, sig_header)
-        
-        if webhook_response.payment_status == "paid":
-            user_id = webhook_response.metadata.get("user_id")
-            if user_id:
-                # Check if already processed
-                existing = await db.payment_transactions.find_one({
-                    "session_id": webhook_response.session_id,
-                    "payment_status": "paid"
-                })
-                
-                if not existing:
-                    # Update transaction
-                    await db.payment_transactions.update_one(
-                        {"session_id": webhook_response.session_id},
-                        {"$set": {
-                            "status": "complete",
-                            "payment_status": "paid",
-                            "updated_at": datetime.now(timezone.utc).isoformat()
-                        }}
-                    )
-                    
-                    # Activate subscription
-                    subscription_end = datetime.now(timezone.utc) + timedelta(days=30)
-                    await db.users.update_one(
-                        {"id": user_id},
-                        {"$set": {
-                            "subscription_active": True,
-                            "subscription_end": subscription_end.isoformat()
-                        }}
-                    )
-        
+        stripe_lib.api_key = STRIPE_API_KEY
+        if STRIPE_WEBHOOK_SECRET and sig_header:
+            event = stripe_lib.Webhook.construct_event(body, sig_header, STRIPE_WEBHOOK_SECRET)
+        else:
+            event = stripe_lib.Event.construct_from(
+                stripe_lib.util.convert_to_stripe_object(
+                    stripe_lib.util.json.loads(body)
+                ),
+                stripe_lib.api_key
+            )
+
+        if event["type"] == "checkout.session.completed":
+            session = event["data"]["object"]
+            if session.get("payment_status") == "paid":
+                user_id = session.get("metadata", {}).get("user_id")
+                if user_id:
+                    existing = await db.payment_transactions.find_one({
+                        "session_id": session["id"],
+                        "payment_status": "paid"
+                    })
+                    if not existing:
+                        await db.payment_transactions.update_one(
+                            {"session_id": session["id"]},
+                            {"$set": {
+                                "status": "complete",
+                                "payment_status": "paid",
+                                "updated_at": datetime.now(timezone.utc).isoformat()
+                            }}
+                        )
+                        subscription_end = datetime.now(timezone.utc) + timedelta(days=30)
+                        await db.users.update_one(
+                            {"id": user_id},
+                            {"$set": {
+                                "subscription_active": True,
+                                "subscription_end": subscription_end.isoformat()
+                            }}
+                        )
+
         return {"received": True}
     except Exception as e:
         logger.error(f"Webhook error: {e}")
@@ -2272,12 +2272,8 @@ Write in a deep but accessible way, like a wise master guiding a student. Don't 
 """
     
     try:
-        llm = LlmChat(api_key=os.getenv("EMERGENT_LLM_KEY"))
-        response = await llm.send_message_async(
-            message=UserMessage(text=synthesis_prompt),
-            model="anthropic/claude-sonnet-4-20250514",
-            max_tokens=2000
-        )
+        model = genai.GenerativeModel(model_name="gemini-2.0-flash")
+        response = await model.generate_content_async(synthesis_prompt)
         synthesis_text = response.text
     except Exception as e:
         logger.error(f"Error generating path synthesis: {e}")
