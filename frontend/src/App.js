@@ -1,30 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from './components/ui/sonner';
 import Layout from './components/Layout';
 import SplashScreen from './components/SplashScreen';
+// Eagerly load pages used immediately (landing, auth)
 import Landing from './pages/Landing';
 import Login from './pages/Login';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import AuthCallback from './pages/AuthCallback';
-import Dashboard from './pages/Dashboard';
-import Consultation from './pages/Consultation';
-import History from './pages/History';
-import Pricing from './pages/Pricing';
-import PaymentSuccess from './pages/PaymentSuccess';
-import SharedConsultation from './pages/SharedConsultation';
-import Library from './pages/Library';
-import Statistics from './pages/Statistics';
-import Paths from './pages/Paths';
-import CompletedPaths from './pages/CompletedPaths';
-import Subscription from './pages/Subscription';
-import NotificationSettings from './pages/NotificationSettings';
-import AstrologicalProfile from './pages/AstrologicalProfile';
-import NatalChart from './pages/NatalChart';
+// Lazy load all other pages for faster initial load
+const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const AuthCallback = lazy(() => import('./pages/AuthCallback'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Consultation = lazy(() => import('./pages/Consultation'));
+const History = lazy(() => import('./pages/History'));
+const Pricing = lazy(() => import('./pages/Pricing'));
+const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));
+const SharedConsultation = lazy(() => import('./pages/SharedConsultation'));
+const Library = lazy(() => import('./pages/Library'));
+const Statistics = lazy(() => import('./pages/Statistics'));
+const Paths = lazy(() => import('./pages/Paths'));
+const CompletedPaths = lazy(() => import('./pages/CompletedPaths'));
+const Subscription = lazy(() => import('./pages/Subscription'));
+const NotificationSettings = lazy(() => import('./pages/NotificationSettings'));
+const AstrologicalProfile = lazy(() => import('./pages/AstrologicalProfile'));
+const NatalChart = lazy(() => import('./pages/NatalChart'));
 import './App.css';
+
+// Loading fallback for lazy routes
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-[#F9F7F2]">
+    <div className="w-8 h-8 border-2 border-[#C44D38] border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -75,6 +84,7 @@ function AppRouter() {
   }
 
   return (
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       {/* Auth Callback Route */}
       <Route path="/auth/callback" element={<AuthCallback />} />
@@ -185,6 +195,7 @@ function AppRouter() {
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   );
 }
 
