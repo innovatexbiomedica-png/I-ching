@@ -2153,6 +2153,21 @@ async def get_guided_paths(request: Request):
     return paths_list
 
 
+@api_router.get("/paths/unread-count")
+async def get_unread_paths_count(request: Request):
+    """Get count of unread completed paths for notification badge.
+    NOTE: Must be defined BEFORE /paths/{path_id} so FastAPI doesn't
+    treat 'unread-count' as a path_id parameter."""
+    user = await get_current_user(request)
+
+    count = await db.completed_paths.count_documents({
+        "user_id": user["id"],
+        "is_read": False
+    })
+
+    return {"count": count}
+
+
 @api_router.get("/paths/{path_id}")
 async def get_path_detail(path_id: str, request: Request):
     """Get details of a specific guided path"""
@@ -2422,19 +2437,6 @@ async def get_completed_path_detail(completed_path_id: str, request: Request):
     return completed_path
 
 
-@api_router.get("/paths/unread-count")
-async def get_unread_paths_count(request: Request):
-    """Get count of unread completed paths for notification badge"""
-    user = await get_current_user(request)
-    
-    count = await db.completed_paths.count_documents({
-        "user_id": user["id"],
-        "is_read": False
-    })
-    
-    return {"count": count}
-
-
 # ============== PROGRESSION SYSTEM ==============
 
 @api_router.get("/progression")
@@ -2556,14 +2558,30 @@ async def get_current_advice(request: Request):
         }
     
     # Get user's preference
-    prefs = await get_user_notification_preferences(db, user["id"])
-    frequency = prefs.get("frequency", "daily")
-    lang = user.get("language", "it")
-    
-    advice = await generate_personalized_advice(db, user["id"], frequency, lang)
-    advice["notification_preferences"] = prefs
-    
-    return advice
+    try:
+        prefs = await get_user_notification_preferences(db, user["id"])
+        frequency = prefs.get("frequency", "daily")
+        lang = user.get("language", "it")
+
+        advice = await generate_personalized_advice(db, user["id"], frequency, lang)
+        if not isinstance(advice, dict):
+            advice = {"message": str(advice) if advice else ""}
+        advice["notification_preferences"] = prefs
+        return advice
+    except Exception as e:
+        logger.error(f"Error generating personalized advice: {e}", exc_info=True)
+        # Graceful fallback: return chinese-calendar preview instead of 500
+        day_energy = get_chinese_day_energy()
+        year_animal = get_chinese_year_animal()
+        lang = user.get("language", "it")
+        return {
+            "is_fallback": True,
+            "message": "Consiglio temporaneamente non disponibile. Riprova tra poco." if lang == "it" else "Advice temporarily unavailable. Try again shortly.",
+            "chinese_calendar": {
+                "day_energy": day_energy,
+                "year_animal": year_animal,
+            }
+        }
 
 
 @api_router.get("/chinese-calendar")
