@@ -2560,13 +2560,15 @@ async def get_current_advice(request: Request):
     # Get user's preference
     try:
         prefs = await get_user_notification_preferences(db, user["id"])
-        frequency = prefs.get("frequency", "daily")
+        # Strip MongoDB internals (ObjectId is not JSON serializable)
+        clean_prefs = {k: v for k, v in prefs.items() if k != "_id"}
+        frequency = clean_prefs.get("frequency", "daily")
         lang = user.get("language", "it")
 
         advice = await generate_personalized_advice(db, user["id"], frequency, lang)
         if not isinstance(advice, dict):
             advice = {"message": str(advice) if advice else ""}
-        advice["notification_preferences"] = prefs
+        advice["notification_preferences"] = clean_prefs
         return advice
     except Exception as e:
         logger.error(f"Error generating personalized advice: {e}", exc_info=True)
