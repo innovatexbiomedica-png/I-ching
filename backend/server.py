@@ -1310,6 +1310,77 @@ async def get_reset_requests():
     ).sort("created_at", -1).to_list(50)
     return requests
 
+
+def _verify_admin(secret_header: str):
+    """Constant-time check against ADMIN_SECRET env var."""
+    import hmac
+    expected = os.environ.get("ADMIN_SECRET", "")
+    if not expected:
+        raise HTTPException(status_code=503, detail="ADMIN_SECRET non configurato")
+    if not hmac.compare_digest(secret_header or "", expected):
+        raise HTTPException(status_code=403, detail="Accesso admin non autorizzato")
+
+
+@api_router.post("/admin/revoke-test-premium")
+async def revoke_test_premium(request: Request):
+    """
+    Revokes Premium from any user whose subscription was activated manually
+    (i.e. they have subscription_active=true but no associated paid
+    payment_transaction). End of the testing window.
+
+    Auth: X-Admin-Secret header must match the ADMIN_SECRET env var.
+    """
+    _verify_admin(request.headers.get("X-Admin-Secret"))
+
+    # Find paid transactions to know which users LEGITIMATELY have Premium
+    paid = await db.payment_transactions.distinct("user_id", {"payment_status": "paid"})
+    paid_set = set(paid)
+
+    affected = []
+    premium_users = await db.users.find(
+        {"subscription_active": True},
+        {"_id": 0, "id": 1, "email": 1, "subscription_end": 1, "auth_provider": 1}
+    ).to_list(1000)
+
+    for u in premium_users:
+        if u["id"] in paid_set:
+            continue  # legitimate paying user — keep Premium
+        await db.users.update_one(
+            {"id": u["id"]},
+            {"$set": {
+                "subscription_active": False,
+                "subscription_end": None,
+                "premium_revoked_at": datetime.now(timezone.utc).isoformat(),
+                "premium_revoked_reason": "test_period_ended",
+            }}
+        )
+        affected.append({
+            "email": u.get("email"),
+            "previous_end": u.get("subscription_end"),
+        })
+
+    return {
+        "revoked": len(affected),
+        "users": affected,
+        "kept_paying": len(paid_set),
+    }
+
+
+@api_router.get("/admin/users-overview")
+async def admin_users_overview(request: Request):
+    """Quick overview of user base by plan (admin-only)."""
+    _verify_admin(request.headers.get("X-Admin-Secret"))
+    total = await db.users.count_documents({})
+    premium = await db.users.count_documents({"subscription_active": True})
+    free = total - premium
+    paid = await db.payment_transactions.count_documents({"payment_status": "paid"})
+    return {
+        "total_users": total,
+        "premium_users": premium,
+        "free_users": free,
+        "paid_transactions": paid,
+    }
+
 # ============== I CHING CONSULTATION ROUTES ==============
 @api_router.post("/consultations", response_model=ConsultationResponse)
 async def create_consultation(data: ConsultationCreate, user: dict = Depends(get_current_user)):
