@@ -18,7 +18,7 @@ import os
 # Default falls back to the project owner's known emails so the system
 # keeps working even before the env var is set in production.
 # ──────────────────────────────────────────────────────────────────────
-_DEFAULT_ADMINS = "davide@iching.it"
+_DEFAULT_ADMINS = "amministrazione@innovatex.it,innovatexbiomedica@gmail.com,davide@iching.it"
 
 ADMIN_EMAILS = {
     email.strip().lower()
