@@ -23,7 +23,9 @@ function loadGis() {
   return gisLoaded;
 }
 
-const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
+const CLIENT_ID =
+  process.env.REACT_APP_GOOGLE_CLIENT_ID ||
+  '530318233533-748rakb44paferck3s37573hsnhvocj3.apps.googleusercontent.com';
 
 /**
  * Drop-in Google Sign-In button.
