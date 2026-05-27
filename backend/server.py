@@ -49,33 +49,169 @@ GEMINI_SAFETY_SETTINGS = [
 ]
 
 
+def _local_fallback_interpretation(
+    primary, derived, primary_extended, derived_extended,
+    hexagram_data, name_key, language, mode="direct",
+) -> str:
+    """
+    Last-resort interpretation assembled from the traditional Wilhelm text
+    we already have locally (no AI call). Better than the bare
+    'not available' message — the user still gets Sentenza, Immagine,
+    every active moving line, and the derived hexagram if any.
+    """
+    name = primary.get(name_key) or primary.get("name", "")
+    giudizio = (primary_extended or {}).get("giudizio") or ""
+    immagine = (primary_extended or {}).get("immagine") or ""
+
+    moving_lines = (hexagram_data or {}).get("moving_lines") or []
+    primary_n = (hexagram_data or {}).get("primary_hexagram")
+    derived_n = (hexagram_data or {}).get("derived_hexagram")
+
+    if language == "en":
+        parts = [
+            f"### {name} (#{primary_n})",
+            "",
+            "**The Judgment**",
+            giudizio.strip() or "—",
+            "",
+            "**The Image**",
+            immagine.strip() or "—",
+        ]
+    else:
+        parts = [
+            f"### {name} (#{primary_n})",
+            "",
+            "**La Sentenza (Giudizio)**",
+            giudizio.strip() or "—",
+            "",
+            "**L'Immagine**",
+            immagine.strip() or "—",
+        ]
+
+    if moving_lines:
+        parts.append("")
+        parts.append("**Linee mutevoli**" if language != "en" else "**Moving lines**")
+        for pos in moving_lines:
+            try:
+                ld = get_moving_line_extended(primary_n, pos, language) or {}
+                testo = (ld.get("testo") or ld.get("text") or "").strip()
+                spieg = (ld.get("commento") or ld.get("commentary") or ld.get("interpretation") or "").strip()
+                if testo:
+                    parts.append(f"- **{('Linea' if language != 'en' else 'Line')} {pos}.** {testo}")
+                if spieg:
+                    parts.append(f"  {spieg}")
+            except Exception:
+                continue
+
+    if derived_n and derived:
+        d_name = derived.get(name_key) or derived.get("name", "")
+        d_giud = (derived_extended or {}).get("giudizio") or ""
+        parts.append("")
+        if language == "en":
+            parts.append(f"**Where it is heading → {d_name} (#{derived_n})**")
+        else:
+            parts.append(f"**Verso cui si dirige → {d_name} (#{derived_n})**")
+        if d_giud:
+            parts.append(d_giud.strip())
+
+    parts.append("")
+    if language == "en":
+        parts.append(
+            "_(Service note: AI elaboration is momentarily unavailable. "
+            "The text above is the traditional reading from Richard Wilhelm's translation.)_"
+        )
+    else:
+        parts.append(
+            "_(Nota di servizio: l'elaborazione AI non è momentaneamente disponibile. "
+            "Il testo qui sopra è la lettura tradizionale tratta dalla traduzione di Richard Wilhelm.)_"
+        )
+    return "\n".join(parts)
+
+
+def _extract_text_from_gemini_response(response) -> str:
+    """
+    Robust text extraction from a Gemini response.
+
+    `response.text` is a *property* in google-generativeai that raises
+    ValueError when finish_reason is not STOP (e.g. MAX_TOKENS, SAFETY,
+    or when there is a `thoughtSignature` part but no text). We must
+    therefore NEVER touch `.text` blindly — even `getattr(..., "text", None)`
+    actually invokes the property and triggers the exception.
+
+    Strategy:
+      1) Try `.text` inside a try/except. If it works, perfect.
+      2) Otherwise iterate `candidates -> content.parts` and concatenate
+         every `.text` we find on the parts (skipping `thought` parts).
+    """
+    if not response:
+        return ""
+    # 1. Fast path
+    try:
+        t = response.text
+        if t:
+            return t
+    except Exception:
+        pass
+    # 2. Manual extraction from candidates/parts
+    pieces = []
+    try:
+        candidates = getattr(response, "candidates", None) or []
+        for cand in candidates:
+            content = getattr(cand, "content", None)
+            if not content:
+                continue
+            for part in getattr(content, "parts", []) or []:
+                # Skip Gemini 2.5 'thought' parts that carry no user-facing text
+                if getattr(part, "thought", False):
+                    continue
+                ptext = getattr(part, "text", None)
+                if ptext:
+                    pieces.append(ptext)
+    except Exception:
+        pass
+    return "".join(pieces)
+
+
 async def _gemini_generate_with_retry(model, prompt, max_retries: int = 3):
-    """Call Gemini with exponential backoff on rate limit / transient errors."""
+    """
+    Call Gemini with exponential backoff on rate limit / transient errors.
+
+    Returns the extracted text (possibly empty if the model produced none).
+    Raises only on persistent transport errors.
+    """
     last_error = None
     for attempt in range(max_retries):
         try:
             response = await model.generate_content_async(prompt)
-            # Some safety blocks return empty text — fall back gracefully
-            if response and getattr(response, "text", None):
-                return response.text
-            if response and response.candidates:
-                # Try to extract text from candidates anyway
-                for cand in response.candidates:
-                    if cand.content and cand.content.parts:
-                        joined = "".join(p.text for p in cand.content.parts if hasattr(p, "text"))
-                        if joined:
-                            return joined
-            raise RuntimeError("Empty response from Gemini")
+            text = _extract_text_from_gemini_response(response)
+
+            # If text is empty AND it's because we ran out of tokens on
+            # thinking-only output, retry once with a smaller / different
+            # config might help — but here we just surface what we have.
+            if text:
+                return text
+
+            # Log finish reason for diagnostics
+            try:
+                fr = response.candidates[0].finish_reason if response.candidates else "?"
+            except Exception:
+                fr = "?"
+            logger.warning(f"Gemini returned empty text (finish_reason={fr}, attempt {attempt+1}/{max_retries})")
+
+            # Empty text → retry once more, then give up gracefully
+            if attempt < max_retries - 1:
+                await asyncio.sleep(1)
+                continue
+            return ""  # graceful empty
         except Exception as e:
             last_error = e
             err_str = str(e).lower()
-            # Retry on transient errors (rate limit, network, server)
             if any(s in err_str for s in ("429", "rate", "quota", "timeout", "503", "504", "500")):
                 wait = 2 ** attempt  # 1s, 2s, 4s
                 logger.warning(f"Gemini transient error (attempt {attempt+1}/{max_retries}), retrying in {wait}s: {e}")
                 await asyncio.sleep(wait)
                 continue
-            # Non-transient errors: stop retrying
+            logger.error(f"Gemini non-transient error: {e}", exc_info=True)
             raise
     raise last_error if last_error else RuntimeError("Gemini retry exhausted")
 from iching_data import get_hexagram_traditional_data, get_trigram_info, get_moving_lines_text, get_all_lines_text, TRIGRAMS
@@ -726,10 +862,19 @@ Write as an ancient Taoist master, with poetry, depth, and compassion."""
             generation_config=GEMINI_DEEP_CONFIG,
             safety_settings=GEMINI_SAFETY_SETTINGS,
         )
-        return await _gemini_generate_with_retry(model, user_prompt)
+        text = await _gemini_generate_with_retry(model, user_prompt)
+        if text and len(text) > 100:
+            return text
+        logger.warning(f"Deep interp empty/short ({len(text or '')} char), using rich fallback")
     except Exception as e:
-        logger.error(f"Error generating deep interpretation: {e}")
-        return f"L'interpretazione non è disponibile al momento. Il tuo esagramma è {primary.get(name_key, primary['name'])}."
+        logger.error(f"Error generating deep interpretation: {e}", exc_info=True)
+
+    # Rich fallback assembled from the traditional Wilhelm text we
+    # already have locally — much better than the bare "not available"
+    return _local_fallback_interpretation(
+        primary, derived, primary_extended, derived_extended,
+        hexagram_data, name_key, language, mode="deep",
+    )
 
 async def generate_direct_interpretation(hexagram_data: dict, question: str, language: str, 
                                           primary: dict, derived: dict, 
@@ -907,10 +1052,17 @@ Get straight to the point. Tell the querent what they need to know.
             generation_config=GEMINI_DIRECT_CONFIG,
             safety_settings=GEMINI_SAFETY_SETTINGS,
         )
-        return await _gemini_generate_with_retry(model, user_prompt)
+        text = await _gemini_generate_with_retry(model, user_prompt)
+        if text and len(text) > 100:
+            return text
+        logger.warning(f"Direct interp empty/short ({len(text or '')} char), using rich fallback")
     except Exception as e:
-        logger.error(f"Error generating direct interpretation: {e}")
-        return f"L'interpretazione non è disponibile al momento. Il tuo esagramma è {primary.get(name_key, primary['name'])}."
+        logger.error(f"Error generating direct interpretation: {e}", exc_info=True)
+
+    return _local_fallback_interpretation(
+        primary, derived, primary_extended, derived_extended,
+        hexagram_data, name_key, language, mode="direct",
+    )
 
 # ============== AUTH ROUTES ==============
 @api_router.post("/auth/register", response_model=UserResponse)
