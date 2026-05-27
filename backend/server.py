@@ -208,9 +208,11 @@ BINARY_TO_HEX = {
 # ============== MODELS ==============
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str
-    name: str
-    phone: str = ""
+    # Server-side validation: minimum 6 chars (matches frontend hint).
+    # Keeps registration safe even if a client bypasses UI validation.
+    password: str = Field(..., min_length=6, max_length=128)
+    name: str = Field(..., min_length=1, max_length=80)
+    phone: str = Field(default="", max_length=30)
     language: str = "it"
 
 class UserLogin(BaseModel):
