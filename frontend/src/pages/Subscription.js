@@ -32,16 +32,28 @@ const Subscription = () => {
   const handleSubscribe = async (planType) => {
     setProcessingPayment(true);
     try {
-      const response = await axios.post(`${API}/payments/create-checkout`, 
-        { plan_type: planType },
-        { headers: { Authorization: `Bearer ${getToken()}` }}
+      const response = await axios.post(
+        `${API}/payments/checkout`,
+        {
+          plan_type: planType,
+          origin_url: window.location.origin,
+        },
+        { headers: { Authorization: `Bearer ${getToken()}` } }
       );
-      
-      if (response.data.checkout_url) {
-        window.location.href = response.data.checkout_url;
+
+      // Backend returns { url, session_id }
+      const checkoutUrl = response.data.url || response.data.checkout_url;
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        toast.error('URL di pagamento mancante. Riprova.');
       }
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Errore nel processare il pagamento');
+      const detail = error.response?.data?.detail;
+      const msg = error.response?.status === 404
+        ? 'Endpoint pagamento non disponibile. Contatta il supporto.'
+        : (detail || 'Errore nel processare il pagamento');
+      toast.error(msg);
     } finally {
       setProcessingPayment(false);
     }

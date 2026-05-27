@@ -310,6 +310,8 @@ class SynthesisRequest(BaseModel):
 
 class CheckoutRequest(BaseModel):
     origin_url: str
+    # 'monthly' (default) → €9.99 / 'yearly' → €79.99
+    plan_type: str = "monthly"
 
 class NoteCreate(BaseModel):
     consultation_id: str
@@ -1872,22 +1874,43 @@ async def get_shared_consultation(share_token: str):
     }
 
 # ============== STRIPE PAYMENT ROUTES ==============
-SUBSCRIPTION_PRICE = 9.99  # Monthly price in EUR
+# Prices come from subscription_manager.SUBSCRIPTION_PRICES so they stay
+# in one place (and match what /subscription/status exposes to the UI).
+SUBSCRIPTION_PRICE = SUBSCRIPTION_PRICES["monthly"]["price"]  # legacy export
+
 
 @api_router.post("/payments/checkout")
 async def create_checkout(data: CheckoutRequest, request: Request, user: dict = Depends(get_current_user)):
+    if not STRIPE_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="Pagamenti non ancora configurati. Riprova più tardi."
+        )
+
+    # Pick price from chosen plan
+    plan_type = (data.plan_type or "monthly").lower()
+    if plan_type not in SUBSCRIPTION_PRICES:
+        raise HTTPException(status_code=400, detail="plan_type non valido (monthly|yearly)")
+    plan_cfg = SUBSCRIPTION_PRICES[plan_type]
+    price_eur = float(plan_cfg["price"])
+    product_label = (
+        "I Ching del Benessere — Premium Mensile" if plan_type == "monthly"
+        else "I Ching del Benessere — Premium Annuale"
+    )
+    duration_days = 30 if plan_type == "monthly" else 365
+
     stripe_lib.api_key = STRIPE_API_KEY
 
     success_url = f"{data.origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{data.origin_url}/pricing"
+    cancel_url = f"{data.origin_url}/subscription"
 
     session = stripe_lib.checkout.Session.create(
         payment_method_types=["card"],
         line_items=[{
             "price_data": {
-                "currency": "eur",
-                "product_data": {"name": "I Ching del Benessere - Premium"},
-                "unit_amount": int(SUBSCRIPTION_PRICE * 100),
+                "currency": plan_cfg["currency"].lower(),
+                "product_data": {"name": product_label},
+                "unit_amount": int(round(price_eur * 100)),
             },
             "quantity": 1,
         }],
@@ -1897,17 +1920,19 @@ async def create_checkout(data: CheckoutRequest, request: Request, user: dict = 
         metadata={
             "user_id": user["id"],
             "user_email": user["email"],
-            "type": "monthly_subscription"
+            "type": f"{plan_type}_subscription",
+            "duration_days": str(duration_days),
         }
     )
 
-    # Create payment transaction record
     transaction_doc = {
         "id": str(uuid.uuid4()),
         "session_id": session.id,
         "user_id": user["id"],
-        "amount": SUBSCRIPTION_PRICE,
-        "currency": "eur",
+        "amount": price_eur,
+        "currency": plan_cfg["currency"].lower(),
+        "plan_type": plan_type,
+        "duration_days": duration_days,
         "status": "pending",
         "payment_status": "initiated",
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -1939,8 +1964,10 @@ async def get_payment_status(session_id: str, user: dict = Depends(get_current_u
                 }}
             )
 
-            # Activate subscription for 30 days
-            subscription_end = datetime.now(timezone.utc) + timedelta(days=30)
+            # Activate subscription for the chosen plan duration
+            txn = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
+            days = (txn or {}).get("duration_days") or 30
+            subscription_end = datetime.now(timezone.utc) + timedelta(days=int(days))
             await db.users.update_one(
                 {"id": user["id"]},
                 {"$set": {
@@ -1991,7 +2018,12 @@ async def stripe_webhook(request: Request):
                                 "updated_at": datetime.now(timezone.utc).isoformat()
                             }}
                         )
-                        subscription_end = datetime.now(timezone.utc) + timedelta(days=30)
+                        # Use duration from transaction record (30 for monthly, 365 for yearly)
+                        txn = await db.payment_transactions.find_one(
+                            {"session_id": session["id"]}, {"_id": 0}
+                        )
+                        days = (txn or {}).get("duration_days") or 30
+                        subscription_end = datetime.now(timezone.utc) + timedelta(days=int(days))
                         await db.users.update_one(
                             {"id": user_id},
                             {"$set": {
