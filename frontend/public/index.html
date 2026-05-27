@@ -7,10 +7,53 @@
         <meta name="description" content="I Ching del Benessere - L'antica saggezza cinese per il benessere moderno" />
         <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
         <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+        <!-- Performance: open the connection to the backend & Google Fonts
+             during HTML parsing so the first API call and font load are
+             ~200-400ms faster on slow networks. -->
+        <link rel="preconnect" href="https://iching-backend-ac3n.onrender.com" crossorigin />
+        <link rel="dns-prefetch" href="https://iching-backend-ac3n.onrender.com" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link rel="dns-prefetch" href="https://accounts.google.com" />
+
+        <!-- Initial paint background = avoid flash of white on load. -->
+        <style>
+            html, body {
+                background: #F9F7F2;
+                color: #2C2C2C;
+                font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+                margin: 0;
+                min-height: 100vh;
+            }
+            #root:empty::before {
+                content: '';
+                display: block;
+                width: 32px;
+                height: 32px;
+                border: 2px solid #C44D38;
+                border-top-color: transparent;
+                border-radius: 50%;
+                animation: app-spin 0.8s linear infinite;
+                margin: 40vh auto;
+            }
+            @keyframes app-spin { to { transform: rotate(360deg); } }
+        </style>
+
         <title>I Ching del Benessere</title>
     </head>
     <body>
-        <noscript>You need to enable JavaScript to run this app.</noscript>
+        <noscript>Per usare l'app è necessario abilitare JavaScript.</noscript>
         <div id="root"></div>
+        <!-- Fire-and-forget warmup ping: wakes the Render free-tier service
+             in parallel with the React bundle download. -->
+        <script>
+            (function() {
+                try {
+                    fetch('https://iching-backend-ac3n.onrender.com/ping', { mode: 'cors', cache: 'no-store' })
+                        .catch(function(){});
+                } catch (_) {}
+            })();
+        </script>
     </body>
 </html>

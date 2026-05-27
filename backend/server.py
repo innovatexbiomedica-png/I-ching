@@ -1,6 +1,7 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Response
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -4184,28 +4185,87 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Gzip everything > 500 bytes. Backend payloads (hexagrams.json, library)
+# go from ~30KB to ~6KB. Browser supports gzip out of the box.
+app.add_middleware(GZipMiddleware, minimum_size=500, compresslevel=6)
+
+
+# Endpoints whose payload never changes per-user (truly static catalog data).
+# We let the browser cache them for an hour — huge speedup for repeated visits
+# to the library and for the consultation flow that reads hex data.
+_STATIC_API_PATHS = (
+    "/api/hexagrams",
+    "/api/library/hexagrams",
+    "/api/library/trigrams",
+)
+
 
 @app.middleware("http")
-async def add_privacy_headers(request: Request, call_next):
+async def add_privacy_and_cache_headers(request: Request, call_next):
     """
-    Enforce the Privacy Policy claim that API responses are not indexable
-    and that personal data exchanges are not cacheable by intermediaries.
+    Adds security headers required by the Privacy Policy AND smart cache
+    headers per route family:
+      - personal endpoints  -> no-store
+      - static catalog data -> public, max-age=3600
+      - everything else     -> default browser caching
     """
     response = await call_next(request)
     response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive, nosnippet"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["X-Content-Type-Options"] = "nosniff"
-    # Don't override caching for static-ish endpoints (hexagrams, lunar) where
-    # appropriate, but mark personal endpoints as no-store.
-    if request.url.path.startswith("/api/auth") or \
-       request.url.path.startswith("/api/consultations") or \
-       request.url.path.startswith("/api/profile") or \
-       request.url.path.startswith("/api/natal-chart") or \
-       request.url.path.startswith("/api/notes") or \
-       request.url.path.startswith("/api/notifications"):
+
+    path = request.url.path
+    if path.startswith(_STATIC_API_PATHS):
+        # 1 hour browser cache + stale-while-revalidate 1 day
+        response.headers["Cache-Control"] = "public, max-age=3600, stale-while-revalidate=86400"
+    elif path.startswith((
+        "/api/auth", "/api/consultations", "/api/profile",
+        "/api/natal-chart", "/api/notes", "/api/notifications",
+        "/api/fitness", "/api/subscription",
+    )):
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
     return response
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Performance: MongoDB indexes
+# ────────────────────────────────────────────────────────────────────────
+@app.on_event("startup")
+async def ensure_indexes():
+    """
+    Create indexes on the collections we read most frequently.
+    Idempotent: MongoDB skips creation if the index already exists.
+    """
+    try:
+        await db.users.create_index("email", unique=True)
+        await db.users.create_index("id", unique=True)
+        await db.consultations.create_index([("user_id", 1), ("created_at", -1)])
+        await db.consultations.create_index("share_token")
+        await db.notes.create_index([("user_id", 1), ("consultation_id", 1)])
+        await db.payment_transactions.create_index("session_id", unique=True)
+        await db.payment_transactions.create_index([("user_id", 1), ("created_at", -1)])
+        await db.notification_preferences.create_index("user_id", unique=True)
+        await db.notification_reads.create_index("user_id", unique=True)
+        await db.fitness_profiles.create_index("user_id", unique=True)
+        await db.fitness_programs.create_index([("user_id", 1), ("active", 1)])
+        await db.fitness_completed.create_index([("user_id", 1), ("completed_at", -1)])
+        await db.user_paths.create_index([("user_id", 1), ("path_id", 1)])
+        await db.completed_paths.create_index([("user_id", 1), ("is_read", 1)])
+        await db.password_resets.create_index([("email", 1), ("created_at", -1)])
+        logger.info("✅ MongoDB indexes ensured")
+    except Exception as e:
+        logger.warning(f"Index creation skipped: {e}")
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+
+# Lightweight ping endpoint used by external uptime monitors (UptimeRobot,
+# Cron-job.org, etc.) to keep the Render free-tier service warm and avoid
+# the 30-60s cold start when a real user lands on the site.
+@app.get("/ping")
+@app.get("/healthz")
+async def health_check():
+    return {"status": "ok", "ts": datetime.now(timezone.utc).isoformat()}
