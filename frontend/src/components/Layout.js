@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../lib/translations';
-import { Menu, X, User, LogOut, Globe, Home } from 'lucide-react';
+import { Menu, X, User, LogOut, Globe, Home, Sparkles, Crown, Star, Bell, FileText } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -132,7 +132,7 @@ const Layout = ({ children }) => {
                       <span className="font-sans text-sm max-w-[100px] truncate">{user?.name}</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-[#F9F7F2] border-[#D1CDC7]">
+                  <DropdownMenuContent align="end" className="bg-[#F9F7F2] border-[#D1CDC7] min-w-[220px]">
                     <DropdownMenuItem
                       onClick={() => navigate('/dashboard')}
                       className="text-[#2C2C2C] cursor-pointer"
@@ -141,6 +141,48 @@ const Layout = ({ children }) => {
                       <Home className="w-4 h-4 mr-2" />
                       {language === 'it' ? 'La mia Home' : 'My Home'}
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => navigate('/profile/astrology')}
+                      className="text-[#2C2C2C] cursor-pointer"
+                      data-testid="profile-astro-btn"
+                    >
+                      <Star className="w-4 h-4 mr-2" />
+                      {language === 'it' ? 'Profilo Astrologico' : 'Astrological Profile'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => navigate('/natal-chart')}
+                      className="text-[#2C2C2C] cursor-pointer"
+                      data-testid="profile-natalchart-btn"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      {language === 'it' ? 'Tema Natale' : 'Natal Chart'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => navigate('/fitness')}
+                      className="text-[#2C2C2C] cursor-pointer"
+                      data-testid="profile-fitness-btn"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2 text-[#C44D38]" />
+                      {language === 'it' ? 'Fitness & Coaching' : 'Fitness & Coaching'}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-[#D1CDC7]" />
+                    <DropdownMenuItem
+                      onClick={() => navigate('/subscription')}
+                      className="text-[#2C2C2C] cursor-pointer"
+                      data-testid="profile-subscription-btn"
+                    >
+                      <Crown className="w-4 h-4 mr-2 text-amber-500" />
+                      {language === 'it' ? 'Abbonamento' : 'Subscription'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => navigate('/notifications')}
+                      className="text-[#2C2C2C] cursor-pointer"
+                      data-testid="profile-notifications-btn"
+                    >
+                      <Bell className="w-4 h-4 mr-2" />
+                      {language === 'it' ? 'Notifiche' : 'Notifications'}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-[#D1CDC7]" />
                     <DropdownMenuItem
                       onClick={handleLogout}
                       className="text-[#2C2C2C] cursor-pointer"
@@ -219,17 +261,33 @@ const Layout = ({ children }) => {
                     <User className="w-3.5 h-3.5" />
                     <span className="font-medium">{user?.name}</span>
                   </div>
-                  <Link
-                    to="/dashboard"
-                    className="flex items-center space-x-2 py-2 text-[#2C2C2C]"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
+                  <Link to="/dashboard" className="flex items-center space-x-2 py-2 text-[#2C2C2C]" onClick={() => setMobileMenuOpen(false)}>
                     <Home className="w-4 h-4" />
                     <span>{language === 'it' ? 'La mia Home' : 'My Home'}</span>
                   </Link>
+                  <Link to="/profile/astrology" className="flex items-center space-x-2 py-2 text-[#2C2C2C]" onClick={() => setMobileMenuOpen(false)}>
+                    <Star className="w-4 h-4" />
+                    <span>{language === 'it' ? 'Profilo Astrologico' : 'Astrological Profile'}</span>
+                  </Link>
+                  <Link to="/natal-chart" className="flex items-center space-x-2 py-2 text-[#2C2C2C]" onClick={() => setMobileMenuOpen(false)}>
+                    <FileText className="w-4 h-4" />
+                    <span>{language === 'it' ? 'Tema Natale' : 'Natal Chart'}</span>
+                  </Link>
+                  <Link to="/fitness" className="flex items-center space-x-2 py-2 text-[#2C2C2C]" onClick={() => setMobileMenuOpen(false)}>
+                    <Sparkles className="w-4 h-4 text-[#C44D38]" />
+                    <span>{language === 'it' ? 'Fitness & Coaching' : 'Fitness & Coaching'}</span>
+                  </Link>
+                  <Link to="/subscription" className="flex items-center space-x-2 py-2 text-[#2C2C2C]" onClick={() => setMobileMenuOpen(false)}>
+                    <Crown className="w-4 h-4 text-amber-500" />
+                    <span>{language === 'it' ? 'Abbonamento' : 'Subscription'}</span>
+                  </Link>
+                  <Link to="/notifications" className="flex items-center space-x-2 py-2 text-[#2C2C2C]" onClick={() => setMobileMenuOpen(false)}>
+                    <Bell className="w-4 h-4" />
+                    <span>{language === 'it' ? 'Notifiche' : 'Notifications'}</span>
+                  </Link>
                   <button
                     onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-                    className="flex items-center space-x-2 py-2 text-[#2C2C2C]"
+                    className="flex items-center space-x-2 py-2 text-[#2C2C2C] pt-3 mt-1 border-t border-[#D1CDC7] w-full"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>{t.nav.logout}</span>
