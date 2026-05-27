@@ -186,6 +186,16 @@ const MobileBottomNav = () => {
                 {language === 'it' ? 'Abbonamento' : 'Subscription'}
               </span>
             </button>
+
+            <button
+              onClick={() => { handleNavClick('/fitness'); }}
+              className="flex items-center space-x-3 px-4 py-3 hover:bg-[#F9F7F2] transition-colors"
+            >
+              <Sparkles className="w-5 h-5 text-[#C44D38]" />
+              <span className="text-[#2C2C2C]">
+                {language === 'it' ? 'Fitness & Coaching' : 'Fitness & Coaching'}
+              </span>
+            </button>
             
             <button
               onClick={() => { handleNavClick('/statistics'); }}

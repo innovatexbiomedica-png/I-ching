@@ -96,6 +96,13 @@ from astrology_profile import (
 )
 from natal_chart import calculate_natal_chart, geocode_location, KERYKEION_AVAILABLE
 from wilhelm_source import build_authoritative_context, is_loaded as wilhelm_loaded
+from fitness_coaching import (
+    ONBOARDING_QUESTIONS as FITNESS_ONBOARDING_QUESTIONS,
+    validate_onboarding as fitness_validate_onboarding,
+    score_to_focus_areas as fitness_score,
+    generate_weekly_program as fitness_generate_program,
+    compute_xp_and_badges as fitness_compute_xp,
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -1324,6 +1331,196 @@ async def verify_reset_code(data: PasswordResetVerify):
     
     return {"message": "Password aggiornata con successo. Ora puoi accedere."}
 
+# ═══════════════════════════════════════════════════════════════════════
+# FITNESS COACHING (esclusivo piano fitness_coaching)
+# ═══════════════════════════════════════════════════════════════════════
+
+def _require_fitness_plan(user: dict):
+    """Raises 403 unless the user's plan unlocks Fitness Coaching."""
+    plan = get_user_plan(user)
+    limits = get_plan_limits(plan)
+    if not limits.get("can_fitness_coaching"):
+        raise HTTPException(
+            status_code=403,
+            detail="Il programma Fitness & Coaching è disponibile solo nel piano Fitness Coaching."
+        )
+
+
+@api_router.get("/fitness/onboarding/questions")
+async def fitness_get_onboarding(user: dict = Depends(get_current_user)):
+    """Returns the onboarding questionnaire. Open to any logged-in user
+    so the free preview can show what the program looks like."""
+    return {"questions": FITNESS_ONBOARDING_QUESTIONS}
+
+
+@api_router.get("/fitness/onboarding")
+async def fitness_get_my_onboarding(user: dict = Depends(get_current_user)):
+    """Read back the user's saved answers (if any)."""
+    profile = await db.fitness_profiles.find_one({"user_id": user["id"]}, {"_id": 0})
+    return {
+        "has_profile": bool(profile),
+        "profile": profile,
+        "focus": fitness_score(profile.get("answers", {})) if profile else None,
+    }
+
+
+@api_router.post("/fitness/onboarding")
+async def fitness_save_onboarding(data: dict, user: dict = Depends(get_current_user)):
+    """Save the answers. Required before generating a program."""
+    _require_fitness_plan(user)
+    answers = data.get("answers") or {}
+    validation = fitness_validate_onboarding(answers)
+    if not validation["ok"]:
+        raise HTTPException(status_code=400, detail={
+            "message": "Onboarding incompleto",
+            "missing": validation["missing"],
+            "errors": validation["errors"],
+        })
+
+    focus = fitness_score(answers)
+    doc = {
+        "user_id": user["id"],
+        "answers": answers,
+        "focus": focus,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.fitness_profiles.update_one(
+        {"user_id": user["id"]},
+        {"$set": doc, "$setOnInsert": {"created_at": doc["updated_at"]}},
+        upsert=True,
+    )
+    return {"saved": True, "focus": focus}
+
+
+@api_router.post("/fitness/program/generate")
+async def fitness_generate_new_program(user: dict = Depends(get_current_user)):
+    """Generate a fresh weekly program based on the saved onboarding."""
+    _require_fitness_plan(user)
+
+    profile = await db.fitness_profiles.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not profile or not profile.get("answers"):
+        raise HTTPException(
+            status_code=400,
+            detail="Completa prima il questionario di onboarding."
+        )
+
+    # Use today's I Ching hexagram as a thematic anchor
+    hex_number = get_daily_hexagram_number()
+    hex_data = HEXAGRAMS.get(hex_number, {}) or {}
+    lang = user.get("language", "it")
+    name_key = "name_it" if lang == "it" else "name_en"
+    hex_name = hex_data.get(name_key, hex_data.get("name", ""))
+
+    program = fitness_generate_program(
+        user_id=user["id"],
+        answers=profile["answers"],
+        iching_hexagram_number=hex_number,
+        iching_hexagram_name=hex_name,
+        language=lang,
+    )
+
+    # Replace any current program with this new one (one active at a time)
+    await db.fitness_programs.delete_many({"user_id": user["id"], "active": True})
+    program_record = {**program, "active": True}
+    await db.fitness_programs.insert_one(program_record)
+
+    # Return a clean copy (strip Mongo's _id)
+    program_record.pop("_id", None)
+    return program_record
+
+
+@api_router.get("/fitness/program/current")
+async def fitness_get_current_program(user: dict = Depends(get_current_user)):
+    """Return the user's currently active program, if any."""
+    _require_fitness_plan(user)
+    program = await db.fitness_programs.find_one(
+        {"user_id": user["id"], "active": True},
+        {"_id": 0},
+    )
+    if not program:
+        return {"has_program": False, "program": None}
+    return {"has_program": True, "program": program}
+
+
+@api_router.post("/fitness/activity/{activity_id}/complete")
+async def fitness_complete_activity(
+    activity_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """Mark a single activity as completed (or toggle it back)."""
+    _require_fitness_plan(user)
+    program = await db.fitness_programs.find_one(
+        {"user_id": user["id"], "active": True},
+        {"_id": 0},
+    )
+    if not program:
+        raise HTTPException(status_code=404, detail="Nessun programma attivo.")
+
+    changed = False
+    completed_now = False
+    for day in program.get("days", []):
+        for act in day.get("activities", []):
+            if act.get("id") == activity_id:
+                act["completed"] = not act.get("completed", False)
+                completed_now = act["completed"]
+                if completed_now:
+                    act["completed_at"] = datetime.now(timezone.utc).isoformat()
+                else:
+                    act.pop("completed_at", None)
+                changed = True
+                break
+        if changed:
+            break
+
+    if not changed:
+        raise HTTPException(status_code=404, detail="Attività non trovata nel programma.")
+
+    await db.fitness_programs.update_one(
+        {"user_id": user["id"], "active": True},
+        {"$set": {"days": program["days"], "updated_at": datetime.now(timezone.utc).isoformat()}},
+    )
+
+    # If marking complete, record in completed_activities for cross-program stats
+    if completed_now:
+        await db.fitness_completed.insert_one({
+            "user_id": user["id"],
+            "activity_id": activity_id,
+            "program_id": program["id"],
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+        })
+
+    return {"activity_id": activity_id, "completed": completed_now}
+
+
+@api_router.get("/fitness/stats")
+async def fitness_get_stats(user: dict = Depends(get_current_user)):
+    """Aggregated XP / streak / badges across all programs."""
+    _require_fitness_plan(user)
+    total_done = await db.fitness_completed.count_documents({"user_id": user["id"]})
+
+    # Streak: consecutive days with at least one completion (work backwards)
+    today = datetime.now(timezone.utc).date()
+    streak = 0
+    for i in range(30):  # cap at 30 days back
+        d = today - timedelta(days=i)
+        start = datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
+        end = start + timedelta(days=1)
+        count = await db.fitness_completed.count_documents({
+            "user_id": user["id"],
+            "completed_at": {"$gte": start.isoformat(), "$lt": end.isoformat()},
+        })
+        if count == 0:
+            if i == 0:
+                continue  # today might still be empty
+            break
+        streak += 1
+
+    return fitness_compute_xp(total_done, streak)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# ADMIN
+# ═══════════════════════════════════════════════════════════════════════
 @api_router.get("/admin/reset-requests")
 async def get_reset_requests():
     """

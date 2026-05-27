@@ -26,6 +26,7 @@ const Subscription = lazy(() => import('./pages/Subscription'));
 const NotificationSettings = lazy(() => import('./pages/NotificationSettings'));
 const AstrologicalProfile = lazy(() => import('./pages/AstrologicalProfile'));
 const NatalChart = lazy(() => import('./pages/NatalChart'));
+const Fitness = lazy(() => import('./pages/Fitness'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const CookiePolicy = lazy(() => import('./pages/CookiePolicy'));
 const Terms = lazy(() => import('./pages/Terms'));
@@ -39,6 +40,7 @@ const PRIVATE_PATHS = [
   '/dashboard', '/profile', '/history', '/consult', '/natal-chart',
   '/paths', '/completed-paths', '/statistics', '/notifications',
   '/subscription', '/payment', '/auth/callback', '/shared',
+  '/fitness',
 ];
 
 // Sets/removes <meta name="robots" content="noindex,nofollow"> based on path
@@ -230,6 +232,11 @@ function AppRouter() {
       <Route path="/natal-chart" element={
         <ProtectedRoute>
           <Layout><NatalChart /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/fitness" element={
+        <ProtectedRoute>
+          <Layout><Fitness /></Layout>
         </ProtectedRoute>
       } />
       

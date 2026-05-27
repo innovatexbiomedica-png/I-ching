@@ -31,6 +31,8 @@ Disallow: /subscription/
 Disallow: /payment/
 Disallow: /auth/callback
 Disallow: /shared/
+Disallow: /fitness
+Disallow: /fitness/
 
 # Pagine consentite (pubbliche)
 Allow: /$
