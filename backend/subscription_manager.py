@@ -2,6 +2,36 @@
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict
 import random
+import os
+
+
+# ──────────────────────────────────────────────────────────────────────
+# OWNER / ADMIN WHITELIST
+# ──────────────────────────────────────────────────────────────────────
+# Email addresses listed here always receive Premium access (and admin
+# privileges where relevant), regardless of any payment or subscription
+# status. Useful for the site owner and trusted operators.
+#
+# Set via env var ADMIN_EMAILS as a comma-separated list, e.g.:
+#   ADMIN_EMAILS="davide@iching.it,davide.marino@example.com"
+#
+# Default falls back to the project owner's known emails so the system
+# keeps working even before the env var is set in production.
+# ──────────────────────────────────────────────────────────────────────
+_DEFAULT_ADMINS = "davide@iching.it"
+
+ADMIN_EMAILS = {
+    email.strip().lower()
+    for email in (os.environ.get("ADMIN_EMAILS") or _DEFAULT_ADMINS).split(",")
+    if email.strip()
+}
+
+
+def is_admin_email(email: Optional[str]) -> bool:
+    """True if this email belongs to the owner/admin whitelist."""
+    if not email:
+        return False
+    return email.strip().lower() in ADMIN_EMAILS
 
 # Limiti per piano
 PLAN_LIMITS = {
@@ -46,7 +76,15 @@ SUBSCRIPTION_PRICES = {
 
 
 def get_user_plan(user: dict) -> str:
-    """Determina il piano dell'utente"""
+    """Determina il piano dell'utente.
+
+    Owners/admins (ADMIN_EMAILS whitelist) always get 'premium' regardless
+    of subscription state — they are not charged.
+    """
+    # Owner/admin bypass: full access, always free
+    if is_admin_email(user.get("email")):
+        return "premium"
+
     if user.get("subscription_active"):
         sub_end = user.get("subscription_end")
         if sub_end:

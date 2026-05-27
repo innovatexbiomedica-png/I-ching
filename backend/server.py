@@ -83,6 +83,7 @@ from iching_extended import ICHING_EXTENDED, get_extended_hexagram_data, get_mov
 from subscription_manager import (
     get_user_plan, get_plan_limits, check_consultation_limit, can_use_consultation_type,
     get_daily_hexagram_number, get_lunar_phase, get_user_level, check_and_award_badges,
+    is_admin_email,
     PLAN_LIMITS, SUBSCRIPTION_PRICES, USER_LEVELS, BADGES, GUIDED_PATHS
 )
 from personalized_advice import (
@@ -230,6 +231,8 @@ class UserResponse(BaseModel):
     language: str
     subscription_active: bool = False
     subscription_end: Optional[str] = None
+    is_admin: bool = False  # True for owner/whitelisted emails
+    plan: str = "free"      # 'premium' for admins & paying users
 
 class PasswordResetRequest(BaseModel):
     email: EmailStr
@@ -954,17 +957,22 @@ async def login(credentials: UserLogin):
         raise HTTPException(status_code=401, detail="Credenziali non valide")
     
     token = create_token(user["id"], user["email"])
-    
+
+    admin = is_admin_email(user.get("email"))
+    plan = get_user_plan(user)
+    display = user.get("display_name") or user.get("name", "")
     return {
         "token": token,
         "user": UserResponse(
             id=user["id"],
             email=user["email"],
-            name=user["name"],
+            name=display,
             phone=user.get("phone", ""),
             language=user["language"],
-            subscription_active=user.get("subscription_active", False),
-            subscription_end=user.get("subscription_end")
+            subscription_active=user.get("subscription_active", False) or admin,
+            subscription_end=user.get("subscription_end"),
+            is_admin=admin,
+            plan=plan,
         )
     }
 
@@ -1069,6 +1077,10 @@ async def google_id_token_login(data: dict):
     # Issue our own JWT
     token = create_token(user_id, google_email)
 
+    # Admin whitelist (owner) gets Premium for free regardless of payments
+    admin = is_admin_email(google_email)
+    plan = "premium" if (admin or subscription_active) else "free"
+
     return {
         "token": token,
         "user": {
@@ -1077,8 +1089,10 @@ async def google_id_token_login(data: dict):
             "name": user_name,
             "picture": google_picture,
             "language": user_language,
-            "subscription_active": subscription_active,
+            "subscription_active": bool(subscription_active or admin),
             "subscription_end": subscription_end,
+            "is_admin": admin,
+            "plan": plan,
         }
     }
 
@@ -1093,14 +1107,18 @@ async def get_me(user: dict = Depends(get_current_user)):
     # If the user has activated a pseudonym, display that instead of the real name.
     # Real name stays in the DB so they can revert later (see /auth/pseudonym).
     display = user.get("display_name") or user.get("name", "")
+    admin = is_admin_email(user.get("email"))
+    plan = get_user_plan(user)  # 'premium' for admins or paying users
     return UserResponse(
         id=user["id"],
         email=user["email"],
         name=display,
         phone=user.get("phone", ""),
         language=user["language"],
-        subscription_active=user.get("subscription_active", False),
-        subscription_end=user.get("subscription_end")
+        subscription_active=user.get("subscription_active", False) or admin,
+        subscription_end=user.get("subscription_end"),
+        is_admin=admin,
+        plan=plan,
     )
 
 @api_router.put("/auth/language")
@@ -1337,6 +1355,7 @@ async def revoke_test_premium(request: Request):
     paid_set = set(paid)
 
     affected = []
+    kept_admins = []
     premium_users = await db.users.find(
         {"subscription_active": True},
         {"_id": 0, "id": 1, "email": 1, "subscription_end": 1, "auth_provider": 1}
@@ -1345,6 +1364,12 @@ async def revoke_test_premium(request: Request):
     for u in premium_users:
         if u["id"] in paid_set:
             continue  # legitimate paying user — keep Premium
+        if is_admin_email(u.get("email")):
+            # Owner/admin: never revoke. Their access comes from the
+            # whitelist anyway, but we also leave the DB flag untouched
+            # so analytics stay consistent.
+            kept_admins.append(u.get("email"))
+            continue
         await db.users.update_one(
             {"id": u["id"]},
             {"$set": {
@@ -1363,6 +1388,7 @@ async def revoke_test_premium(request: Request):
         "revoked": len(affected),
         "users": affected,
         "kept_paying": len(paid_set),
+        "kept_admins": kept_admins,
     }
 
 
