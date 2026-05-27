@@ -1,0 +1,73 @@
+# I Ching del Benessere — robots.txt
+# Ultimo aggiornamento: 2026-01-01
+#
+# Permettiamo l'indicizzazione delle pagine pubbliche (home, login, registrazione,
+# documentazione, policy) e blocchiamo TUTTE le aree autenticate o personalizzate
+# per proteggere i dati degli utenti dall'indicizzazione nei motori di ricerca.
+
+User-agent: *
+
+# Aree autenticate / contenenti dati personali
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /profile
+Disallow: /profile/
+Disallow: /history
+Disallow: /history/
+Disallow: /consult
+Disallow: /consult/
+Disallow: /natal-chart
+Disallow: /natal-chart/
+Disallow: /paths
+Disallow: /paths/
+Disallow: /completed-paths
+Disallow: /completed-paths/
+Disallow: /statistics
+Disallow: /statistics/
+Disallow: /notifications
+Disallow: /notifications/
+Disallow: /subscription
+Disallow: /subscription/
+Disallow: /payment/
+Disallow: /auth/callback
+Disallow: /shared/
+
+# Pagine consentite (pubbliche)
+Allow: /$
+Allow: /login
+Allow: /register
+Allow: /forgot-password
+Allow: /pricing
+Allow: /library
+Allow: /privacy
+Allow: /cookie-policy
+Allow: /terms
+Allow: /data-protection
+
+# Sitemap
+Sitemap: https://chingbenessere.it/sitemap.xml
+
+# AI scrapers — blocchiamo i bot che addestrano LLM commerciali sui contenuti
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /

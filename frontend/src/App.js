@@ -26,7 +26,39 @@ const Subscription = lazy(() => import('./pages/Subscription'));
 const NotificationSettings = lazy(() => import('./pages/NotificationSettings'));
 const AstrologicalProfile = lazy(() => import('./pages/AstrologicalProfile'));
 const NatalChart = lazy(() => import('./pages/NatalChart'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const CookiePolicy = lazy(() => import('./pages/CookiePolicy'));
+const Terms = lazy(() => import('./pages/Terms'));
+const DataProtection = lazy(() => import('./pages/DataProtection'));
+import CookieBanner from './components/CookieBanner';
+import SiteFooter from './components/SiteFooter';
 import './App.css';
+
+// Routes that must NOT be indexed by search engines (contain user data)
+const PRIVATE_PATHS = [
+  '/dashboard', '/profile', '/history', '/consult', '/natal-chart',
+  '/paths', '/completed-paths', '/statistics', '/notifications',
+  '/subscription', '/payment', '/auth/callback', '/shared',
+];
+
+// Sets/removes <meta name="robots" content="noindex,nofollow"> based on path
+function useRobotsMeta() {
+  const location = useLocation();
+  useEffect(() => {
+    const isPrivate = PRIVATE_PATHS.some((p) => location.pathname.startsWith(p));
+    let tag = document.querySelector('meta[name="robots"]');
+    if (isPrivate) {
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute('name', 'robots');
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', 'noindex, nofollow, noarchive, nosnippet');
+    } else if (tag) {
+      tag.parentNode.removeChild(tag);
+    }
+  }, [location.pathname]);
+}
 
 // Loading fallback for lazy routes
 const PageLoader = () => (
@@ -76,7 +108,10 @@ const PublicRoute = ({ children }) => {
 // Router component that handles auth callback detection
 function AppRouter() {
   const location = useLocation();
-  
+
+  // Apply noindex/nofollow on private pages
+  useRobotsMeta();
+
   // Check URL fragment for session_id (Google OAuth callback)
   // This must be checked synchronously BEFORE any other route matching
   if (location.hash?.includes('session_id=') || location.pathname === '/auth/callback') {
@@ -113,6 +148,12 @@ function AppRouter() {
       } />
       <Route path="/pricing" element={<Layout><Pricing /></Layout>} />
       <Route path="/shared/:shareToken" element={<SharedConsultation />} />
+
+      {/* Legal / policy pages (publicly indexable) */}
+      <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
+      <Route path="/cookie-policy" element={<Layout><CookiePolicy /></Layout>} />
+      <Route path="/terms" element={<Layout><Terms /></Layout>} />
+      <Route path="/data-protection" element={<Layout><DataProtection /></Layout>} />
       
       {/* Protected Routes */}
       <Route path="/dashboard" element={
@@ -224,8 +265,14 @@ function AppWithSplash() {
 
   return (
     <BrowserRouter>
-      <AppRouter />
-      <Toaster 
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1">
+          <AppRouter />
+        </div>
+        <SiteFooter />
+      </div>
+      <CookieBanner />
+      <Toaster
         position="top-center"
         toastOptions={{
           style: {
