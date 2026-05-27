@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../lib/translations';
-import { Menu, X, User, LogOut, Globe } from 'lucide-react';
+import { Menu, X, User, LogOut, Globe, Home } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,9 +47,12 @@ const Layout = ({ children }) => {
     navigate('/');
   };
 
+  // 'Home' / dashboard intentionally LEFT OUT of the top navbar:
+  // the brand logo (top-left) already routes to the public landing,
+  // and the personal dashboard is reachable from the profile dropdown
+  // (icon top-right) — see DropdownMenuItem -> /dashboard below.
   const navLinks = isAuthenticated
     ? [
-        { to: '/dashboard', label: language === 'it' ? 'Home' : 'Home' },
         { to: '/consult', label: t.nav.consult },
         { to: '/history', label: t.nav.history },
         { to: '/library', label: language === 'it' ? 'Biblioteca' : 'Library' },
@@ -130,7 +133,15 @@ const Layout = ({ children }) => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-[#F9F7F2] border-[#D1CDC7]">
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
+                      onClick={() => navigate('/dashboard')}
+                      className="text-[#2C2C2C] cursor-pointer"
+                      data-testid="profile-home-btn"
+                    >
+                      <Home className="w-4 h-4 mr-2" />
+                      {language === 'it' ? 'La mia Home' : 'My Home'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
                       onClick={handleLogout}
                       className="text-[#2C2C2C] cursor-pointer"
                       data-testid="logout-btn"
@@ -203,13 +214,27 @@ const Layout = ({ children }) => {
               </div>
 
               {isAuthenticated ? (
-                <button
-                  onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-                  className="flex items-center space-x-2 py-2 text-[#2C2C2C]"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>{t.nav.logout}</span>
-                </button>
+                <>
+                  <div className="pt-2 mt-2 border-t border-[#D1CDC7] flex items-center space-x-2 text-[#7a6f63] text-xs">
+                    <User className="w-3.5 h-3.5" />
+                    <span className="font-medium">{user?.name}</span>
+                  </div>
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center space-x-2 py-2 text-[#2C2C2C]"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Home className="w-4 h-4" />
+                    <span>{language === 'it' ? 'La mia Home' : 'My Home'}</span>
+                  </Link>
+                  <button
+                    onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+                    className="flex items-center space-x-2 py-2 text-[#2C2C2C]"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>{t.nav.logout}</span>
+                  </button>
+                </>
               ) : (
                 <div className="flex flex-col space-y-2 pt-2 border-t border-[#D1CDC7]">
                   <Link
