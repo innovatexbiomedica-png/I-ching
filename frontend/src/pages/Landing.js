@@ -181,9 +181,9 @@ const Landing = () => {
   return (
     <div className="overflow-hidden">
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center" data-testid="hero-section">
+      <section className="relative min-h-[90vh] flex items-center overflow-hidden" data-testid="hero-section">
         {/* Background Image */}
-        <div 
+        <div
           className="absolute inset-0 opacity-20"
           style={{
             backgroundImage: 'url(https://images.unsplash.com/photo-1628313348688-3d279e8538ed?crop=entropy&cs=srgb&fm=jpg&q=85)',
@@ -192,6 +192,69 @@ const Landing = () => {
           }}
         />
         <div className="absolute inset-0 hero-gradient" />
+
+        {/* Decorative slowly-rotating Yin-Yang orb (right side) */}
+        <div
+          aria-hidden
+          className="absolute right-[-120px] top-1/2 -translate-y-1/2 w-[460px] h-[460px] hidden lg:block pointer-events-none"
+          style={{ opacity: 0.22 }}
+        >
+          <div className="yy-orb">
+            <div className="yy-half yy-dark">
+              <div className="yy-dot yy-dot-light" />
+            </div>
+            <div className="yy-half yy-light">
+              <div className="yy-dot yy-dot-dark" />
+            </div>
+          </div>
+          <style>{`
+            .yy-orb {
+              width: 100%; height: 100%;
+              position: relative;
+              border-radius: 50%;
+              animation: yy-rotate 60s linear infinite;
+              box-shadow: 0 30px 80px rgba(44,44,44,.08);
+            }
+            .yy-half {
+              position: absolute; inset: 0;
+              border-radius: 50%;
+              clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%);
+            }
+            .yy-dark {
+              background:
+                radial-gradient(circle at 50% 25%, #4a4a4a 0%, #2c2c2c 60%, #1a1a1a 100%);
+            }
+            .yy-light {
+              background:
+                radial-gradient(circle at 50% 75%, #fdfaf3 0%, #efe7d6 60%, #d7caab 100%);
+              clip-path: polygon(50% 0, 0 0, 0 100%, 50% 100%);
+            }
+            /* Yin-yang "dots" of opposite colour */
+            .yy-dot {
+              position: absolute;
+              width: 18%; height: 18%;
+              border-radius: 50%;
+              left: 50%; transform: translateX(-50%);
+            }
+            .yy-dot-light { top: 16%; background: #efe7d6; }
+            .yy-dot-dark  { bottom: 16%; background: #2c2c2c; }
+            /* S-shaped curve illusion */
+            .yy-dark::after, .yy-light::after {
+              content: ''; position: absolute;
+              width: 50%; height: 50%; border-radius: 50%;
+              left: 50%; transform: translateX(-50%);
+            }
+            .yy-dark::after  { top: 0;    background: inherit; }
+            .yy-light::after { bottom: 0; background: inherit; }
+            @keyframes yy-rotate {
+              from { transform: rotate(0deg); }
+              to   { transform: rotate(360deg); }
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .yy-orb { animation: none; }
+            }
+          `}</style>
+        </div>
         
         <div className="container-zen relative z-10 py-20">
           <div className="max-w-3xl">

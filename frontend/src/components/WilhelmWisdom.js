@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Quote, ArrowRight, ChevronRight } from 'lucide-react';
+import CoinTossAnimation from './CoinTossAnimation';
 
 /*
  * Componenti per arricchire la Landing con contenuti AUTENTICI
@@ -296,6 +297,15 @@ export function ConsultationTutorial() {
               "Lo Yi è imperscrutabile, vasto e perfetto. Il saggio rispetta il rito,
               perché nel rito si rivela il Tao."
             </em>
+          </p>
+        </div>
+
+        {/* Animazione live: 3 monete che costruiscono un esagramma */}
+        <div className="mb-12">
+          <CoinTossAnimation autoplay height={360} />
+          <p className="text-center text-xs text-[#7a6f63] mt-3 italic">
+            Sei lanci di tre monete — sei linee, dal basso verso l'alto.
+            Il pallino rosso 🔴 segnala una linea <em>mutevole</em>.
           </p>
         </div>
 
