@@ -76,6 +76,15 @@ export const AuthProvider = ({ children }) => {
 
   const getToken = () => localStorage.getItem('token');
 
+  // Set user + token together (used by Google Sign-In flow which already
+  // received both from the backend in one shot).
+  const setUserAndToken = (userData, token) => {
+    if (token) localStorage.setItem('token', token);
+    if (userData?.language) localStorage.setItem('language', userData.language);
+    setUser(userData);
+    setLanguage(userData?.language || 'it');
+  };
+
   const value = {
     user,
     loading,
@@ -85,6 +94,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateLanguage,
     getToken,
+    setUserAndToken,
     isAuthenticated: !!user,
     hasSubscription: user?.subscription_active || false
   };

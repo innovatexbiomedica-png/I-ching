@@ -942,90 +942,107 @@ async def login(credentials: UserLogin):
         )
     }
 
-@api_router.post("/auth/google/callback")
-async def google_oauth_callback(data: dict, response: Response):
-    """
-    Google OAuth callback - currently disabled.
-    To enable, integrate directly with Google Identity Services
-    and exchange the ID token here.
-    """
-    raise HTTPException(
-        status_code=501,
-        detail="Google OAuth non ancora configurato. Usa email/password."
-    )
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 
-    # Legacy code below (unreachable) - kept for future Google OAuth integration
-    auth_data = {}
-    
-    # Extract user info from Google
-    google_email = auth_data.get("email")
-    google_name = auth_data.get("name", "")
-    google_picture = auth_data.get("picture", "")
-    session_token = auth_data.get("session_token", "")
-    
-    if not google_email:
-        raise HTTPException(status_code=400, detail="Email non disponibile da Google")
-    
-    # Check if user exists
-    existing_user = await db.users.find_one({"email": google_email}, {"_id": 0})
-    
-    if existing_user:
-        # Update existing user with Google data
-        await db.users.update_one(
-            {"email": google_email},
-            {"$set": {
-                "google_picture": google_picture,
-                "google_name": google_name,
-                "last_login": datetime.now(timezone.utc).isoformat()
-            }}
+
+@api_router.post("/auth/google")
+async def google_id_token_login(data: dict):
+    """
+    Login/Register via Google Identity Services (modern OAuth flow).
+
+    The frontend Google button produces a signed JWT (id_token / 'credential').
+    We verify it server-side against Google's public keys, then create
+    or update the user and return our own session JWT.
+
+    Body: { "credential": "<google_id_token_jwt>" }
+    """
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=501,
+            detail="Google Sign-In non configurato. Imposta GOOGLE_CLIENT_ID."
         )
+
+    credential = data.get("credential") or data.get("id_token")
+    if not credential:
+        raise HTTPException(status_code=400, detail="credential (id_token) richiesto")
+
+    try:
+        from google.oauth2 import id_token as google_id_token
+        from google.auth.transport import requests as google_requests
+    except ImportError:
+        raise HTTPException(
+            status_code=500,
+            detail="google-auth non installato sul backend"
+        )
+
+    # Verify the token signature, expiry, and audience (must match our Client ID)
+    try:
+        idinfo = google_id_token.verify_oauth2_token(
+            credential,
+            google_requests.Request(),
+            GOOGLE_CLIENT_ID,
+            clock_skew_in_seconds=10,
+        )
+    except ValueError as e:
+        logger.warning(f"Google token verification failed: {e}")
+        raise HTTPException(status_code=401, detail="Token Google non valido o scaduto")
+
+    # Extract identity from verified payload
+    google_email = idinfo.get("email")
+    google_name = idinfo.get("name", "")
+    google_picture = idinfo.get("picture", "")
+    google_email_verified = idinfo.get("email_verified", False)
+    google_sub = idinfo.get("sub")  # Stable Google user id
+
+    if not google_email or not google_email_verified:
+        raise HTTPException(status_code=400, detail="Email Google non verificata")
+
+    # Find or create user
+    existing_user = await db.users.find_one({"email": google_email}, {"_id": 0})
+
+    if existing_user:
         user_id = existing_user["id"]
         user_name = existing_user.get("name") or google_name
         user_language = existing_user.get("language", "it")
+        subscription_active = existing_user.get("subscription_active", False)
+        subscription_end = existing_user.get("subscription_end")
+        # Link Google fields if missing
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {
+                "google_sub": google_sub,
+                "google_picture": google_picture,
+                "google_name": google_name,
+                "last_login": datetime.now(timezone.utc).isoformat(),
+            }}
+        )
     else:
-        # Create new user from Google data
+        # First-time Google user → create account (free plan)
         user_id = str(uuid.uuid4())
         user_doc = {
             "id": user_id,
             "email": google_email,
-            "password": "",  # No password for OAuth users
+            "password": "",  # No password for OAuth-only users
             "name": google_name,
             "phone": "",
             "language": "it",
+            "google_sub": google_sub,
             "google_picture": google_picture,
             "google_name": google_name,
             "subscription_active": False,
             "subscription_end": None,
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "auth_provider": "google"
+            "auth_provider": "google",
         }
         await db.users.insert_one(user_doc)
         user_name = google_name
         user_language = "it"
-    
-    # Store session token with expiry
-    session_doc = {
-        "user_id": user_id,
-        "session_token": session_token,
-        "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
-        "created_at": datetime.now(timezone.utc)
-    }
-    await db.user_sessions.insert_one(session_doc)
-    
-    # Create our own JWT token
+        subscription_active = False
+        subscription_end = None
+
+    # Issue our own JWT
     token = create_token(user_id, google_email)
-    
-    # Set httpOnly cookie
-    response.set_cookie(
-        key="session_token",
-        value=session_token,
-        httponly=True,
-        secure=True,
-        samesite="none",
-        max_age=7*24*60*60,  # 7 days
-        path="/"
-    )
-    
+
     return {
         "token": token,
         "user": {
@@ -1033,9 +1050,17 @@ async def google_oauth_callback(data: dict, response: Response):
             "email": google_email,
             "name": user_name,
             "picture": google_picture,
-            "language": user_language
+            "language": user_language,
+            "subscription_active": subscription_active,
+            "subscription_end": subscription_end,
         }
     }
+
+
+# Backwards-compat alias for any old client still hitting /callback
+@api_router.post("/auth/google/callback")
+async def google_oauth_callback_compat(data: dict):
+    return await google_id_token_login(data)
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(user: dict = Depends(get_current_user)):
