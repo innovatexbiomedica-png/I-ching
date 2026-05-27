@@ -156,16 +156,20 @@ const Subscription = () => {
         {/* Current Plan Status */}
         {isPremium && (
           <div className="zen-card mb-6 bg-gradient-to-r from-[#C44D38]/10 to-[#E67E22]/10 border-2 border-[#C44D38]">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center space-x-3">
                 <Crown className="w-8 h-8 text-[#C44D38]" />
                 <div>
                   <h3 className="font-serif text-xl text-[#2C2C2C]">
-                    {language === 'it' ? 'Piano Premium Attivo' : 'Premium Plan Active'}
+                    {status?.is_admin
+                      ? (language === 'it' ? 'Account Amministratore (illimitato)' : 'Administrator Account (lifetime)')
+                      : (language === 'it' ? 'Piano Premium Attivo' : 'Premium Plan Active')}
                   </h3>
-                  {status.subscription_end && (
+                  {status.subscription_end && !status.is_admin && (
                     <p className="text-sm text-[#595959]">
-                      {language === 'it' ? 'Scade il: ' : 'Expires: '}
+                      {status.cancellation_requested_at
+                        ? (language === 'it' ? 'Disdetta — attivo fino al: ' : 'Cancelled — active until: ')
+                        : (language === 'it' ? 'Scade il: ' : 'Expires: ')}
                       {new Date(status.subscription_end).toLocaleDateString()}
                     </p>
                   )}
@@ -178,6 +182,72 @@ const Subscription = () => {
                 <p className="text-2xl font-bold text-[#C44D38]">{status.usage?.monthly_consultations || 0}</p>
               </div>
             </div>
+
+            {/* Manage subscription: cancel auto-renew + 14-day withdrawal */}
+            {!status?.is_admin && (
+              <div className="mt-5 pt-5 border-t border-[#C44D38]/20 flex flex-col sm:flex-row gap-2 sm:gap-3">
+                {!status.cancellation_requested_at ? (
+                  <button
+                    onClick={async () => {
+                      const ok = window.confirm(
+                        language === 'it'
+                          ? 'Vuoi davvero disdire l\'abbonamento? Manterrai l\'accesso Premium fino alla scadenza già pagata, poi tornerai al piano Free senza ulteriori addebiti.'
+                          : 'Cancel your subscription? You keep Premium until the end of the paid period, then you go back to Free with no further charges.'
+                      );
+                      if (!ok) return;
+                      try {
+                        const r = await axios.post(
+                          `${API}/subscription/cancel`,
+                          {},
+                          { headers: { Authorization: `Bearer ${getToken()}` } }
+                        );
+                        toast.success(r.data.message);
+                        fetchSubscriptionStatus();
+                      } catch (e) {
+                        toast.error(e.response?.data?.detail || 'Errore durante la disdetta');
+                      }
+                    }}
+                    className="flex-1 px-4 py-2 rounded border border-[#D1CDC7] bg-white text-[#2C2C2C] hover:bg-[#F9F7F2] text-sm"
+                  >
+                    {language === 'it' ? 'Disdici abbonamento (senza rimborso)' : 'Cancel subscription (no refund)'}
+                  </button>
+                ) : (
+                  <div className="flex-1 px-4 py-2 rounded border border-[#D1CDC7] bg-[#F9F7F2] text-[#595959] text-sm text-center">
+                    {language === 'it'
+                      ? '✓ Disdetta confermata — niente rinnovo automatico'
+                      : '✓ Cancellation confirmed — no auto-renewal'}
+                  </div>
+                )}
+
+                {status.within_withdrawal_window && (
+                  <button
+                    onClick={async () => {
+                      const ok = window.confirm(
+                        language === 'it'
+                          ? 'Esercitare il diritto di recesso (entro 14 giorni dall\'acquisto)? L\'accesso Premium verrà revocato immediatamente e il rimborso sarà processato entro 14 giorni lavorativi.'
+                          : 'Exercise the right of withdrawal (within 14 days of purchase)? Premium access will be revoked immediately and the refund processed within 14 business days.'
+                      );
+                      if (!ok) return;
+                      try {
+                        const r = await axios.post(
+                          `${API}/subscription/withdraw`,
+                          {},
+                          { headers: { Authorization: `Bearer ${getToken()}` } }
+                        );
+                        toast.success(r.data.message);
+                        fetchSubscriptionStatus();
+                      } catch (e) {
+                        toast.error(e.response?.data?.detail || 'Errore');
+                      }
+                    }}
+                    className="flex-1 px-4 py-2 rounded bg-[#C44D38] text-white hover:bg-[#A63D2B] text-sm font-medium"
+                    title={language === 'it' ? 'Recesso entro 14 giorni con rimborso (art. 52 Codice Consumo)' : 'Right of withdrawal within 14 days with refund'}
+                  >
+                    {language === 'it' ? '⚖️ Esercita recesso (con rimborso, ≤14 giorni)' : '⚖️ Withdraw (refund, ≤14 days)'}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 

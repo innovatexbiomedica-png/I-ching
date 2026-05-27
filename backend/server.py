@@ -1941,6 +1941,110 @@ async def create_checkout(data: CheckoutRequest, request: Request, user: dict = 
 
     return {"url": session.url, "session_id": session.id}
 
+@api_router.post("/subscription/cancel")
+async def cancel_subscription(user: dict = Depends(get_current_user)):
+    """
+    User-initiated subscription cancellation.
+
+    We DON'T immediately revoke access — the user has already paid for the
+    current period, so Premium stays active until subscription_end. We just
+    set `auto_renew=False` and `cancellation_requested_at` so:
+      - the UI can show "Annullato, attivo fino a DD/MM/YYYY"
+      - no future renewal is triggered
+      - we have an audit trail
+
+    Once subscription_end is in the past, get_user_plan() naturally returns 'free'.
+    """
+    # Admins / whitelist users have lifetime free Premium — cancel makes no sense
+    if is_admin_email(user.get("email")):
+        raise HTTPException(
+            status_code=400,
+            detail="Gli account amministratori hanno accesso permanente — non c'è nulla da disdire."
+        )
+
+    if not user.get("subscription_active"):
+        raise HTTPException(status_code=400, detail="Non hai un abbonamento attivo da disdire.")
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {
+            "auto_renew": False,
+            "cancellation_requested_at": now_iso,
+        }}
+    )
+    sub_end = user.get("subscription_end")
+    return {
+        "message": "Abbonamento disdetto. Continuerai ad avere accesso Premium fino alla scadenza.",
+        "active_until": sub_end,
+        "cancelled_at": now_iso,
+    }
+
+
+@api_router.post("/subscription/withdraw")
+async def withdraw_subscription(user: dict = Depends(get_current_user)):
+    """
+    Right of withdrawal (art. 52 Codice del Consumo / 14 days from purchase).
+
+    Triggers immediate Premium revocation. Refund is NOT issued automatically —
+    we just flag the request and the admin processes it manually via Stripe
+    (this lets us subtract any consultations already consumed, as the law allows).
+    """
+    if is_admin_email(user.get("email")):
+        raise HTTPException(status_code=400, detail="Gli admin non possono esercitare il recesso.")
+
+    # Find the latest paid transaction
+    last_paid = await db.payment_transactions.find_one(
+        {"user_id": user["id"], "payment_status": "paid"},
+        {"_id": 0},
+        sort=[("created_at", -1)],
+    )
+    if not last_paid:
+        raise HTTPException(status_code=400, detail="Nessun pagamento da rimborsare.")
+
+    # 14-day window check
+    try:
+        purchase_dt = datetime.fromisoformat(last_paid["created_at"].replace("Z", "+00:00"))
+    except Exception:
+        purchase_dt = datetime.now(timezone.utc)
+    elapsed_days = (datetime.now(timezone.utc) - purchase_dt).days
+    if elapsed_days > 14:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Il diritto di recesso è scaduto (acquisto avvenuto {elapsed_days} giorni fa, limite 14)."
+        )
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    # Revoke access immediately (refund handled manually by admin)
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {
+            "subscription_active": False,
+            "subscription_end": None,
+            "withdrawal_requested_at": now_iso,
+            "withdrawal_session_id": last_paid["session_id"],
+            "auto_renew": False,
+        }}
+    )
+    # Record the request so admin can process the refund
+    await db.refund_requests.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "email": user["email"],
+        "session_id": last_paid["session_id"],
+        "amount": last_paid.get("amount"),
+        "currency": last_paid.get("currency"),
+        "requested_at": now_iso,
+        "status": "pending",
+        "purchase_date": last_paid["created_at"],
+    })
+    return {
+        "message": "Recesso esercitato. Il rimborso verrà processato entro 14 giorni lavorativi.",
+        "withdrawn_at": now_iso,
+    }
+
+
 @api_router.get("/payments/status/{session_id}")
 async def get_payment_status(session_id: str, user: dict = Depends(get_current_user)):
     stripe_lib.api_key = STRIPE_API_KEY
@@ -2067,6 +2171,20 @@ async def get_subscription_status(request: Request):
     
     remaining = limits["monthly_consultations"] - monthly_count if limits["monthly_consultations"] != -1 else -1
     
+    # Determine if user is still within the 14-day withdrawal window
+    within_withdrawal_window = False
+    last_paid = await db.payment_transactions.find_one(
+        {"user_id": user["id"], "payment_status": "paid"},
+        {"_id": 0, "created_at": 1, "amount": 1},
+        sort=[("created_at", -1)],
+    )
+    if last_paid:
+        try:
+            purchase_dt = datetime.fromisoformat(last_paid["created_at"].replace("Z", "+00:00"))
+            within_withdrawal_window = (datetime.now(timezone.utc) - purchase_dt).days <= 14
+        except Exception:
+            pass
+
     return {
         "plan": plan,
         "limits": limits,
@@ -2075,6 +2193,12 @@ async def get_subscription_status(request: Request):
             "remaining": remaining
         },
         "subscription_end": user.get("subscription_end"),
+        "auto_renew": user.get("auto_renew", True),
+        "cancellation_requested_at": user.get("cancellation_requested_at"),
+        "is_admin": is_admin_email(user.get("email")),
+        "within_withdrawal_window": within_withdrawal_window,
+        "last_purchase_at": last_paid.get("created_at") if last_paid else None,
+        "last_purchase_amount": last_paid.get("amount") if last_paid else None,
         "prices": SUBSCRIPTION_PRICES
     }
 
