@@ -58,7 +58,7 @@ const Layout = ({ children }) => {
         { to: '/library', label: language === 'it' ? 'Biblioteca' : 'Library' },
         { to: '/paths', label: language === 'it' ? 'Percorsi' : 'Paths' },
         { to: '/completed-paths', label: language === 'it' ? 'Risultati' : 'Results', badge: unreadPathsCount },
-        { to: '/statistics', label: language === 'it' ? 'Stats' : 'Stats' },
+        { to: '/statistics', label: language === 'it' ? 'Statistiche' : 'Statistics' },
       ]
     : [
         { to: '/library', label: language === 'it' ? 'Biblioteca' : 'Library' },
