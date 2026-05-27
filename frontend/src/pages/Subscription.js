@@ -11,6 +11,7 @@ const Subscription = () => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'yearly'
 
   useEffect(() => {
     fetchSubscriptionStatus();
@@ -59,66 +60,111 @@ const Subscription = () => {
     }
   };
 
+  // Three-tier feature comparison: free / base / fitness coaching
   const features = [
     {
       icon: <Compass className="w-5 h-5" />,
       name: language === 'it' ? 'Consultazioni al mese' : 'Monthly consultations',
-      free: '3',
-      premium: language === 'it' ? 'Illimitate' : 'Unlimited',
+      free: '5',
+      base: language === 'it' ? 'Illimitate' : 'Unlimited',
+      fitness: language === 'it' ? 'Illimitate' : 'Unlimited',
     },
     {
       icon: <Zap className="w-5 h-5" />,
-      name: language === 'it' ? 'Stesa Diretta' : 'Direct Reading',
-      free: true,
-      premium: true,
+      name: language === 'it' ? 'Interpretazione Diretta (300-400 parole)' : 'Direct interpretation',
+      free: true, base: true, fitness: true,
     },
     {
       icon: <Moon className="w-5 h-5" />,
-      name: language === 'it' ? 'Stesa Profonda' : 'Deep Reading',
-      free: false,
-      premium: true,
+      name: language === 'it' ? 'Interpretazione Profonda (700-1000 parole)' : 'Deep interpretation',
+      free: false, base: true, fitness: true,
     },
     {
       icon: <BookOpen className="w-5 h-5" />,
       name: language === 'it' ? 'Storico consultazioni' : 'Consultation history',
-      free: '10',
-      premium: language === 'it' ? 'Illimitato' : 'Unlimited',
+      free: '10', base: language === 'it' ? 'Illimitato' : 'Unlimited',
+      fitness: language === 'it' ? 'Illimitato' : 'Unlimited',
     },
     {
       icon: <StickyNote className="w-5 h-5" />,
       name: language === 'it' ? 'Note personali' : 'Personal notes',
-      free: false,
-      premium: true,
+      free: false, base: true, fitness: true,
     },
     {
       icon: <BarChart3 className="w-5 h-5" />,
-      name: language === 'it' ? 'Statistiche complete' : 'Full statistics',
-      free: false,
-      premium: true,
+      name: language === 'it' ? 'Statistiche e progressione' : 'Statistics & progression',
+      free: false, base: true, fitness: true,
     },
     {
-      name: language === 'it' ? 'Continuazione conversazioni' : 'Conversation continuation',
-      free: false,
-      premium: true,
+      name: language === 'it' ? 'Continuazione conversazione' : 'Conversation continuation',
+      free: false, base: true, fitness: true,
     },
     {
-      name: language === 'it' ? 'Sintesi multiple stese' : 'Multiple readings synthesis',
-      free: false,
-      premium: true,
+      name: language === 'it' ? 'Sintesi multi-consultazioni' : 'Multi-reading synthesis',
+      free: false, base: true, fitness: true,
+    },
+    {
+      name: language === 'it' ? 'Percorsi guidati (Amore, Carriera, Spirituale)' : 'Guided paths',
+      free: false, base: true, fitness: true,
     },
     {
       icon: <Sparkles className="w-5 h-5" />,
-      name: language === 'it' ? 'Consigli Personalizzati AI' : 'AI Personalized Advice',
-      free: false,
-      premium: true,
+      name: language === 'it' ? '★ Tema natale + export PDF/DOCX' : '★ Natal chart + PDF/DOCX export',
+      free: false, base: false, fitness: true,
     },
     {
       icon: <Bell className="w-5 h-5" />,
-      name: language === 'it' ? 'Notifiche & Calendario Cinese' : 'Notifications & Chinese Calendar',
-      free: false,
-      premium: true,
+      name: language === 'it' ? '★ Consigli personalizzati giornalieri' : '★ Daily personalized advice',
+      free: false, base: false, fitness: true,
+    },
+    {
+      icon: <Sparkles className="w-5 h-5" />,
+      name: language === 'it'
+        ? '★ Programma interattivo Sport, Cultura e Benessere'
+        : '★ Interactive Sport, Culture & Wellness program',
+      free: false, base: false, fitness: true,
     },
   ];
+
+  const PLANS = {
+    free: {
+      key: 'free',
+      title: 'Free',
+      priceMonthly: 0,
+      priceYearly: 0,
+      monthlyEquivalentYearly: 0,
+      savings: null,
+      ctaMonthly: null,
+      ctaYearly: null,
+      column: 'free',
+      tagline: language === 'it' ? 'Per iniziare' : 'To get started',
+    },
+    base: {
+      key: 'base',
+      title: language === 'it' ? 'Base' : 'Base',
+      priceMonthly: 9.99,
+      priceYearly: 107.89,
+      monthlyEquivalentYearly: 8.99,
+      savings: '10%',
+      ctaMonthly: 'base_monthly',
+      ctaYearly: 'base_yearly',
+      column: 'base',
+      tagline: language === 'it' ? 'I Ching illimitato' : 'Unlimited I Ching',
+      highlight: true,
+    },
+    fitness: {
+      key: 'fitness_coaching',
+      title: language === 'it' ? 'Fitness Coaching' : 'Fitness Coaching',
+      priceMonthly: 19.99,
+      priceYearly: 191.90,
+      monthlyEquivalentYearly: 15.99,
+      savings: '20%',
+      ctaMonthly: 'fitness_monthly',
+      ctaYearly: 'fitness_yearly',
+      column: 'fitness',
+      tagline: language === 'it' ? 'Esperienza completa' : 'Complete experience',
+    },
+  };
 
   if (loading) {
     return (
@@ -251,98 +297,151 @@ const Subscription = () => {
           </div>
         )}
 
-        {/* Pricing Cards */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Free Plan */}
-          <div className={`zen-card ${!isPremium ? 'border-2 border-[#C44D38]' : ''}`}>
-            <div className="text-center mb-6">
-              <h3 className="font-serif text-2xl text-[#2C2C2C] mb-2">Free</h3>
-              <p className="text-4xl font-bold text-[#2C2C2C]">€0</p>
-              <p className="text-sm text-[#595959]">{language === 'it' ? 'per sempre' : 'forever'}</p>
-            </div>
-            
-            <ul className="space-y-3 mb-6">
-              {features.map((feature, idx) => (
-                <li key={idx} className="flex items-center justify-between">
-                  <span className="text-sm text-[#595959]">{feature.name}</span>
-                  {typeof feature.free === 'boolean' ? (
-                    feature.free ? (
-                      <Check className="w-5 h-5 text-green-500" />
-                    ) : (
-                      <X className="w-5 h-5 text-[#D1CDC7]" />
-                    )
-                  ) : (
-                    <span className="text-sm font-medium text-[#2C2C2C]">{feature.free}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-
-            {!isPremium && (
-              <button disabled className="w-full py-3 rounded-lg border-2 border-[#C44D38] text-[#C44D38] font-medium">
-                {language === 'it' ? 'Piano Attuale' : 'Current Plan'}
-              </button>
-            )}
+        {/* Billing cycle toggle */}
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex bg-[#F9F7F2] border border-[#D1CDC7] rounded-full p-1">
+            <button
+              onClick={() => setBillingCycle('monthly')}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition ${
+                billingCycle === 'monthly' ? 'bg-[#C44D38] text-white shadow' : 'text-[#595959]'
+              }`}
+            >
+              {language === 'it' ? 'Mensile' : 'Monthly'}
+            </button>
+            <button
+              onClick={() => setBillingCycle('yearly')}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 ${
+                billingCycle === 'yearly' ? 'bg-[#C44D38] text-white shadow' : 'text-[#595959]'
+              }`}
+            >
+              {language === 'it' ? 'Annuale' : 'Yearly'}
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                billingCycle === 'yearly' ? 'bg-white/20 text-white' : 'bg-[#C44D38] text-white'
+              }`}>
+                −10/20%
+              </span>
+            </button>
           </div>
+        </div>
 
-          {/* Premium Plan */}
-          <div className={`zen-card bg-gradient-to-br from-[#2C2C2C] to-[#1a1a1a] text-white ${isPremium ? 'border-2 border-[#C44D38]' : ''}`}>
-            <div className="text-center mb-6">
-              <div className="inline-block px-3 py-1 bg-[#C44D38] rounded-full text-xs uppercase tracking-wider mb-2">
-                {language === 'it' ? 'Più Popolare' : 'Most Popular'}
-              </div>
-              <h3 className="font-serif text-2xl mb-2">Premium</h3>
-              <div className="flex items-center justify-center space-x-2">
-                <p className="text-4xl font-bold">€9.99</p>
-                <span className="text-sm text-white/60">/{language === 'it' ? 'mese' : 'month'}</span>
-              </div>
-              <p className="text-sm text-white/60 mt-1">
-                {language === 'it' ? 'o €79.99/anno (risparmia 33%)' : 'or €79.99/year (save 33%)'}
-              </p>
-            </div>
-            
-            <ul className="space-y-3 mb-6">
-              {features.map((feature, idx) => (
-                <li key={idx} className="flex items-center justify-between">
-                  <span className="text-sm text-white/80">{feature.name}</span>
-                  {typeof feature.premium === 'boolean' ? (
-                    feature.premium ? (
-                      <Check className="w-5 h-5 text-[#C44D38]" />
-                    ) : (
-                      <X className="w-5 h-5 text-white/30" />
-                    )
-                  ) : (
-                    <span className="text-sm font-medium text-[#C44D38]">{feature.premium}</span>
+        {/* Pricing Cards — 3 tiers */}
+        <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-5 mb-8">
+          {Object.values(PLANS).map((plan) => {
+            const isFreePlan = plan.key === 'free';
+            const userPlanKey = status?.plan || 'free';
+            const isCurrent = userPlanKey === plan.key
+              || (userPlanKey === 'premium' && plan.key === 'fitness_coaching');
+            const price = billingCycle === 'yearly' ? plan.priceYearly : plan.priceMonthly;
+            const monthlyEquiv = billingCycle === 'yearly' ? plan.monthlyEquivalentYearly : null;
+            const cta = billingCycle === 'yearly' ? plan.ctaYearly : plan.ctaMonthly;
+            const isDark = plan.column === 'fitness';
+            const isHighlighted = plan.highlight;
+
+            return (
+              <div
+                key={plan.key}
+                className={`zen-card relative ${
+                  isDark ? 'bg-gradient-to-br from-[#2C2C2C] to-[#1a1a1a] text-white' : ''
+                } ${
+                  isCurrent || isHighlighted ? 'border-2 border-[#C44D38]' : 'border border-[#D1CDC7]'
+                }`}
+              >
+                {isHighlighted && !isCurrent && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#C44D38] text-white rounded-full text-xs uppercase tracking-wider shadow">
+                    {language === 'it' ? 'Più Popolare' : 'Most Popular'}
+                  </div>
+                )}
+
+                <div className="text-center mb-5 pt-2">
+                  <h3 className={`font-serif text-2xl mb-1 ${isDark ? 'text-white' : 'text-[#2C2C2C]'}`}>
+                    {plan.title}
+                  </h3>
+                  <p className={`text-xs mb-3 ${isDark ? 'text-white/60' : 'text-[#7a6f63]'}`}>
+                    {plan.tagline}
+                  </p>
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-[#2C2C2C]'}`}>
+                      €{isFreePlan ? '0' : price.toFixed(2).replace('.', ',')}
+                    </span>
+                    {!isFreePlan && (
+                      <span className={`text-xs ${isDark ? 'text-white/60' : 'text-[#595959]'}`}>
+                        /{billingCycle === 'yearly' ? (language === 'it' ? 'anno' : 'yr') : (language === 'it' ? 'mese' : 'mo')}
+                      </span>
+                    )}
+                  </div>
+                  {billingCycle === 'yearly' && monthlyEquiv !== null && monthlyEquiv > 0 && (
+                    <p className={`text-xs mt-1 ${isDark ? 'text-white/60' : 'text-[#7a6f63]'}`}>
+                      ≈ €{monthlyEquiv.toFixed(2).replace('.', ',')} /{language === 'it' ? 'mese' : 'mo'} ·{' '}
+                      <span className="text-[#C44D38] font-medium">−{plan.savings}</span>
+                    </p>
                   )}
-                </li>
-              ))}
-            </ul>
+                  {isFreePlan && (
+                    <p className={`text-xs mt-1 ${isDark ? 'text-white/60' : 'text-[#7a6f63]'}`}>
+                      {language === 'it' ? 'per sempre' : 'forever'}
+                    </p>
+                  )}
+                </div>
 
-            {isPremium ? (
-              <button disabled className="w-full py-3 rounded-lg bg-[#C44D38] text-white font-medium">
-                {language === 'it' ? 'Piano Attuale' : 'Current Plan'}
-              </button>
-            ) : (
-              <div className="space-y-2">
-                <button 
-                  onClick={() => handleSubscribe('monthly')}
-                  disabled={processingPayment}
-                  className="w-full py-3 rounded-lg bg-[#C44D38] text-white font-medium hover:bg-[#A33D2B] transition-colors disabled:opacity-50"
-                >
-                  {processingPayment 
-                    ? (language === 'it' ? 'Elaborazione...' : 'Processing...') 
-                    : (language === 'it' ? 'Abbonati Mensile' : 'Subscribe Monthly')}
-                </button>
-                <button 
-                  onClick={() => handleSubscribe('yearly')}
-                  disabled={processingPayment}
-                  className="w-full py-3 rounded-lg border-2 border-[#C44D38] text-[#C44D38] font-medium hover:bg-[#C44D38]/10 transition-colors disabled:opacity-50"
-                >
-                  {language === 'it' ? 'Abbonati Annuale (risparmia 33%)' : 'Subscribe Yearly (save 33%)'}
-                </button>
+                <ul className="space-y-2 mb-6 text-sm">
+                  {features.map((f, idx) => {
+                    const val = f[plan.column];
+                    return (
+                      <li key={idx} className="flex items-start justify-between gap-2">
+                        <span className={`flex-1 ${isDark ? 'text-white/80' : 'text-[#595959]'}`}>
+                          {f.name}
+                        </span>
+                        {typeof val === 'boolean' ? (
+                          val ? (
+                            <Check className={`w-4 h-4 flex-shrink-0 mt-0.5 ${isDark ? 'text-[#C44D38]' : 'text-green-600'}`} />
+                          ) : (
+                            <X className={`w-4 h-4 flex-shrink-0 mt-0.5 ${isDark ? 'text-white/30' : 'text-[#D1CDC7]'}`} />
+                          )
+                        ) : (
+                          <span className={`font-medium text-xs ${isDark ? 'text-[#C44D38]' : 'text-[#2C2C2C]'}`}>
+                            {val}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                {isCurrent ? (
+                  <button
+                    disabled
+                    className={`w-full py-2.5 rounded-lg font-medium text-sm ${
+                      isDark
+                        ? 'bg-[#C44D38] text-white'
+                        : 'border-2 border-[#C44D38] text-[#C44D38] bg-white'
+                    }`}
+                  >
+                    {language === 'it' ? '✓ Piano Attuale' : '✓ Current Plan'}
+                  </button>
+                ) : isFreePlan ? (
+                  <button
+                    disabled
+                    className="w-full py-2.5 rounded-lg font-medium text-sm border border-[#D1CDC7] text-[#7a6f63] bg-[#F9F7F2]"
+                  >
+                    {language === 'it' ? 'Piano Gratuito' : 'Free Plan'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleSubscribe(cta)}
+                    disabled={processingPayment || !cta}
+                    className={`w-full py-2.5 rounded-lg font-medium text-sm transition disabled:opacity-50 ${
+                      isDark
+                        ? 'bg-[#C44D38] text-white hover:bg-[#A33D2B]'
+                        : 'bg-[#C44D38] text-white hover:bg-[#A33D2B]'
+                    }`}
+                  >
+                    {processingPayment
+                      ? (language === 'it' ? 'Elaborazione...' : 'Processing...')
+                      : (language === 'it' ? `Sottoscrivi ${plan.title}` : `Subscribe to ${plan.title}`)}
+                  </button>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })}
         </div>
 
         {/* Features Detail */}

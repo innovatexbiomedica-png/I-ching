@@ -33,11 +33,24 @@ def is_admin_email(email: Optional[str]) -> bool:
         return False
     return email.strip().lower() in ADMIN_EMAILS
 
-# Limiti per piano
+# ──────────────────────────────────────────────────────────────────────
+# PIANI DI ABBONAMENTO
+# ──────────────────────────────────────────────────────────────────────
+#  free                  -> €0,  5 stese/mese, solo Diretta
+#  base                  -> €9,99/mese  (€107,89/anno  -10%)
+#                           stese illimitate, Diretta + Profonda,
+#                           sintesi, note, storico illimitato,
+#                           percorsi guidati, statistiche
+#  fitness_coaching      -> €19,99/mese (€191,90/anno  -20%)
+#                           tutto del Base +
+#                           programma Fitness/Coaching personalizzato +
+#                           Tema natale + export PDF/DOCX +
+#                           consigli giornalieri personalizzati
+# ──────────────────────────────────────────────────────────────────────
 PLAN_LIMITS = {
     "free": {
-        "monthly_consultations": 3,
-        "consultation_types": ["direct"],  # Solo stesa diretta
+        "monthly_consultations": 5,
+        "consultation_types": ["direct"],
         "history_limit": 10,
         "can_continue_conversation": False,
         "can_synthesis": False,
@@ -45,53 +58,148 @@ PLAN_LIMITS = {
         "can_add_notes": False,
         "can_view_statistics": False,
         "can_meditative_mode": False,
+        "can_guided_paths": False,
+        "can_natal_chart": False,
+        "can_daily_advice": False,
+        "can_fitness_coaching": False,
     },
-    "premium": {
-        "monthly_consultations": -1,  # Illimitate
-        "consultation_types": ["direct", "deep"],  # Entrambe
-        "history_limit": -1,  # Illimitato
+    "base": {
+        "monthly_consultations": -1,           # illimitate
+        "consultation_types": ["direct", "deep"],
+        "history_limit": -1,
+        "can_continue_conversation": True,
+        "can_synthesis": True,
+        "can_export_pdf": False,               # esclusivo Fitness Coaching
+        "can_add_notes": True,
+        "can_view_statistics": True,
+        "can_meditative_mode": True,
+        "can_guided_paths": True,
+        "can_natal_chart": False,              # esclusivo Fitness Coaching
+        "can_daily_advice": False,             # esclusivo Fitness Coaching
+        "can_fitness_coaching": False,         # esclusivo Fitness Coaching
+    },
+    "fitness_coaching": {
+        "monthly_consultations": -1,
+        "consultation_types": ["direct", "deep"],
+        "history_limit": -1,
         "can_continue_conversation": True,
         "can_synthesis": True,
         "can_export_pdf": True,
         "can_add_notes": True,
         "can_view_statistics": True,
         "can_meditative_mode": True,
-    }
+        "can_guided_paths": True,
+        "can_natal_chart": True,
+        "can_daily_advice": True,
+        "can_fitness_coaching": True,
+    },
+    # Backwards-compat alias (vecchio nome "premium")
+    "premium": {
+        "monthly_consultations": -1,
+        "consultation_types": ["direct", "deep"],
+        "history_limit": -1,
+        "can_continue_conversation": True,
+        "can_synthesis": True,
+        "can_export_pdf": True,
+        "can_add_notes": True,
+        "can_view_statistics": True,
+        "can_meditative_mode": True,
+        "can_guided_paths": True,
+        "can_natal_chart": True,
+        "can_daily_advice": True,
+        "can_fitness_coaching": True,
+    },
 }
 
-# Prezzi
+
+# Prezzi (in EUR). Le chiavi rispecchiano combinazione piano+frequenza.
 SUBSCRIPTION_PRICES = {
-    "monthly": {
+    # Piano BASE — €9,99/mese, sconto annuale 10% → €107,89
+    "monthly": {                       # alias storico per compat. = base mensile
         "price": 9.99,
         "currency": "EUR",
-        "stripe_price_id": "price_monthly_premium"
+        "plan": "base",
+        "stripe_price_id": "price_base_monthly",
     },
-    "yearly": {
-        "price": 79.99,
+    "yearly": {                        # alias storico = base annuale
+        "price": 107.89,
         "currency": "EUR",
-        "stripe_price_id": "price_yearly_premium",
-        "savings": "33%"
-    }
+        "plan": "base",
+        "stripe_price_id": "price_base_yearly",
+        "savings": "10%",
+    },
+    "base_monthly": {
+        "price": 9.99,
+        "currency": "EUR",
+        "plan": "base",
+        "duration_days": 30,
+        "stripe_price_id": "price_base_monthly",
+        "label_it": "Base — Mensile",
+        "label_en": "Base — Monthly",
+    },
+    "base_yearly": {
+        "price": 107.89,
+        "currency": "EUR",
+        "plan": "base",
+        "duration_days": 365,
+        "stripe_price_id": "price_base_yearly",
+        "savings": "10%",
+        "monthly_equivalent": 8.99,
+        "label_it": "Base — Annuale (−10%)",
+        "label_en": "Base — Yearly (−10%)",
+    },
+    # Piano FITNESS COACHING — €19,99/mese, sconto annuale 20% → €191,90
+    "fitness_monthly": {
+        "price": 19.99,
+        "currency": "EUR",
+        "plan": "fitness_coaching",
+        "duration_days": 30,
+        "stripe_price_id": "price_fitness_monthly",
+        "label_it": "Fitness Coaching — Mensile",
+        "label_en": "Fitness Coaching — Monthly",
+    },
+    "fitness_yearly": {
+        "price": 191.90,
+        "currency": "EUR",
+        "plan": "fitness_coaching",
+        "duration_days": 365,
+        "stripe_price_id": "price_fitness_yearly",
+        "savings": "20%",
+        "monthly_equivalent": 15.99,
+        "label_it": "Fitness Coaching — Annuale (−20%)",
+        "label_en": "Fitness Coaching — Yearly (−20%)",
+    },
 }
 
 
 def get_user_plan(user: dict) -> str:
-    """Determina il piano dell'utente.
+    """Determina il piano dell'utente: free / base / fitness_coaching.
 
-    Owners/admins (ADMIN_EMAILS whitelist) always get 'premium' regardless
-    of subscription state — they are not charged.
+    Admin whitelist (ADMIN_EMAILS) -> sempre fitness_coaching (tutto sbloccato).
+    Pagante con sottoscrizione attiva e non scaduta -> il piano memorizzato
+      sul record utente ('base' o 'fitness_coaching'), oppure 'fitness_coaching'
+      come default per le vecchie sottoscrizioni 'premium'.
+    Altrimenti -> free.
     """
-    # Owner/admin bypass: full access, always free
+    # Owner/admin bypass: accesso completo a tutto
     if is_admin_email(user.get("email")):
-        return "premium"
+        return "fitness_coaching"
 
     if user.get("subscription_active"):
         sub_end = user.get("subscription_end")
+        active = False
         if sub_end:
             if isinstance(sub_end, str):
-                sub_end = datetime.fromisoformat(sub_end.replace('Z', '+00:00'))
-            if sub_end > datetime.now(timezone.utc):
-                return "premium"
+                sub_end = datetime.fromisoformat(sub_end.replace("Z", "+00:00"))
+            active = sub_end > datetime.now(timezone.utc)
+        else:
+            active = True  # legacy senza scadenza
+        if active:
+            plan = (user.get("subscription_plan") or "").lower()
+            if plan in ("base", "fitness_coaching"):
+                return plan
+            # Legacy ('premium' o sconosciuto): consideriamo fitness_coaching
+            return "fitness_coaching"
     return "free"
 
 

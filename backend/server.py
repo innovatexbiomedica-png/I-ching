@@ -310,8 +310,14 @@ class SynthesisRequest(BaseModel):
 
 class CheckoutRequest(BaseModel):
     origin_url: str
-    # 'monthly' (default) → €9.99 / 'yearly' → €79.99
-    plan_type: str = "monthly"
+    # Accepted values:
+    #   base_monthly      -> €9,99 / 30gg
+    #   base_yearly       -> €107,89 / 365gg  (-10%)
+    #   fitness_monthly   -> €19,99 / 30gg
+    #   fitness_yearly    -> €191,90 / 365gg  (-20%)
+    # Legacy aliases still accepted: 'monthly' -> base_monthly,
+    # 'yearly' -> base_yearly.
+    plan_type: str = "base_monthly"
 
 class NoteCreate(BaseModel):
     consultation_id: str
@@ -1887,17 +1893,23 @@ async def create_checkout(data: CheckoutRequest, request: Request, user: dict = 
             detail="Pagamenti non ancora configurati. Riprova più tardi."
         )
 
-    # Pick price from chosen plan
-    plan_type = (data.plan_type or "monthly").lower()
+    # Map legacy aliases to current SKUs
+    plan_type = (data.plan_type or "base_monthly").lower()
+    legacy_map = {"monthly": "base_monthly", "yearly": "base_yearly"}
+    plan_type = legacy_map.get(plan_type, plan_type)
     if plan_type not in SUBSCRIPTION_PRICES:
-        raise HTTPException(status_code=400, detail="plan_type non valido (monthly|yearly)")
+        raise HTTPException(
+            status_code=400,
+            detail="plan_type non valido. Valori ammessi: base_monthly | base_yearly | fitness_monthly | fitness_yearly"
+        )
     plan_cfg = SUBSCRIPTION_PRICES[plan_type]
     price_eur = float(plan_cfg["price"])
-    product_label = (
-        "I Ching del Benessere — Premium Mensile" if plan_type == "monthly"
-        else "I Ching del Benessere — Premium Annuale"
+    duration_days = int(plan_cfg.get("duration_days") or (365 if "yearly" in plan_type else 30))
+    plan_name = plan_cfg.get("plan", "base")  # 'base' o 'fitness_coaching'
+    product_label = plan_cfg.get(
+        "label_it",
+        "I Ching del Benessere — Abbonamento"
     )
-    duration_days = 30 if plan_type == "monthly" else 365
 
     stripe_lib.api_key = STRIPE_API_KEY
 
@@ -1921,6 +1933,7 @@ async def create_checkout(data: CheckoutRequest, request: Request, user: dict = 
             "user_id": user["id"],
             "user_email": user["email"],
             "type": f"{plan_type}_subscription",
+            "plan": plan_name,  # 'base' or 'fitness_coaching'
             "duration_days": str(duration_days),
         }
     )
@@ -1932,6 +1945,7 @@ async def create_checkout(data: CheckoutRequest, request: Request, user: dict = 
         "amount": price_eur,
         "currency": plan_cfg["currency"].lower(),
         "plan_type": plan_type,
+        "plan": plan_name,
         "duration_days": duration_days,
         "status": "pending",
         "payment_status": "initiated",
@@ -2071,12 +2085,14 @@ async def get_payment_status(session_id: str, user: dict = Depends(get_current_u
             # Activate subscription for the chosen plan duration
             txn = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
             days = (txn or {}).get("duration_days") or 30
+            plan_name = (txn or {}).get("plan") or "base"
             subscription_end = datetime.now(timezone.utc) + timedelta(days=int(days))
             await db.users.update_one(
                 {"id": user["id"]},
                 {"$set": {
                     "subscription_active": True,
-                    "subscription_end": subscription_end.isoformat()
+                    "subscription_end": subscription_end.isoformat(),
+                    "subscription_plan": plan_name,
                 }}
             )
 
@@ -2122,17 +2138,19 @@ async def stripe_webhook(request: Request):
                                 "updated_at": datetime.now(timezone.utc).isoformat()
                             }}
                         )
-                        # Use duration from transaction record (30 for monthly, 365 for yearly)
+                        # Use duration + plan from transaction record
                         txn = await db.payment_transactions.find_one(
                             {"session_id": session["id"]}, {"_id": 0}
                         )
                         days = (txn or {}).get("duration_days") or 30
+                        plan_name = (txn or {}).get("plan") or "base"
                         subscription_end = datetime.now(timezone.utc) + timedelta(days=int(days))
                         await db.users.update_one(
                             {"id": user_id},
                             {"$set": {
                                 "subscription_active": True,
-                                "subscription_end": subscription_end.isoformat()
+                                "subscription_end": subscription_end.isoformat(),
+                                "subscription_plan": plan_name,
                             }}
                         )
 
