@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../lib/translations';
+import {
+  WilhelmOpening,
+  WilhelmHexagramsShowcase,
+  ConsultationTutorial,
+  WilhelmMasterVoice,
+} from '../components/WilhelmWisdom';
 import { 
   Coins, 
   BookOpen, 
@@ -231,6 +237,15 @@ const Landing = () => {
           </div>
         </div>
       </section>
+
+      {/* ═══════════════════════════════════════════════════════════
+          SEZIONI WILHELM — contenuti ancorati al testo originale
+          della traduzione di Richard Wilhelm dell'I King.
+          ═══════════════════════════════════════════════════════════ */}
+      <WilhelmOpening />
+      <WilhelmHexagramsShowcase />
+      <ConsultationTutorial />
+      <WilhelmMasterVoice />
 
       {/* Features Section */}
       <section className="section-zen bg-[#E5E0D8]/30" data-testid="features-section">
