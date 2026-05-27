@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../lib/translations';
 import { Menu, X, User, LogOut, Globe, Home, Sparkles, Crown, Star, Bell, FileText } from 'lucide-react';
+import NotificationBell from './NotificationBell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -118,6 +119,9 @@ const Layout = ({ children }) => {
                   EN
                 </button>
               </div>
+
+              {/* Notifications bell — only when logged in */}
+              {isAuthenticated && <NotificationBell language={language} />}
 
               {/* User Menu */}
               {isAuthenticated ? (

@@ -144,7 +144,8 @@ const Landing = () => {
       description: language === 'it'
         ? 'Messaggi popup con interpretazioni vocali e video animate'
         : 'Popup messages with voice interpretations and animated videos',
-      status: language === 'it' ? 'Prossimamente' : 'Coming Soon'
+      status: language === 'it' ? 'Prossimamente' : 'Coming Soon',
+      available: false,
     },
     {
       id: 'smartwatch',
@@ -154,7 +155,8 @@ const Landing = () => {
       description: language === 'it'
         ? 'Connessione con Apple Watch, Fitbit e altri per monitorare la tua salute e ricevere consigli personalizzati'
         : 'Connect with Apple Watch, Fitbit and others to monitor your health and receive personalized advice',
-      status: language === 'it' ? 'In sviluppo' : 'In Development'
+      status: language === 'it' ? 'In sviluppo' : 'In Development',
+      available: false,
     },
     {
       id: 'notifications',
@@ -164,7 +166,9 @@ const Landing = () => {
       description: language === 'it'
         ? 'Promemoria personalizzati basati sui tuoi ritmi e obiettivi, sincronizzati con i cicli lunari e le energie del giorno'
         : 'Personalized reminders based on your rhythms and goals, synced with lunar cycles and daily energies',
-      status: language === 'it' ? 'Prossimamente' : 'Coming Soon'
+      status: language === 'it' ? '🟢 Disponibile ora' : '🟢 Available now',
+      available: true,
+      link: '/notifications',
     },
     {
       id: 'ai-coach',
@@ -172,9 +176,11 @@ const Landing = () => {
       title: language === 'it' ? 'Coach AI Personale' : 'Personal AI Coach',
       color: 'from-indigo-500 to-blue-600',
       description: language === 'it'
-        ? 'Un assistente AI che ti conosce, ti segue nel tempo e ti guida nel tuo percorso di crescita'
-        : 'An AI assistant that knows you, follows you over time and guides you on your growth path',
-      status: language === 'it' ? 'Beta' : 'Beta'
+        ? 'Un assistente AI che ti conosce, ti segue nel tempo e ti guida nel tuo percorso di crescita — incluso nel piano Fitness Coaching'
+        : 'An AI assistant that knows you, follows you over time and guides you on your growth path — included in the Fitness Coaching plan',
+      status: language === 'it' ? '🟢 Disponibile ora' : '🟢 Available now',
+      available: true,
+      link: '/fitness',
     },
   ];
 
@@ -668,25 +674,44 @@ const Landing = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {futureFeatures.map((feature) => (
-              <div 
-                key={feature.id}
-                className="flex items-start space-x-4 p-6 bg-white rounded-2xl border-2 border-[#E5E0D8] hover:border-purple-300 transition-all hover:shadow-lg group"
-              >
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center text-white flex-shrink-0 group-hover:scale-110 transition-transform`}>
-                  {feature.icon}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <h3 className="font-serif text-lg text-[#2C2C2C]">{feature.title}</h3>
-                    <span className="px-2 py-0.5 bg-purple-100 text-purple-600 text-xs rounded-full">
-                      {feature.status}
-                    </span>
+            {futureFeatures.map((feature) => {
+              const cardClass = `flex items-start space-x-4 p-6 bg-white rounded-2xl border-2 transition-all group ${
+                feature.available
+                  ? 'border-emerald-300 hover:border-emerald-500 hover:shadow-lg cursor-pointer'
+                  : 'border-[#E5E0D8] hover:border-purple-300 hover:shadow-lg'
+              }`;
+              const statusClass = feature.available
+                ? 'px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full font-medium'
+                : 'px-2 py-0.5 bg-purple-100 text-purple-600 text-xs rounded-full';
+              const inner = (
+                <>
+                  <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center text-white flex-shrink-0 group-hover:scale-110 transition-transform`}>
+                    {feature.icon}
                   </div>
-                  <p className="text-sm text-[#595959]">{feature.description}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center flex-wrap gap-2 mb-1">
+                      <h3 className="font-serif text-lg text-[#2C2C2C]">{feature.title}</h3>
+                      <span className={statusClass}>{feature.status}</span>
+                    </div>
+                    <p className="text-sm text-[#595959]">{feature.description}</p>
+                    {feature.available && (
+                      <span className="text-xs text-emerald-700 font-medium mt-2 inline-flex items-center gap-1">
+                        {language === 'it' ? 'Apri ora' : 'Open now'} →
+                      </span>
+                    )}
+                  </div>
+                </>
+              );
+              return feature.available && feature.link ? (
+                <Link key={feature.id} to={feature.link} className={cardClass}>
+                  {inner}
+                </Link>
+              ) : (
+                <div key={feature.id} className={cardClass}>
+                  {inner}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="text-center mt-10">

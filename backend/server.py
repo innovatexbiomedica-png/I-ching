@@ -1501,6 +1501,187 @@ async def verify_reset_code(data: PasswordResetVerify):
     return {"message": "Password aggiornata con successo. Ora puoi accedere."}
 
 # ═══════════════════════════════════════════════════════════════════════
+# NOTIFICHE INTELLIGENTI in-app
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Ogni notifica è generata server-side a partire da:
+#   - esagramma I Ching del giorno (uguale per tutti)
+#   - fase lunare attuale
+#   - energia del calendario cinese (Jiazi cycle)
+#   - eventuali percorsi guidati attivi dell'utente
+#   - aggiornamenti del programma Fitness (se piano fitness_coaching)
+#
+# Il client le scarica con GET /api/notifications/inbox e le marca
+# come lette con POST /api/notifications/{id}/read.
+
+@api_router.get("/notifications/inbox")
+async def get_notifications_inbox(request: Request, user: dict = Depends(get_current_user)):
+    """
+    Returns the user's intelligent notification feed.
+    Mixes:
+      - automatic system notifications (lunar, daily I Ching, etc.)
+      - completed-paths unread counter
+      - stored notifications (db.notifications) if any
+    """
+    lang = user.get("language", "it")
+    notifications = []
+
+    # 1) Notifica esagramma del giorno
+    today = datetime.now(timezone.utc).date()
+    hex_n = get_daily_hexagram_number()
+    hex_data = HEXAGRAMS.get(hex_n, {}) or {}
+    name_key = "name_it" if lang == "it" else "name_en"
+    hex_name = hex_data.get(name_key, hex_data.get("name", ""))
+    notifications.append({
+        "id": f"daily_hex_{today.isoformat()}",
+        "type": "daily_hexagram",
+        "icon": "📖",
+        "title": (f"Esagramma del giorno: {hex_name}" if lang == "it"
+                  else f"Today's hexagram: {hex_name}"),
+        "body": (f"Oggi il Tao ti parla attraverso #{hex_n} {hex_name}. Lascia che la sua energia ti guidi."
+                 if lang == "it"
+                 else f"Today the Tao speaks through #{hex_n} {hex_name}. Let its energy guide you."),
+        "deeplink": "/library/" + str(hex_n),
+        "created_at": datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc).isoformat(),
+        "read": False,
+    })
+
+    # 2) Notifica fase lunare
+    lunar = get_lunar_phase()
+    notifications.append({
+        "id": f"lunar_{today.isoformat()}",
+        "type": "lunar_phase",
+        "icon": lunar.get("emoji", "🌙"),
+        "title": (lunar.get("name_it", "") if lang == "it" else lunar.get("name_en", "")),
+        "body": (lunar.get("advice_it", "") if lang == "it" else lunar.get("advice_en", "")),
+        "deeplink": "/library",
+        "created_at": datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc).isoformat(),
+        "read": False,
+    })
+
+    # 3) Calendario cinese — energia del giorno
+    try:
+        day_energy = get_chinese_day_energy()
+        notifications.append({
+            "id": f"chinese_{today.isoformat()}",
+            "type": "chinese_calendar",
+            "icon": day_energy.get("animal", {}).get("emoji", "🐉"),
+            "title": (f"Energia di oggi: {day_energy.get('element')}" if lang == "it"
+                      else f"Today's energy: {day_energy.get('element_en')}"),
+            "body": (day_energy.get("quality_it", "") if lang == "it" else day_energy.get("quality_en", "")),
+            "deeplink": "/dashboard",
+            "created_at": datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc).isoformat(),
+            "read": False,
+        })
+    except Exception:
+        pass
+
+    # 4) Percorsi completati non letti
+    try:
+        unread_paths = await db.completed_paths.count_documents({
+            "user_id": user["id"],
+            "is_read": False,
+        })
+        if unread_paths > 0:
+            notifications.append({
+                "id": "unread_paths",
+                "type": "completed_paths",
+                "icon": "🛤️",
+                "title": (f"{unread_paths} percorso/i completato/i da rivedere" if lang == "it"
+                          else f"{unread_paths} completed path(s) to review"),
+                "body": (f"Hai {unread_paths} sintesi di percorso pronte da leggere."
+                         if lang == "it"
+                         else f"You have {unread_paths} path syntheses ready to read."),
+                "deeplink": "/completed-paths",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "read": False,
+            })
+    except Exception:
+        pass
+
+    # 5) Programma Fitness — promemoria attività di oggi
+    plan = get_user_plan(user)
+    if get_plan_limits(plan).get("can_fitness_coaching"):
+        try:
+            program = await db.fitness_programs.find_one(
+                {"user_id": user["id"], "active": True}, {"_id": 0}
+            )
+            if program:
+                today_str = today.isoformat()
+                for day in program.get("days", []):
+                    if day.get("date") == today_str:
+                        pending = [a for a in day.get("activities", []) if not a.get("completed")]
+                        if pending:
+                            notifications.append({
+                                "id": f"fitness_today_{today_str}",
+                                "type": "fitness_reminder",
+                                "icon": "✨",
+                                "title": (f"{len(pending)} attività Fitness in programma oggi"
+                                          if lang == "it"
+                                          else f"{len(pending)} fitness activities scheduled today"),
+                                "body": ", ".join(a.get("title", "")[:35] for a in pending[:3]),
+                                "deeplink": "/fitness",
+                                "created_at": datetime.now(timezone.utc).isoformat(),
+                                "read": False,
+                            })
+                        break
+        except Exception:
+            pass
+
+    # 6) Mark which ones the user has already read (stored read state)
+    try:
+        read_doc = await db.notification_reads.find_one(
+            {"user_id": user["id"]}, {"_id": 0, "read_ids": 1}
+        )
+        read_ids = set((read_doc or {}).get("read_ids", []))
+        for n in notifications:
+            if n["id"] in read_ids:
+                n["read"] = True
+    except Exception:
+        pass
+
+    unread_count = sum(1 for n in notifications if not n["read"])
+    return {
+        "notifications": notifications,
+        "unread_count": unread_count,
+        "total": len(notifications),
+    }
+
+
+@api_router.post("/notifications/{notif_id}/read")
+async def mark_notification_read(notif_id: str, user: dict = Depends(get_current_user)):
+    """Persist that this notification was acknowledged by the user."""
+    await db.notification_reads.update_one(
+        {"user_id": user["id"]},
+        {"$addToSet": {"read_ids": notif_id}, "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True,
+    )
+    return {"id": notif_id, "read": True}
+
+
+@api_router.post("/notifications/mark-all-read")
+async def mark_all_notifications_read(user: dict = Depends(get_current_user)):
+    """Mark every currently-fetchable notification as read."""
+    box = await get_notifications_inbox.__wrapped__(None, user) if hasattr(get_notifications_inbox, "__wrapped__") else None
+    # We can't easily reuse the FastAPI handler; just clear by inserting today's keys
+    today = datetime.now(timezone.utc).date().isoformat()
+    keys = [
+        f"daily_hex_{today}",
+        f"lunar_{today}",
+        f"chinese_{today}",
+        "unread_paths",
+        f"fitness_today_{today}",
+    ]
+    await db.notification_reads.update_one(
+        {"user_id": user["id"]},
+        {"$addToSet": {"read_ids": {"$each": keys}},
+         "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True,
+    )
+    return {"marked": len(keys)}
+
+
+# ═══════════════════════════════════════════════════════════════════════
 # FITNESS COACHING (esclusivo piano fitness_coaching)
 # ═══════════════════════════════════════════════════════════════════════
 
