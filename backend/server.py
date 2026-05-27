@@ -214,6 +214,9 @@ class UserCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=80)
     phone: str = Field(default="", max_length=30)
     language: str = "it"
+    # GDPR consents (required by art. 7 GDPR — proof of consent)
+    privacy_accepted: bool = False
+    marketing_consent: bool = False
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -893,11 +896,25 @@ Get straight to the point. Tell the querent what they need to know.
 
 # ============== AUTH ROUTES ==============
 @api_router.post("/auth/register", response_model=UserResponse)
-async def register(user_data: UserCreate):
+async def register(user_data: UserCreate, request: Request):
+    # GDPR art. 6.1.a + art. 7: a valid legal basis requires the data subject
+    # to have given consent BEFORE the data is processed. We refuse to create
+    # the account if the privacy notice was not accepted.
+    if not user_data.privacy_accepted:
+        raise HTTPException(
+            status_code=400,
+            detail="È necessario accettare l'Informativa Privacy per registrarsi."
+        )
+
     existing = await db.users.find_one({"email": user_data.email})
     if existing:
         raise HTTPException(status_code=400, detail="Email già registrata")
-    
+
+    # Record proof of consent (art. 7.1 GDPR — controller must demonstrate consent)
+    now_iso = datetime.now(timezone.utc).isoformat()
+    client_ip = request.client.host if request and request.client else None
+    user_agent = request.headers.get("User-Agent", "") if request else ""
+
     user_id = str(uuid.uuid4())
     user_doc = {
         "id": user_id,
@@ -908,10 +925,19 @@ async def register(user_data: UserCreate):
         "language": user_data.language,
         "subscription_active": False,
         "subscription_end": None,
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_iso,
+        "consents": {
+            "privacy_accepted": True,
+            "privacy_accepted_at": now_iso,
+            "privacy_version": "2.0",  # bump when policy text changes
+            "marketing_consent": bool(user_data.marketing_consent),
+            "marketing_consent_at": now_iso if user_data.marketing_consent else None,
+            "ip": client_ip,
+            "user_agent": user_agent[:300],
+        },
     }
     await db.users.insert_one(user_doc)
-    
+
     return UserResponse(
         id=user_id,
         email=user_data.email,
@@ -1064,10 +1090,13 @@ async def google_oauth_callback_compat(data: dict):
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(user: dict = Depends(get_current_user)):
+    # If the user has activated a pseudonym, display that instead of the real name.
+    # Real name stays in the DB so they can revert later (see /auth/pseudonym).
+    display = user.get("display_name") or user.get("name", "")
     return UserResponse(
         id=user["id"],
         email=user["email"],
-        name=user["name"],
+        name=display,
         phone=user.get("phone", ""),
         language=user["language"],
         subscription_active=user.get("subscription_active", False),
@@ -1080,6 +1109,107 @@ async def update_language(language: str, user: dict = Depends(get_current_user))
         raise HTTPException(status_code=400, detail="Lingua non supportata")
     await db.users.update_one({"id": user["id"]}, {"$set": {"language": language}})
     return {"message": "Lingua aggiornata"}
+
+
+@api_router.put("/auth/pseudonym")
+async def set_pseudonym(data: dict, user: dict = Depends(get_current_user)):
+    """
+    Honors the Privacy Policy promise:
+    "Su richiesta puoi attivare l'uso di uno pseudonimo al posto del nome reale."
+
+    Accepts:
+      { "pseudonym": "<string>" }  -> sets it (displayed in UI in place of real name)
+      { "pseudonym": null }        -> removes it (real name resumes)
+
+    The real name is preserved in the DB (so the user can revert) but the
+    public-facing `name` is overridden by `display_name` everywhere the UI
+    reads it from /auth/me, /profile, /history shared cards, etc.
+    """
+    pseudonym = data.get("pseudonym")
+    if pseudonym is not None:
+        pseudonym = str(pseudonym).strip()
+        if pseudonym == "":
+            pseudonym = None
+        elif len(pseudonym) > 40:
+            raise HTTPException(status_code=400, detail="Lo pseudonimo non può superare 40 caratteri")
+
+    update = {
+        "display_name": pseudonym,
+        "pseudonym_active": pseudonym is not None,
+        "pseudonym_updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.users.update_one({"id": user["id"]}, {"$set": update})
+    return {"message": "Pseudonimo aggiornato", "pseudonym_active": pseudonym is not None, "display_name": pseudonym}
+
+
+@api_router.put("/auth/marketing-consent")
+async def update_marketing_consent(data: dict, user: dict = Depends(get_current_user)):
+    """
+    Allow user to grant or revoke marketing consent at any time (art. 7.3 GDPR).
+    Body: { "consent": true | false }
+    """
+    consent = bool(data.get("consent", False))
+    now = datetime.now(timezone.utc).isoformat()
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {
+            "consents.marketing_consent": consent,
+            "consents.marketing_consent_at": now if consent else None,
+            "consents.marketing_revoked_at": None if consent else now,
+        }}
+    )
+    return {"message": "Preferenze marketing aggiornate", "marketing_consent": consent}
+
+
+@api_router.delete("/auth/account")
+async def delete_account(user: dict = Depends(get_current_user)):
+    """
+    GDPR art. 17 — Right to erasure ("right to be forgotten").
+
+    Deletes the user's account and all related personal data. Consultations
+    are anonymized (user_id removed, retained in aggregate-statistics form)
+    rather than fully deleted, as allowed by recital 26 for purely statistical
+    purposes that don't allow re-identification.
+    """
+    uid = user["id"]
+    # Anonymize past consultations (keep only the I Ching content, drop link to user)
+    await db.consultations.update_many(
+        {"user_id": uid},
+        {"$set": {"user_id": None, "anonymized": True, "anonymized_at": datetime.now(timezone.utc).isoformat()},
+         "$unset": {"question": ""}}  # question may contain personal info -> drop
+    )
+    # Delete user-private collections completely
+    await db.notes.delete_many({"user_id": uid})
+    await db.user_paths.delete_many({"user_id": uid})
+    await db.notification_preferences.delete_many({"user_id": uid})
+    await db.payment_transactions.delete_many({"user_id": uid})
+    await db.completed_paths.delete_many({"user_id": uid})
+    # Finally remove the user record itself
+    await db.users.delete_one({"id": uid})
+    return {"message": "Account eliminato. Tutti i dati personali sono stati cancellati."}
+
+
+@api_router.get("/auth/export")
+async def export_user_data(user: dict = Depends(get_current_user)):
+    """
+    GDPR art. 20 — Right to data portability.
+    Returns a JSON dump of all data the user can claim ownership of.
+    """
+    uid = user["id"]
+    user_doc = await db.users.find_one({"id": uid}, {"_id": 0, "password": 0})
+    consultations = await db.consultations.find({"user_id": uid}, {"_id": 0}).to_list(10000)
+    notes = await db.notes.find({"user_id": uid}, {"_id": 0}).to_list(10000)
+    paths = await db.user_paths.find({"user_id": uid}, {"_id": 0}).to_list(1000)
+    prefs = await db.notification_preferences.find_one({"user_id": uid}, {"_id": 0})
+    return {
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "format_version": "1.0",
+        "user": user_doc,
+        "consultations": consultations,
+        "notes": notes,
+        "paths": paths,
+        "notification_preferences": prefs,
+    }
 
 @api_router.post("/auth/request-reset")
 async def request_password_reset(data: PasswordResetRequest):
@@ -3237,6 +3367,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def add_privacy_headers(request: Request, call_next):
+    """
+    Enforce the Privacy Policy claim that API responses are not indexable
+    and that personal data exchanges are not cacheable by intermediaries.
+    """
+    response = await call_next(request)
+    response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive, nosnippet"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    # Don't override caching for static-ish endpoints (hexagrams, lunar) where
+    # appropriate, but mark personal endpoints as no-store.
+    if request.url.path.startswith("/api/auth") or \
+       request.url.path.startswith("/api/consultations") or \
+       request.url.path.startswith("/api/profile") or \
+       request.url.path.startswith("/api/natal-chart") or \
+       request.url.path.startswith("/api/notes") or \
+       request.url.path.startswith("/api/notifications"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
+    return response
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

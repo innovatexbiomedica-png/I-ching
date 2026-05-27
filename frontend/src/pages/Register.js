@@ -17,13 +17,11 @@ import { Loader2, Mail, Lock, User, Globe, Phone, Eye, EyeOff } from 'lucide-rea
 import Logo from '../components/Logo';
 import GoogleSignIn from '../components/GoogleSignIn';
 
-// REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-
 const Register = () => {
   const { register, language: currentLang } = useAuth();
   const t = useTranslation(currentLang);
   const navigate = useNavigate();
-  
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -31,14 +29,30 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [language, setLanguage] = useState(currentLang);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // GDPR consent state — privacy is required, marketing is optional
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [acceptedMarketing, setAcceptedMarketing] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!acceptedPrivacy) {
+      toast.error(
+        currentLang === 'it'
+          ? 'Per procedere devi accettare l\'Informativa Privacy.'
+          : 'You must accept the Privacy Notice to proceed.'
+      );
+      return;
+    }
+
     setLoading(true);
-    
+
     try {
-      await register(email, password, name, language, phone);
+      await register(email, password, name, language, phone, {
+        privacy_accepted: true,
+        marketing_consent: acceptedMarketing,
+      });
       toast.success(t.auth.registerSuccess);
       navigate('/login');
     } catch (error) {
@@ -48,15 +62,10 @@ const Register = () => {
     }
   };
 
-  const handleGoogleRegister = () => {
-    // Google OAuth not yet configured. Use email/password registration instead.
-    alert('Registrazione con Google non ancora disponibile. Usa email e password.');
-  };
-
   return (
     <div className="auth-container" data-testid="register-page">
       <div className="auth-card animate-fade-in-up">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="flex justify-center mb-4">
             <Logo size="lg" showText={false} />
           </div>
@@ -66,10 +75,108 @@ const Register = () => {
           <div className="w-12 h-px bg-[#C44D38] mx-auto" />
         </div>
 
-        {/* Google Sign-Up (official button via Google Identity Services) */}
-        <div className="mb-6">
-          <GoogleSignIn text="signup_with" />
+        {/* ──────────────────────────────────────────────────────────────
+            GDPR CONSENT — must appear BEFORE any sign-up method (Google
+            included). Without privacy consent the user cannot register.
+            Layout follows the lawyer's spec:
+            1. Short notice with link to full Privacy Policy
+            2. Mandatory checkbox (privacy)
+            3. Optional checkbox (marketing)
+            ────────────────────────────────────────────────────────────── */}
+        <div className="space-y-3 mb-6">
+          {/* Short legal notice */}
+          <div className="rounded-md border border-[#D1CDC7] bg-[#F9F7F2] px-4 py-3 text-sm text-[#3a3a3a] text-center">
+            {currentLang === 'it'
+              ? 'Procedendo con la registrazione accetti la nostra '
+              : 'By signing up you accept our '}
+            <Link to="/privacy" className="font-medium text-[#C44D38] underline" target="_blank" rel="noopener">
+              {currentLang === 'it' ? 'Informativa Privacy' : 'Privacy Notice'}
+            </Link>{' '}
+            (art. 13 Reg. UE 2016/679).
+          </div>
+
+          {/* Mandatory privacy checkbox */}
+          <label
+            className={`flex items-start gap-3 p-3 rounded-md border cursor-pointer transition ${
+              acceptedPrivacy
+                ? 'border-[#C44D38] bg-[#FDF4F1]'
+                : 'border-blue-300 bg-blue-50 hover:bg-blue-100'
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={acceptedPrivacy}
+              onChange={(e) => setAcceptedPrivacy(e.target.checked)}
+              className="mt-1 accent-[#C44D38] w-4 h-4 flex-shrink-0"
+              data-testid="privacy-checkbox"
+              required
+            />
+            <span className="text-sm text-[#2C2C2C] leading-snug">
+              {currentLang === 'it' ? (
+                <>
+                  Ho letto e accetto l'
+                  <Link to="/privacy" target="_blank" rel="noopener" className="font-medium text-[#C44D38] underline">
+                    Informativa Privacy
+                  </Link>
+                  . Acconsento al trattamento dei miei dati personali ai sensi dell'art. 13 del Reg. UE 2016/679 (GDPR).{' '}
+                  <span className="text-[#C44D38] font-medium">*obbligatorio</span>
+                </>
+              ) : (
+                <>
+                  I have read and accept the{' '}
+                  <Link to="/privacy" target="_blank" rel="noopener" className="font-medium text-[#C44D38] underline">
+                    Privacy Notice
+                  </Link>
+                  . I consent to the processing of my personal data under art. 13 of EU Reg. 2016/679 (GDPR).{' '}
+                  <span className="text-[#C44D38] font-medium">*required</span>
+                </>
+              )}
+            </span>
+          </label>
+
+          {/* Optional marketing checkbox */}
+          <label className="flex items-start gap-3 p-3 rounded-md border border-[#E5E0D8] bg-white cursor-pointer hover:bg-[#F9F7F2]">
+            <input
+              type="checkbox"
+              checked={acceptedMarketing}
+              onChange={(e) => setAcceptedMarketing(e.target.checked)}
+              className="mt-1 accent-[#C44D38] w-4 h-4 flex-shrink-0"
+              data-testid="marketing-checkbox"
+            />
+            <span className="text-sm text-[#3a3a3a] leading-snug">
+              {currentLang === 'it'
+                ? <>Acconsento a ricevere comunicazioni promozionali e aggiornamenti via email. <span className="text-[#7a6f63]">(facoltativo)</span></>
+                : <>I consent to receive promotional communications and updates via email. <span className="text-[#7a6f63]">(optional)</span></>}
+            </span>
+          </label>
         </div>
+
+        {/* ──────────────────────────────────────────────────────────────
+            Sign-up methods. The Google button is disabled until the user
+            checks the privacy box, so the consent precedes ANY data
+            transmission to Google or to our backend.
+            ────────────────────────────────────────────────────────────── */}
+        {acceptedPrivacy ? (
+          <div className="mb-6">
+            <GoogleSignIn text="signup_with" />
+          </div>
+        ) : (
+          <div className="mb-6">
+            <button
+              type="button"
+              disabled
+              className="w-full px-4 py-2.5 rounded border border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed flex items-center justify-center gap-2"
+              title={currentLang === 'it' ? 'Accetta l\'Informativa Privacy per usare Google' : 'Accept the Privacy Notice to use Google'}
+            >
+              <svg className="h-5 w-5 opacity-50" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              </svg>
+              <span className="text-sm">
+                {currentLang === 'it' ? 'Accetta la privacy per usare Google' : 'Accept privacy to use Google'}
+              </span>
+            </button>
+          </div>
+        )}
 
         {/* Divider */}
         <div className="relative mb-6">
@@ -82,7 +189,7 @@ const Register = () => {
             </span>
           </div>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="form-group">
             <Label htmlFor="name" className="form-label">
@@ -102,7 +209,7 @@ const Register = () => {
               />
             </div>
           </div>
-          
+
           <div className="form-group">
             <Label htmlFor="email" className="form-label">
               {t.auth.email}
@@ -139,7 +246,7 @@ const Register = () => {
               />
             </div>
           </div>
-          
+
           <div className="form-group">
             <Label htmlFor="password" className="form-label">
               {t.auth.password}
@@ -170,7 +277,7 @@ const Register = () => {
               {currentLang === 'it' ? 'Minimo 6 caratteri' : 'Minimum 6 characters'}
             </p>
           </div>
-          
+
           <div className="form-group">
             <Label htmlFor="language" className="form-label">
               {t.auth.language}
@@ -178,7 +285,7 @@ const Register = () => {
             <div className="relative">
               <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#595959] z-10" />
               <Select value={language} onValueChange={setLanguage}>
-                <SelectTrigger 
+                <SelectTrigger
                   className="pl-10 bg-[#EBE8E1] border-[#D1CDC7]"
                   data-testid="language-select"
                 >
@@ -191,12 +298,17 @@ const Register = () => {
               </Select>
             </div>
           </div>
-          
+
           <Button
             type="submit"
-            disabled={loading}
+            disabled={loading || !acceptedPrivacy}
             className="w-full btn-primary"
             data-testid="register-submit"
+            title={
+              !acceptedPrivacy
+                ? (currentLang === 'it' ? 'Accetta l\'Informativa Privacy per procedere' : 'Accept the Privacy Notice to proceed')
+                : ''
+            }
           >
             {loading ? (
               <>
@@ -207,13 +319,20 @@ const Register = () => {
               t.auth.register
             )}
           </Button>
+          {!acceptedPrivacy && (
+            <p className="text-xs text-center text-[#7a6f63] -mt-3">
+              {currentLang === 'it'
+                ? '↑ Accetta l\'Informativa Privacy per attivare la registrazione'
+                : '↑ Accept the Privacy Notice to enable registration'}
+            </p>
+          )}
         </form>
-        
+
         <div className="mt-8 text-center">
           <p className="text-[#595959]">
             {t.auth.hasAccount}{' '}
-            <Link 
-              to="/login" 
+            <Link
+              to="/login"
               className="text-[#C44D38] hover:underline"
               data-testid="login-link"
             >
