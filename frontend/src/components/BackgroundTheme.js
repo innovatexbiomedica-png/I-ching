@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import Starfield from './Starfield';
+import OsakaWaves from './OsakaWaves';
 
 /*
  * Sistema di sfondi commutabili applicato a TUTTO il sito.
@@ -97,7 +98,7 @@ function DayBackground() {
   );
 }
 
-// 🌙 NIGHT — starry sky
+// 🌙 NIGHT — starry sky (denser, more visible)
 function NightBackground() {
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
@@ -105,36 +106,27 @@ function NightBackground() {
         style={{
           position: 'absolute', inset: 0,
           background:
-            'radial-gradient(1200px 800px at 70% 0%, #1a1f4d 0%, transparent 55%), ' +
-            'radial-gradient(900px 700px at 15% 100%, #2a1a55 0%, transparent 50%), ' +
-            '#0A0F2C',
+            'radial-gradient(1200px 800px at 70% 0%, #1f2659 0%, transparent 55%), ' +
+            'radial-gradient(900px 700px at 15% 100%, #34206b 0%, transparent 50%), ' +
+            '#070B22',
         }}
       />
-      <Starfield density={120} />
-      {/* gentle veil so light content cards still read well */}
+      <Starfield density={200} />
+      {/* faint glow nebulae for depth */}
       <div
         style={{
-          position: 'absolute', inset: 0,
-          background: 'radial-gradient(ellipse at center, transparent 30%, rgba(10,15,44,0.35) 100%)',
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background:
+            'radial-gradient(500px 500px at 78% 30%, rgba(230,184,89,0.07), transparent 70%), ' +
+            'radial-gradient(450px 450px at 22% 70%, rgba(124,58,237,0.10), transparent 70%)',
         }}
       />
     </div>
   );
 }
 
-// 🎴 OSAKA — traditional Seigaiha (wave) pattern
+// 🎴 OSAKA — animated painted waves (sumi-e / Hokusai style)
 function OsakaBackground() {
-  // Seigaiha = "blue sea and waves" — overlapping arcs, classic Japanese/Chinese motif.
-  const wave = encodeURIComponent(`
-<svg xmlns='http://www.w3.org/2000/svg' width='120' height='60' viewBox='0 0 120 60'>
-  <g fill='none' stroke='#C9A24B' stroke-width='1.4' opacity='0.5'>
-    <path d='M0 60 A30 30 0 0 1 60 60 A30 30 0 0 1 120 60'/>
-    <path d='M0 60 A22 22 0 0 1 60 60 A22 22 0 0 1 120 60'/>
-    <path d='M0 60 A14 14 0 0 1 60 60 A14 14 0 0 1 120 60'/>
-    <path d='M0 60 A6 6 0 0 1 60 60 A6 6 0 0 1 120 60'/>
-    <path d='M-60 60 A30 30 0 0 1 0 60 A30 30 0 0 1 60 60' transform='translate(0,0)'/>
-  </g>
-</svg>`);
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
       {/* warm parchment base */}
@@ -142,28 +134,20 @@ function OsakaBackground() {
         style={{
           position: 'absolute', inset: 0,
           background:
-            'radial-gradient(1000px 700px at 50% -10%, #F6ECD8 0%, transparent 60%), ' +
-            'linear-gradient(180deg, #F3E7CE 0%, #EADBBE 100%)',
+            'radial-gradient(1000px 700px at 50% -10%, #F8EFDC 0%, transparent 60%), ' +
+            'linear-gradient(180deg, #F4E8CF 0%, #E7D6B4 100%)',
         }}
       />
-      {/* repeating wave motif */}
+      {/* paper grain */}
       <div
         style={{
-          position: 'absolute', inset: 0, opacity: 0.5,
-          backgroundImage: `url("data:image/svg+xml,${wave}")`,
-          backgroundSize: '120px 60px',
-          maskImage: 'linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.7))',
-          WebkitMaskImage: 'linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.7))',
+          position: 'absolute', inset: 0, opacity: 0.05,
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
         }}
       />
-      {/* soft sun disc top-right (rising-sun nod) */}
-      <div
-        style={{
-          position: 'absolute', top: '-120px', right: '-80px',
-          width: 380, height: 380, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(196,77,56,0.18) 0%, rgba(196,77,56,0.06) 45%, transparent 70%)',
-        }}
-      />
+      {/* ANIMATED painted waves */}
+      <OsakaWaves />
     </div>
   );
 }

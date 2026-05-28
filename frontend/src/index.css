@@ -91,6 +91,31 @@
   }
 }
 
+/* ──────────────────────────────────────────────────────────────
+   Dynamic background themes — let the night/osaka backdrop show
+   through the landing's own opaque/gradient surfaces.
+   On 'day' nothing changes.
+   ────────────────────────────────────────────────────────────── */
+html[data-bg-theme="night"] .hero-gradient,
+html[data-bg-theme="osaka"] .hero-gradient {
+  opacity: 0 !important;
+}
+/* dim the hero's unsplash photo so the animated backdrop is visible */
+html[data-bg-theme="night"] [data-testid="hero-section"] > div[style*="background-image"],
+html[data-bg-theme="osaka"] [data-testid="hero-section"] > div[style*="background-image"] {
+  opacity: 0.06 !important;
+}
+/* the paper grain overlay only makes sense on the day theme */
+html[data-bg-theme="night"] body::before,
+html[data-bg-theme="osaka"] body::before {
+  opacity: 0 !important;
+}
+/* on the night theme, make the big light section bands translucent so
+   the stars keep showing while cards stay readable */
+html[data-bg-theme="night"] .section-zen.bg-\[\#E5E0D8\]\/30 {
+  background: transparent !important;
+}
+
 /* Paper Texture Overlay - GPU accelerated for smoother scrolling */
 body::before {
   content: '';
