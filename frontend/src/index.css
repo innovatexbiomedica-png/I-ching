@@ -173,6 +173,57 @@ html[data-bg-theme="night"] select {
   border-color: rgba(168,120,255,0.3) !important;
 }
 
+/* ── Night: navbar text + controls → pearl so they read on the dark glass ── */
+html[data-bg-theme="night"] [data-testid="main-navigation"] .nav-link {
+  color: rgba(232, 226, 255, 0.82) !important;
+}
+html[data-bg-theme="night"] [data-testid="main-navigation"] .nav-link:hover,
+html[data-bg-theme="night"] [data-testid="main-navigation"] .nav-link.active {
+  color: #F4EFFF !important;
+}
+html[data-bg-theme="night"] [data-testid="main-navigation"] .lang-btn {
+  color: rgba(232, 226, 255, 0.6) !important;
+}
+html[data-bg-theme="night"] [data-testid="main-navigation"] .lang-btn.active,
+html[data-bg-theme="night"] [data-testid="main-navigation"] .lang-btn:hover {
+  color: #E6B859 !important;
+}
+html[data-bg-theme="night"] [data-testid="login-link"],
+html[data-bg-theme="night"] [data-testid="user-menu-trigger"],
+html[data-bg-theme="night"] [data-testid="mobile-menu-btn"] {
+  color: #E8E2FF !important;
+}
+/* icons (Globe, User, Bell, hamburger…) get a soft pearl tint */
+html[data-bg-theme="night"] [data-testid="main-navigation"] svg {
+  color: #C9C3E8 !important;
+}
+/* vertical separators dimmer on dark */
+html[data-bg-theme="night"] [data-testid="main-navigation"] .border-l {
+  border-color: rgba(168, 120, 255, 0.22) !important;
+}
+/* theme-switcher pill container → subtle dark glass instead of white */
+html[data-bg-theme="night"] [data-testid="main-navigation"] .bg-white\/60 {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(168, 120, 255, 0.25) !important;
+}
+
+/* ── Night: Radix dropdown (profile menu) renders in a portal under <body> ── */
+html[data-bg-theme="night"] [role="menu"] {
+  background: rgba(16, 21, 54, 0.96) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: rgba(168, 120, 255, 0.25) !important;
+}
+html[data-bg-theme="night"] [role="menuitem"],
+html[data-bg-theme="night"] [role="menu"] .text-\[\#2C2C2C\] {
+  color: #E8E2FF !important;
+}
+html[data-bg-theme="night"] [role="menuitem"]:hover,
+html[data-bg-theme="night"] [role="menuitem"]:focus {
+  background: rgba(168, 120, 255, 0.14) !important;
+  color: #F4EFFF !important;
+}
+
 /* Paper Texture Overlay - GPU accelerated for smoother scrolling */
 body::before {
   content: '';
