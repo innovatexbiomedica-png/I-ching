@@ -35,8 +35,12 @@ export default function Starfield({ density = 200, className = '' }) {
 
     const resize = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
-      w = canvas.clientWidth;
-      h = canvas.clientHeight;
+      // This is a full-viewport FIXED backdrop. An ancestor with a CSS
+      // transform/will-change can establish a containing block that
+      // collapses the layout width of inset:0 children to 0. So we size
+      // straight from the viewport instead of trusting layout metrics.
+      w = window.innerWidth;
+      h = window.innerHeight;
       canvas.width = w * dpr;
       canvas.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -314,5 +318,5 @@ export default function Starfield({ density = 200, className = '' }) {
     };
   }, [density]);
 
-  return <canvas ref={canvasRef} className={className} style={{ width: '100%', height: '100%', display: 'block' }} aria-hidden />;
+  return <canvas ref={canvasRef} className={className} style={{ position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh', display: 'block' }} aria-hidden />;
 }

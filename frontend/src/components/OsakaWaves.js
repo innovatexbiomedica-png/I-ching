@@ -22,8 +22,10 @@ export default function OsakaWaves({ className = '' }) {
 
     const resize = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
-      w = canvas.clientWidth;
-      h = canvas.clientHeight;
+      // Full-viewport FIXED backdrop — size from the viewport directly to
+      // avoid the width:0 collapse caused by a transformed ancestor.
+      w = window.innerWidth;
+      h = window.innerHeight;
       canvas.width = w * dpr;
       canvas.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -115,7 +117,7 @@ export default function OsakaWaves({ className = '' }) {
     <canvas
       ref={canvasRef}
       className={className}
-      style={{ width: '100%', height: '100%', display: 'block' }}
+      style={{ position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh', display: 'block' }}
       aria-hidden
     />
   );
