@@ -8,6 +8,12 @@ import {
   ConsultationTutorial,
   WilhelmMasterVoice,
 } from '../components/WilhelmWisdom';
+import CosmicLanding from '../components/cosmic/CosmicLanding';
+
+// Feature flag: switch the whole landing to the new "Cosmo Astrale" design.
+// Enabled on the redesign-preview branch; controlled via env so production
+// can keep the old landing until approved.
+const USE_COSMIC_LANDING = (process.env.REACT_APP_COSMIC_LANDING ?? 'true') !== 'false';
 import { 
   Coins, 
   BookOpen, 
@@ -45,6 +51,11 @@ const Landing = () => {
   const t = useTranslation(language);
   const [expandedWellness, setExpandedWellness] = useState(null);
   const [expandedFeature, setExpandedFeature] = useState(null);
+
+  // New cosmic design (redesign-preview)
+  if (USE_COSMIC_LANDING) {
+    return <CosmicLanding isAuthenticated={isAuthenticated} />;
+  }
 
   // I Trigrammi con i loro significati
   const trigrams = [
