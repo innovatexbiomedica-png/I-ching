@@ -57,7 +57,10 @@
   }
   
   body {
-    @apply bg-[#F9F7F2] text-[#2C2C2C];
+    /* Background color is provided by <BackgroundTheme> (day/night/osaka).
+       Keep text colour here; the fixed background layer is the backdrop. */
+    @apply text-[#2C2C2C];
+    background: transparent;
     font-family: 'Manrope', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

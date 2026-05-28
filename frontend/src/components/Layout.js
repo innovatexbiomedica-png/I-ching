@@ -250,14 +250,17 @@ const Layout = ({ children }) => {
               )}
             </div>
 
-            {/* Mobile menu button */}
-            <button
-              className="md:hidden p-2 text-[#2C2C2C]"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              data-testid="mobile-menu-btn"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+            {/* Mobile: theme switcher (always visible) + hamburger */}
+            <div className="flex items-center gap-2 lg:hidden">
+              <BgThemeSwitcher />
+              <button
+                className="p-2 text-[#2C2C2C]"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                data-testid="mobile-menu-btn"
+              >
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
           </div>
         </div>
 
