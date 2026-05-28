@@ -110,10 +110,67 @@ html[data-bg-theme="night"] body::before,
 html[data-bg-theme="osaka"] body::before {
   opacity: 0 !important;
 }
-/* on the night theme, make the big light section bands translucent so
-   the stars keep showing while cards stay readable */
-html[data-bg-theme="night"] .section-zen.bg-\[\#E5E0D8\]\/30 {
-  background: transparent !important;
+/* ──────────────────────────────────────────────────────────────
+   NIGHT MODE — full dark theme so the starfield is visible behind
+   EVERY section of the site while scrolling. Light surfaces become
+   transparent; opaque cards become translucent "glass"; dark text
+   becomes light/pearl.
+   ────────────────────────────────────────────────────────────── */
+/* Every section/band becomes see-through (the fixed starfield shows) */
+html[data-bg-theme="night"] section,
+html[data-bg-theme="night"] .section-zen {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+/* Common opaque light surfaces -> transparent */
+html[data-bg-theme="night"] .bg-\[\#F9F7F2\],
+html[data-bg-theme="night"] .bg-\[\#E5E0D8\]\/30,
+html[data-bg-theme="night"] .bg-\[\#EBE8E1\],
+html[data-bg-theme="night"] .bg-\[\#F8F6F3\],
+html[data-bg-theme="night"] .bg-\[\#E5E0D8\] {
+  background-color: transparent !important;
+}
+/* Cards become translucent glass so text stays readable over the sky */
+html[data-bg-theme="night"] .zen-card,
+html[data-bg-theme="night"] .auth-card {
+  background: rgba(16, 21, 54, 0.55) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-color: rgba(168, 120, 255, 0.25) !important;
+}
+/* White cards on light pages too */
+html[data-bg-theme="night"] .bg-white {
+  background: rgba(16, 21, 54, 0.5) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+/* Text → pearl, so it reads on the dark sky */
+html[data-bg-theme="night"] .text-\[\#2C2C2C\],
+html[data-bg-theme="night"] .text-\[\#595959\],
+html[data-bg-theme="night"] .text-\[\#3a3a3a\],
+html[data-bg-theme="night"] .text-\[\#7a6f63\],
+html[data-bg-theme="night"] .text-\[\#8A8680\] {
+  color: #E8E2FF !important;
+}
+html[data-bg-theme="night"] h1,
+html[data-bg-theme="night"] h2,
+html[data-bg-theme="night"] h3 {
+  color: #F4EFFF !important;
+}
+/* Navbar + footer stay as soft dark glass for contrast */
+html[data-bg-theme="night"] [data-testid="main-navigation"],
+html[data-bg-theme="night"] [data-testid="footer"] {
+  background: rgba(10, 15, 44, 0.75) !important;
+  backdrop-filter: blur(10px);
+  border-color: rgba(168,120,255,0.18) !important;
+}
+/* Inputs readable on dark */
+html[data-bg-theme="night"] input,
+html[data-bg-theme="night"] textarea,
+html[data-bg-theme="night"] select {
+  background: rgba(255,255,255,0.06) !important;
+  color: #F0EAFF !important;
+  border-color: rgba(168,120,255,0.3) !important;
 }
 
 /* Paper Texture Overlay - GPU accelerated for smoother scrolling */

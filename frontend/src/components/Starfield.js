@@ -17,7 +17,20 @@ export default function Starfield({ density = 140, className = '' }) {
     let w, h, dpr;
     let stars = [];
     let shooting = [];
+    let planets = [];
     const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+    const buildPlanets = () => {
+      // A few distant planets drifting very slowly with parallax.
+      planets = [
+        { rx: 0.16, ry: 0.22, r: Math.min(w, h) * 0.07, depth: 0.10,
+          c1: '#E6B859', c2: '#8a5a1f', ring: false, drift: 0.04 },
+        { rx: 0.84, ry: 0.30, r: Math.min(w, h) * 0.10, depth: 0.16,
+          c1: '#7C3AED', c2: '#2a1a55', ring: true, drift: -0.03 },
+        { rx: 0.72, ry: 0.78, r: Math.min(w, h) * 0.05, depth: 0.08,
+          c1: '#5aa0ff', c2: '#16306b', ring: false, drift: 0.05 },
+      ];
+    };
 
     const resize = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -27,6 +40,7 @@ export default function Starfield({ density = 140, className = '' }) {
       canvas.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       init();
+      buildPlanets();
     };
     const init = () => {
       const count = Math.round((w * h) / 9000 * (density / 140));
@@ -41,11 +55,41 @@ export default function Starfield({ density = 140, className = '' }) {
       }));
     };
     let t = 0;
+    const drawPlanet = (p, mx, my) => {
+      const px = p.rx * w - mx * p.depth * 60 + Math.sin(t * 0.002) * (p.drift * 40);
+      const py = p.ry * h - my * p.depth * 60;
+      // soft glow halo
+      const halo = ctx.createRadialGradient(px, py, p.r * 0.2, px, py, p.r * 2.2);
+      halo.addColorStop(0, p.c1 + '22');
+      halo.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = halo;
+      ctx.beginPath(); ctx.arc(px, py, p.r * 2.2, 0, Math.PI * 2); ctx.fill();
+      // planet body with light gradient
+      const g = ctx.createRadialGradient(px - p.r * 0.35, py - p.r * 0.35, p.r * 0.1, px, py, p.r);
+      g.addColorStop(0, p.c1);
+      g.addColorStop(1, p.c2);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(px, py, p.r, 0, Math.PI * 2); ctx.fill();
+      // optional ring
+      if (p.ring) {
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(-0.5);
+        ctx.scale(1, 0.32);
+        ctx.strokeStyle = p.c1 + 'aa';
+        ctx.lineWidth = Math.max(2, p.r * 0.10);
+        ctx.beginPath(); ctx.arc(0, 0, p.r * 1.5, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      }
+    };
+
     const draw = () => {
       ctx.clearRect(0, 0, w, h);
       t++;
       const mx = (mouseRef.current.x - w / 2) * 0.01;
       const my = (mouseRef.current.y - h / 2) * 0.01;
+      // planets behind everything
+      for (const p of planets) drawPlanet(p, mx, my);
       for (const s of stars) {
         const al = reduceMotion ? s.a : s.a + Math.sin(t * s.tw + s.ph) * 0.25;
         const px = s.x - mx * s.depth * 30;
