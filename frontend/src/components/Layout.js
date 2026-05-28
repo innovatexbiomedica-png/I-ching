@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../lib/translations';
-import { Menu, X, User, LogOut, Globe, Home, Sparkles, Crown, Star, Bell, FileText } from 'lucide-react';
+import { Menu, X, User, LogOut, Globe, Home, Sparkles, Crown, Star, Bell, FileText, Sun, Moon, Waves } from 'lucide-react';
 import NotificationBell from './NotificationBell';
+import { useBackgroundTheme } from './BackgroundTheme';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,33 @@ import Logo from './Logo';
 import axios from 'axios';
 
 const API = `${(process.env.REACT_APP_BACKEND_URL || "https://iching-backend-ac3n.onrender.com")}/api`;
+
+// Small 3-way background theme switcher (☀️ 🌙 🎴)
+const BgThemeSwitcher = () => {
+  const { theme, setTheme } = useBackgroundTheme();
+  const opts = [
+    { id: 'day', icon: <Sun className="w-4 h-4" />, title: 'Diurno' },
+    { id: 'night', icon: <Moon className="w-4 h-4" />, title: 'Notturno' },
+    { id: 'osaka', icon: <Waves className="w-4 h-4" />, title: 'Osaka' },
+  ];
+  return (
+    <div className="flex items-center gap-0.5 rounded-full border border-[#D1CDC7] p-0.5 bg-white/60">
+      {opts.map((o) => (
+        <button
+          key={o.id}
+          onClick={() => setTheme(o.id)}
+          title={o.title}
+          aria-label={`Sfondo ${o.title}`}
+          className={`p-1.5 rounded-full transition ${
+            theme === o.id ? 'bg-[#C44D38] text-white' : 'text-[#7a6f63] hover:bg-[#E5E0D8]'
+          }`}
+        >
+          {o.icon}
+        </button>
+      ))}
+    </div>
+  );
+};
 
 const Layout = ({ children }) => {
   const { user, logout, language, updateLanguage, isAuthenticated, getToken } = useAuth();
@@ -68,7 +96,7 @@ const Layout = ({ children }) => {
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F9F7F2]">
+    <div className="min-h-screen flex flex-col bg-transparent">
       {/* Navigation */}
       <nav className="backdrop-blur-md bg-[#F9F7F2]/95 border-b border-[#D1CDC7]/50 sticky top-0 z-50" data-testid="main-navigation">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
@@ -99,6 +127,11 @@ const Layout = ({ children }) => {
                   )}
                 </Link>
               ))}
+
+              {/* Background theme switcher */}
+              <div className="border-l border-[#D1CDC7] pl-4">
+                <BgThemeSwitcher />
+              </div>
 
               {/* Language Selector */}
               <div className="flex items-center space-x-1 border-l border-[#D1CDC7] pl-4">

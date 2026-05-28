@@ -33,6 +33,7 @@ const Terms = lazy(() => import('./pages/Terms'));
 const DataProtection = lazy(() => import('./pages/DataProtection'));
 import CookieBanner from './components/CookieBanner';
 import SiteFooter from './components/SiteFooter';
+import { BackgroundThemeProvider } from './components/BackgroundTheme';
 import './App.css';
 
 // Routes that must NOT be indexed by search engines (contain user data)
@@ -297,7 +298,9 @@ function AppWithSplash() {
 function App() {
   return (
     <AuthProvider>
-      <AppWithSplash />
+      <BackgroundThemeProvider>
+        <AppWithSplash />
+      </BackgroundThemeProvider>
     </AuthProvider>
   );
 }
