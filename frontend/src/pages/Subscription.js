@@ -65,7 +65,7 @@ const Subscription = () => {
     {
       icon: <Compass className="w-5 h-5" />,
       name: language === 'it' ? 'Consultazioni' : 'Consultations',
-      free: language === 'it' ? '5 / mese' : '5 / mo',
+      free: language === 'it' ? '1 / mese' : '1 / mo',
       trial: language === 'it' ? '3 totali' : '3 total',
       base: language === 'it' ? 'Illimitate' : 'Unlimited',
       fitness: language === 'it' ? 'Illimitate' : 'Unlimited',

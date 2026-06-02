@@ -63,7 +63,7 @@ const Pricing = () => {
         : 'Start your I Ching journey',
       features: [
         { 
-          name: language === 'it' ? '3 consultazioni al mese' : '3 consultations/month', 
+          name: language === 'it' ? '1 consultazione al mese' : '1 consultation/month',
           included: true,
           icon: <MessageCircle className="w-4 h-4" />
         },

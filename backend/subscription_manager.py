@@ -36,7 +36,7 @@ def is_admin_email(email: Optional[str]) -> bool:
 # ──────────────────────────────────────────────────────────────────────
 # PIANI DI ABBONAMENTO
 # ──────────────────────────────────────────────────────────────────────
-#  free                  -> €0,  5 stese/mese, solo Diretta
+#  free                  -> €0,  1 stesa/mese, solo Diretta
 #  base                  -> €9,99/mese  (€107,89/anno  -10%)
 #                           stese illimitate, Diretta + Profonda,
 #                           sintesi, note, storico illimitato,
@@ -49,7 +49,7 @@ def is_admin_email(email: Optional[str]) -> bool:
 # ──────────────────────────────────────────────────────────────────────
 PLAN_LIMITS = {
     "free": {
-        "monthly_consultations": 5,
+        "monthly_consultations": 1,
         "consultation_types": ["direct"],
         "history_limit": 10,
         "can_continue_conversation": False,
