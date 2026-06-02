@@ -252,6 +252,7 @@ from subscription_manager import (
     get_user_plan, get_plan_limits, check_consultation_limit, can_use_consultation_type,
     get_daily_hexagram_number, get_lunar_phase, get_user_level, check_and_award_badges,
     is_admin_email,
+    grant_trial_pack, consume_trial_credit_if_applicable,
     PLAN_LIMITS, SUBSCRIPTION_PRICES, USER_LEVELS, BADGES, GUIDED_PATHS
 )
 from personalized_advice import (
@@ -2056,10 +2057,14 @@ async def create_consultation(data: ConsultationCreate, user: dict = Depends(get
     }
     
     await db.consultations.insert_one(consultation_doc)
-    
+
+    # Se l'utente sta usando il gettone-prova, scala 1 credito (idempotente
+    # rispetto al record consultation_doc: una consultazione → un credito).
+    await consume_trial_credit_if_applicable(db, user)
+
     # Check and award badges
     new_badges = await check_and_award_badges(db, user["id"], consultation_doc)
-    
+
     response = ConsultationResponse(
         id=consultation_id,
         question=data.question,
@@ -2449,12 +2454,15 @@ async def create_checkout(data: CheckoutRequest, request: Request, user: dict = 
     if plan_type not in SUBSCRIPTION_PRICES:
         raise HTTPException(
             status_code=400,
-            detail="plan_type non valido. Valori ammessi: base_monthly | base_yearly | fitness_monthly | fitness_yearly"
+            detail="plan_type non valido. Valori ammessi: trial_pack | base_monthly | base_yearly | fitness_monthly | fitness_yearly"
         )
     plan_cfg = SUBSCRIPTION_PRICES[plan_type]
     price_eur = float(plan_cfg["price"])
-    duration_days = int(plan_cfg.get("duration_days") or (365 if "yearly" in plan_type else 30))
-    plan_name = plan_cfg.get("plan", "base")  # 'base' o 'fitness_coaching'
+    is_trial = plan_type == "trial_pack"
+    # I trial non hanno scadenza a tempo: usano crediti. Per gli altri, default 30/365 giorni.
+    duration_days = 0 if is_trial else int(plan_cfg.get("duration_days") or (365 if "yearly" in plan_type else 30))
+    plan_name = plan_cfg.get("plan", "base")  # 'base' / 'fitness_coaching' / 'trial_pack'
+    trial_credits = int(plan_cfg.get("trial_credits") or 0) if is_trial else 0
     product_label = plan_cfg.get(
         "label_it",
         "I Ching del Benessere — Abbonamento"
@@ -2481,9 +2489,10 @@ async def create_checkout(data: CheckoutRequest, request: Request, user: dict = 
         metadata={
             "user_id": user["id"],
             "user_email": user["email"],
-            "type": f"{plan_type}_subscription",
-            "plan": plan_name,  # 'base' or 'fitness_coaching'
+            "type": f"{plan_type}_purchase" if is_trial else f"{plan_type}_subscription",
+            "plan": plan_name,  # 'base' / 'fitness_coaching' / 'trial_pack'
             "duration_days": str(duration_days),
+            "trial_credits": str(trial_credits),
         }
     )
 
@@ -2496,6 +2505,8 @@ async def create_checkout(data: CheckoutRequest, request: Request, user: dict = 
         "plan_type": plan_type,
         "plan": plan_name,
         "duration_days": duration_days,
+        "trial_credits": trial_credits,
+        "is_trial": is_trial,
         "status": "pending",
         "payment_status": "initiated",
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -2691,17 +2702,23 @@ async def stripe_webhook(request: Request):
                         txn = await db.payment_transactions.find_one(
                             {"session_id": session["id"]}, {"_id": 0}
                         )
-                        days = (txn or {}).get("duration_days") or 30
                         plan_name = (txn or {}).get("plan") or "base"
-                        subscription_end = datetime.now(timezone.utc) + timedelta(days=int(days))
-                        await db.users.update_one(
-                            {"id": user_id},
-                            {"$set": {
-                                "subscription_active": True,
-                                "subscription_end": subscription_end.isoformat(),
-                                "subscription_plan": plan_name,
-                            }}
-                        )
+                        if plan_name == "trial_pack" or (txn or {}).get("is_trial"):
+                            # GETTONE PROVA: accredita N consultazioni, niente
+                            # subscription_active. Funziona a crediti.
+                            credits = int((txn or {}).get("trial_credits") or 3)
+                            await grant_trial_pack(db, user_id, credits=credits)
+                        else:
+                            days = (txn or {}).get("duration_days") or 30
+                            subscription_end = datetime.now(timezone.utc) + timedelta(days=int(days))
+                            await db.users.update_one(
+                                {"id": user_id},
+                                {"$set": {
+                                    "subscription_active": True,
+                                    "subscription_end": subscription_end.isoformat(),
+                                    "subscription_plan": plan_name,
+                                }}
+                            )
 
         return {"received": True}
     except Exception as e:
@@ -2752,12 +2769,27 @@ async def get_subscription_status(request: Request):
         except Exception:
             pass
 
+    try:
+        trial_credits_remaining = int(user.get("trial_credits_remaining") or 0)
+    except (TypeError, ValueError):
+        trial_credits_remaining = 0
+    try:
+        trial_credits_consumed = int(user.get("trial_credits_consumed_total") or 0)
+    except (TypeError, ValueError):
+        trial_credits_consumed = 0
+
     return {
         "plan": plan,
         "limits": limits,
         "usage": {
             "monthly_consultations": monthly_count,
             "remaining": remaining
+        },
+        "trial": {
+            "active": plan == "trial_pack",
+            "credits_remaining": trial_credits_remaining,
+            "credits_consumed": trial_credits_consumed,
+            "purchased_at": user.get("trial_purchased_at"),
         },
         "subscription_end": user.get("subscription_end"),
         "auto_renew": user.get("auto_renew", True),

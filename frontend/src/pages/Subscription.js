@@ -60,69 +60,76 @@ const Subscription = () => {
     }
   };
 
-  // Three-tier feature comparison: free / base / fitness coaching
+  // Four-tier feature comparison: free / trial (gettone) / base / fitness coaching
   const features = [
     {
       icon: <Compass className="w-5 h-5" />,
-      name: language === 'it' ? 'Consultazioni al mese' : 'Monthly consultations',
-      free: '5',
+      name: language === 'it' ? 'Consultazioni' : 'Consultations',
+      free: language === 'it' ? '5 / mese' : '5 / mo',
+      trial: language === 'it' ? '3 totali' : '3 total',
       base: language === 'it' ? 'Illimitate' : 'Unlimited',
       fitness: language === 'it' ? 'Illimitate' : 'Unlimited',
     },
     {
       icon: <Zap className="w-5 h-5" />,
       name: language === 'it' ? 'Interpretazione Diretta (300-400 parole)' : 'Direct interpretation',
-      free: true, base: true, fitness: true,
+      free: true, trial: true, base: true, fitness: true,
     },
     {
       icon: <Moon className="w-5 h-5" />,
       name: language === 'it' ? 'Interpretazione Profonda (700-1000 parole)' : 'Deep interpretation',
-      free: false, base: true, fitness: true,
+      free: false, trial: true, base: true, fitness: true,
     },
     {
       icon: <BookOpen className="w-5 h-5" />,
       name: language === 'it' ? 'Storico consultazioni' : 'Consultation history',
-      free: '10', base: language === 'it' ? 'Illimitato' : 'Unlimited',
+      free: '10',
+      trial: language === 'it' ? 'durante la prova' : 'during trial',
+      base: language === 'it' ? 'Illimitato' : 'Unlimited',
       fitness: language === 'it' ? 'Illimitato' : 'Unlimited',
     },
     {
       icon: <StickyNote className="w-5 h-5" />,
       name: language === 'it' ? 'Note personali' : 'Personal notes',
-      free: false, base: true, fitness: true,
+      free: false, trial: true, base: true, fitness: true,
     },
     {
       icon: <BarChart3 className="w-5 h-5" />,
       name: language === 'it' ? 'Statistiche e progressione' : 'Statistics & progression',
-      free: false, base: true, fitness: true,
+      free: false, trial: true, base: true, fitness: true,
     },
     {
       name: language === 'it' ? 'Continuazione conversazione' : 'Conversation continuation',
-      free: false, base: true, fitness: true,
+      free: false, trial: true, base: true, fitness: true,
     },
     {
       name: language === 'it' ? 'Sintesi multi-consultazioni' : 'Multi-reading synthesis',
-      free: false, base: true, fitness: true,
+      free: false, trial: true, base: true, fitness: true,
     },
     {
       name: language === 'it' ? 'Percorsi guidati (Amore, Carriera, Spirituale)' : 'Guided paths',
-      free: false, base: true, fitness: true,
+      free: false, trial: true, base: true, fitness: true,
     },
     {
       icon: <Sparkles className="w-5 h-5" />,
-      name: language === 'it' ? '★ Tema natale + export PDF/DOCX' : '★ Natal chart + PDF/DOCX export',
-      free: false, base: false, fitness: true,
+      name: language === 'it' ? '★ Tema natale (assaggio nella prova)' : '★ Natal chart (preview in trial)',
+      free: false, trial: true, base: false, fitness: true,
+    },
+    {
+      name: language === 'it' ? 'Export PDF / DOCX' : 'PDF / DOCX export',
+      free: false, trial: false, base: false, fitness: true,
     },
     {
       icon: <Bell className="w-5 h-5" />,
       name: language === 'it' ? '★ Consigli personalizzati giornalieri' : '★ Daily personalized advice',
-      free: false, base: false, fitness: true,
+      free: false, trial: true, base: false, fitness: true,
     },
     {
       icon: <Sparkles className="w-5 h-5" />,
       name: language === 'it'
         ? '★ Programma interattivo Sport, Cultura e Benessere'
         : '★ Interactive Sport, Culture & Wellness program',
-      free: false, base: false, fitness: true,
+      free: false, trial: false, base: false, fitness: true,
     },
   ];
 
@@ -138,6 +145,20 @@ const Subscription = () => {
       ctaYearly: null,
       column: 'free',
       tagline: language === 'it' ? 'Per iniziare' : 'To get started',
+    },
+    // GETTONE PROVA — €1,99 una tantum, 3 consultazioni con (quasi) tutto sbloccato.
+    trial: {
+      key: 'trial_pack',
+      title: language === 'it' ? 'Gettone Prova' : 'Trial Token',
+      priceMonthly: 1.99,           // stesso prezzo in entrambe le viste (una tantum)
+      priceYearly: 1.99,
+      monthlyEquivalentYearly: null,
+      savings: null,
+      ctaMonthly: 'trial_pack',
+      ctaYearly: 'trial_pack',
+      column: 'trial',
+      isOneShot: true,
+      tagline: language === 'it' ? 'Prova subito · 3 consultazioni' : 'Try now · 3 consultations',
     },
     base: {
       key: 'base',
@@ -179,7 +200,8 @@ const Subscription = () => {
     );
   }
 
-  const isPremium = status?.plan === 'premium';
+  const isPremium = status?.plan === 'premium' || status?.plan === 'base' || status?.plan === 'fitness_coaching';
+  const onTrial = status?.plan === 'trial_pack' && (status?.trial?.credits_remaining || 0) > 0;
 
   return (
     <div className="page-container">
@@ -198,6 +220,31 @@ const Subscription = () => {
               : 'Unlock all features of your I Ching journey'}
           </p>
         </div>
+
+        {/* Gettone Prova attivo */}
+        {onTrial && (
+          <div className="zen-card mb-6 bg-gradient-to-r from-[#8A9A5B]/12 to-[#C44D38]/8 border-2 border-[#8A9A5B]/50">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center space-x-3">
+                <Sparkles className="w-8 h-8 text-[#8A9A5B]" />
+                <div>
+                  <h3 className="font-serif text-xl text-[#2C2C2C]">
+                    {language === 'it' ? 'Gettone Prova attivo' : 'Trial Token active'}
+                  </h3>
+                  <p className="text-sm text-[#595959]">
+                    {language === 'it'
+                      ? `Hai ${status.trial.credits_remaining} consultazione/i prova residue (su ${(status.trial.credits_consumed || 0) + status.trial.credits_remaining}). Tutte le funzioni premium sono temporaneamente sbloccate.`
+                      : `You have ${status.trial.credits_remaining} trial consultation(s) left (of ${(status.trial.credits_consumed || 0) + status.trial.credits_remaining}). Premium features are temporarily unlocked.`}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-[#7a6f63]">{language === 'it' ? 'Residue' : 'Left'}</p>
+                <p className="text-3xl font-bold text-[#8A9A5B]">{status.trial.credits_remaining}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Current Plan Status */}
         {isPremium && (
@@ -324,10 +371,11 @@ const Subscription = () => {
           </div>
         </div>
 
-        {/* Pricing Cards — 3 tiers */}
-        <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-5 mb-8">
+        {/* Pricing Cards — 4 tiers (free / trial / base / fitness) */}
+        <div className="grid xl:grid-cols-4 lg:grid-cols-2 md:grid-cols-2 gap-5 mb-8">
           {Object.values(PLANS).map((plan) => {
             const isFreePlan = plan.key === 'free';
+            const isTrial = plan.column === 'trial';
             const userPlanKey = status?.plan || 'free';
             const isCurrent = userPlanKey === plan.key
               || (userPlanKey === 'premium' && plan.key === 'fitness_coaching');
@@ -363,16 +411,28 @@ const Subscription = () => {
                     <span className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-[#2C2C2C]'}`}>
                       €{isFreePlan ? '0' : price.toFixed(2).replace('.', ',')}
                     </span>
-                    {!isFreePlan && (
+                    {!isFreePlan && !isTrial && (
                       <span className={`text-xs ${isDark ? 'text-white/60' : 'text-[#595959]'}`}>
                         /{billingCycle === 'yearly' ? (language === 'it' ? 'anno' : 'yr') : (language === 'it' ? 'mese' : 'mo')}
                       </span>
                     )}
+                    {isTrial && (
+                      <span className="text-xs text-[#7a6f63]">
+                        {language === 'it' ? 'una tantum' : 'one-time'}
+                      </span>
+                    )}
                   </div>
-                  {billingCycle === 'yearly' && monthlyEquiv !== null && monthlyEquiv > 0 && (
+                  {!isTrial && billingCycle === 'yearly' && monthlyEquiv !== null && monthlyEquiv > 0 && (
                     <p className={`text-xs mt-1 ${isDark ? 'text-white/60' : 'text-[#7a6f63]'}`}>
                       ≈ €{monthlyEquiv.toFixed(2).replace('.', ',')} /{language === 'it' ? 'mese' : 'mo'} ·{' '}
                       <span className="text-[#C44D38] font-medium">−{plan.savings}</span>
+                    </p>
+                  )}
+                  {isTrial && (
+                    <p className="text-xs mt-1 text-[#7a6f63]">
+                      {language === 'it'
+                        ? '3 consultazioni con (quasi) tutto sbloccato'
+                        : '3 consultations with (almost) everything unlocked'}
                     </p>
                   )}
                   {isFreePlan && (
@@ -415,7 +475,11 @@ const Subscription = () => {
                         : 'border-2 border-[#C44D38] text-[#C44D38] bg-white'
                     }`}
                   >
-                    {language === 'it' ? '✓ Piano Attuale' : '✓ Current Plan'}
+                    {isTrial && status?.trial?.credits_remaining > 0
+                      ? (language === 'it'
+                          ? `✓ Prova attiva · ${status.trial.credits_remaining}/3 residue`
+                          : `✓ Trial active · ${status.trial.credits_remaining}/3 left`)
+                      : (language === 'it' ? '✓ Piano Attuale' : '✓ Current Plan')}
                   </button>
                 ) : isFreePlan ? (
                   <button
@@ -436,7 +500,9 @@ const Subscription = () => {
                   >
                     {processingPayment
                       ? (language === 'it' ? 'Elaborazione...' : 'Processing...')
-                      : (language === 'it' ? `Sottoscrivi ${plan.title}` : `Subscribe to ${plan.title}`)}
+                      : isTrial
+                        ? (language === 'it' ? 'Provalo · €1,99' : 'Try it · €1.99')
+                        : (language === 'it' ? `Sottoscrivi ${plan.title}` : `Subscribe to ${plan.title}`)}
                   </button>
                 )}
               </div>

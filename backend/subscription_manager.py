@@ -63,6 +63,28 @@ PLAN_LIMITS = {
         "can_daily_advice": False,
         "can_fitness_coaching": False,
     },
+    # GETTONE PROVA — assaggio di tutto. Pagamento one-shot €1,99.
+    # 3 consultazioni complete con tutte le funzioni "premium" abilitate
+    # (eccetto il modulo Fitness Coaching, riservato all'abbonamento dedicato).
+    # I crediti si consumano consultazione per consultazione, non scadono a
+    # tempo: durano finché restano gettoni.
+    "trial_pack": {
+        "monthly_consultations": -1,           # gestito tramite trial_credits
+        "consultation_types": ["direct", "deep"],
+        "history_limit": -1,
+        "can_continue_conversation": True,
+        "can_synthesis": True,
+        "can_export_pdf": False,
+        "can_add_notes": True,
+        "can_view_statistics": True,
+        "can_meditative_mode": True,
+        "can_guided_paths": True,
+        "can_natal_chart": True,                # assaggio del tema natale
+        "can_daily_advice": True,               # assaggio del consiglio giornaliero
+        "can_fitness_coaching": False,          # solo nel piano dedicato
+        "is_trial": True,
+        "trial_credit_total": 3,
+    },
     "base": {
         "monthly_consultations": -1,           # illimitate
         "consultation_types": ["direct", "deep"],
@@ -169,22 +191,37 @@ SUBSCRIPTION_PRICES = {
         "label_it": "Fitness Coaching — Annuale (−20%)",
         "label_en": "Fitness Coaching — Yearly (−20%)",
     },
+    # GETTONE PROVA — €1,99 one-shot, 3 consultazioni con tutto sbloccato
+    "trial_pack": {
+        "price": 1.99,
+        "currency": "EUR",
+        "plan": "trial_pack",
+        "duration_days": None,        # nessuna scadenza temporale, solo a crediti
+        "trial_credits": 3,
+        "stripe_price_id": "price_trial_pack",
+        "label_it": "Gettone Prova — 3 consultazioni",
+        "label_en": "Trial Token — 3 consultations",
+    },
 }
 
 
 def get_user_plan(user: dict) -> str:
-    """Determina il piano dell'utente: free / base / fitness_coaching.
+    """Determina il piano dell'utente: free / trial_pack / base / fitness_coaching.
 
-    Admin whitelist (ADMIN_EMAILS) -> sempre fitness_coaching (tutto sbloccato).
-    Pagante con sottoscrizione attiva e non scaduta -> il piano memorizzato
-      sul record utente ('base' o 'fitness_coaching'), oppure 'fitness_coaching'
-      come default per le vecchie sottoscrizioni 'premium'.
-    Altrimenti -> free.
+    Priorità:
+      1) admin whitelist -> fitness_coaching (tutto sbloccato);
+      2) abbonamento attivo non scaduto -> base | fitness_coaching;
+      3) crediti di prova residui (gettone €1,99) -> trial_pack;
+      4) altrimenti -> free.
+
+    Nota: un eventuale gettone-prova residuo non sovrascrive mai un piano
+    a pagamento attivo (priorità 2 vince).
     """
-    # Owner/admin bypass: accesso completo a tutto
+    # 1) Owner/admin bypass
     if is_admin_email(user.get("email")):
         return "fitness_coaching"
 
+    # 2) Abbonamento ricorrente
     if user.get("subscription_active"):
         sub_end = user.get("subscription_end")
         active = False
@@ -198,8 +235,16 @@ def get_user_plan(user: dict) -> str:
             plan = (user.get("subscription_plan") or "").lower()
             if plan in ("base", "fitness_coaching"):
                 return plan
-            # Legacy ('premium' o sconosciuto): consideriamo fitness_coaching
             return "fitness_coaching"
+
+    # 3) Gettone prova: credito residuo?
+    try:
+        credits = int(user.get("trial_credits_remaining") or 0)
+    except (TypeError, ValueError):
+        credits = 0
+    if credits > 0:
+        return "trial_pack"
+
     return "free"
 
 
@@ -215,7 +260,30 @@ async def check_consultation_limit(db, user: dict) -> Dict:
     """
     plan = get_user_plan(user)
     limits = get_plan_limits(plan)
-    
+
+    # GETTONE PROVA: budget a crediti, non a tempo
+    if plan == "trial_pack":
+        try:
+            credits = int(user.get("trial_credits_remaining") or 0)
+        except (TypeError, ValueError):
+            credits = 0
+        total = int(limits.get("trial_credit_total") or 3)
+        if credits <= 0:
+            return {
+                "allowed": False,
+                "remaining": 0,
+                "limit": total,
+                "is_trial": True,
+                "message": "Gettoni di prova esauriti. Passa a un piano per continuare."
+            }
+        return {
+            "allowed": True,
+            "remaining": credits,
+            "limit": total,
+            "is_trial": True,
+            "message": f"Gettone prova attivo — {credits} consultazione/i residue."
+        }
+
     if limits["monthly_consultations"] == -1:
         return {
             "allowed": True,
@@ -254,6 +322,49 @@ def can_use_consultation_type(user: dict, consultation_type: str) -> bool:
     plan = get_user_plan(user)
     limits = get_plan_limits(plan)
     return consultation_type in limits["consultation_types"]
+
+
+# ──────────────────────────────────────────────────────────────────────
+# GETTONE PROVA — helpers
+# ──────────────────────────────────────────────────────────────────────
+
+async def grant_trial_pack(db, user_id: str, credits: int = 3) -> Dict:
+    """Accredita N gettoni-prova all'utente (idempotente sul singolo acquisto:
+    chiamare solo dal webhook quando lo stato passa a 'paid')."""
+    credits = max(1, int(credits))
+    now_iso = datetime.now(timezone.utc).isoformat()
+    # Somma a eventuali gettoni residui (caso raro: ricomprato prima di finirli).
+    await db.users.update_one(
+        {"id": user_id},
+        {
+            "$inc": {"trial_credits_remaining": credits, "trial_credits_purchased_total": credits},
+            "$set": {"trial_purchased_at": now_iso},
+        },
+    )
+    return {"credits_added": credits, "purchased_at": now_iso}
+
+
+async def consume_trial_credit_if_applicable(db, user: dict) -> Optional[int]:
+    """Se l'utente sta consultando col piano 'trial_pack', scala 1 credito.
+    Restituisce il credito residuo dopo la consultazione, oppure None se
+    non era un utente trial."""
+    if get_user_plan(user) != "trial_pack":
+        return None
+    try:
+        before = int(user.get("trial_credits_remaining") or 0)
+    except (TypeError, ValueError):
+        before = 0
+    if before <= 0:
+        return 0
+    new_balance = before - 1
+    await db.users.update_one(
+        {"id": user["id"], "trial_credits_remaining": {"$gt": 0}},
+        {
+            "$inc": {"trial_credits_remaining": -1, "trial_credits_consumed_total": 1},
+            "$set": {"trial_last_consumed_at": datetime.now(timezone.utc).isoformat()},
+        },
+    )
+    return new_balance
 
 
 # ============== ESAGRAMMA DEL GIORNO ==============
