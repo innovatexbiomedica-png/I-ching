@@ -7,17 +7,11 @@ import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Label } from '../components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui/select';
 import { Loader2, Circle, AlertCircle, BookOpen, Sparkles, Zap, Compass, ArrowRight, MessageCircle, Map, ArrowLeft } from 'lucide-react';
 import ShareButton from '../components/ShareButton';
 import HexagramDisplay from '../components/HexagramDisplay';
 import TraditionalReading from '../components/TraditionalReading';
+import InteractiveCoinToss from '../components/InteractiveCoinToss';
 
 const API = `${(process.env.REACT_APP_BACKEND_URL || "https://iching-backend-ac3n.onrender.com")}/api`;
 
@@ -121,10 +115,6 @@ const Consultation = () => {
   };
 
   const currentTopicOptions = topicOptions[language] || topicOptions.it;
-
-  const handleLineChange = (lineNum, value) => {
-    setLines(prev => ({ ...prev, [lineNum]: value }));
-  };
 
   const allLinesFilled = Object.values(lines).every(v => v !== '');
 
@@ -807,49 +797,13 @@ const Consultation = () => {
               </p>
             </div>
 
-            <div className="space-y-4">
-              {[1, 2, 3, 4, 5, 6].map((num) => (
-                <div key={num} className="flex items-center space-x-4" data-testid={`line-${num}-input`}>
-                  <div className="w-28 flex items-center space-x-2">
-                    <span className="text-sm text-[#595959]">
-                      {t.consultation.line} {num}
-                    </span>
-                    <span className="text-xs text-[#C44D38]">
-                      {num === 1 ? (language === 'it' ? '(basso)' : '(bottom)') : 
-                       num === 6 ? (language === 'it' ? '(alto)' : '(top)') : ''}
-                    </span>
-                  </div>
-                  <Select 
-                    value={lines[`line${num}`]} 
-                    onValueChange={(v) => handleLineChange(`line${num}`, v)}
-                  >
-                    <SelectTrigger className="flex-1 bg-[#EBE8E1] border-[#D1CDC7]">
-                      <SelectValue placeholder={`${t.consultation.toss} ${num}`} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#F9F7F2] border-[#D1CDC7]">
-                      <SelectItem value="6">{t.consultation.values[6]}</SelectItem>
-                      <SelectItem value="7">{t.consultation.values[7]}</SelectItem>
-                      <SelectItem value="8">{t.consultation.values[8]}</SelectItem>
-                      <SelectItem value="9">{t.consultation.values[9]}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              ))}
-            </div>
-
-            {/* Coin Value Legend */}
-            <div className="mt-6 pt-6 border-t border-[#D1CDC7]">
-              <p className="text-xs text-[#595959] mb-2">
-                {language === 'it' ? 'Calcolo:' : 'Calculation:'} 
-                {language === 'it' ? ' Testa = 3, Croce = 2' : ' Heads = 3, Tails = 2'}
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-xs text-[#595959]">
-                <div>6 = 2+2+2 ({language === 'it' ? '3 croci' : '3 tails'})</div>
-                <div>7 = 2+2+3 ({language === 'it' ? '2 croci, 1 testa' : '2 tails, 1 head'})</div>
-                <div>8 = 2+3+3 ({language === 'it' ? '1 croce, 2 teste' : '1 tail, 2 heads'})</div>
-                <div>9 = 3+3+3 ({language === 'it' ? '3 teste' : '3 heads'})</div>
-              </div>
-            </div>
+            {/* Modulo interattivo: 3 monete 3D × 6 linee, cripto-casuale. */}
+            <InteractiveCoinToss
+              lines={lines}
+              onLinesChange={setLines}
+              language={language}
+              disabled={loading}
+            />
           </div>
 
           {/* Submit Button */}
