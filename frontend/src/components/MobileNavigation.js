@@ -193,7 +193,7 @@ const MobileBottomNav = () => {
             >
               <Sparkles className="w-5 h-5 text-[#C44D38]" />
               <span className="text-[#2C2C2C]">
-                {language === 'it' ? 'Fitness & Coaching' : 'Fitness & Coaching'}
+                {language === 'it' ? 'Benessere Fisico' : 'Wellness'}
               </span>
             </button>
             

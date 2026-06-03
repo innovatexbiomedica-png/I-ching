@@ -176,8 +176,8 @@ const Landing = () => {
       title: language === 'it' ? 'Coach AI Personale' : 'Personal AI Coach',
       color: 'from-indigo-500 to-blue-600',
       description: language === 'it'
-        ? 'Un assistente AI che ti conosce, ti segue nel tempo e ti guida nel tuo percorso di crescita — incluso nel piano Fitness Coaching'
-        : 'An AI assistant that knows you, follows you over time and guides you on your growth path — included in the Fitness Coaching plan',
+        ? 'Un assistente AI che ti conosce, ti segue nel tempo e ti guida nel tuo percorso di crescita — incluso nel piano Benessere Fisico'
+        : 'An AI assistant that knows you, follows you over time and guides you on your growth path — included in the Wellness plan',
       status: language === 'it' ? '🟢 Disponibile ora' : '🟢 Available now',
       available: true,
       link: '/fitness',

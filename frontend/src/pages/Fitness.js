@@ -311,7 +311,7 @@ const Fitness = () => {
   const [busyActivityId, setBusyActivityId] = useState(null);
 
   useEffect(() => {
-    document.title = 'Fitness Coaching — I Ching del Benessere';
+    document.title = 'Benessere Fisico — I Ching del Benessere';
     boot();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -394,12 +394,12 @@ const Fitness = () => {
       <div className="max-w-2xl mx-auto p-6 text-center py-16">
         <Lock className="w-12 h-12 mx-auto mb-4 text-[#C44D38]" />
         <h1 className="text-3xl font-serif text-[#2C2C2C] mb-3">
-          {language === 'it' ? 'Fitness & Coaching' : 'Fitness & Coaching'}
+          {language === 'it' ? 'Benessere Fisico' : 'Wellness'}
         </h1>
         <p className="text-[#595959] mb-6">
           {language === 'it'
-            ? 'Il programma interattivo Sport, Cultura e Benessere è incluso nel piano Fitness Coaching.'
-            : 'The interactive Sport, Culture & Wellness program is part of the Fitness Coaching plan.'}
+            ? 'Il programma interattivo Sport, Cultura e Benessere è incluso nel piano Benessere Fisico.'
+            : 'The interactive Sport, Culture & Wellness program is part of the Wellness plan.'}
         </p>
         <button
           onClick={() => navigate('/subscription')}
@@ -417,7 +417,7 @@ const Fitness = () => {
         <div className="mb-6 text-center">
           <Sparkles className="w-8 h-8 mx-auto text-[#C44D38] mb-2" />
           <h1 className="text-3xl font-serif text-[#2C2C2C]">
-            {language === 'it' ? 'Fitness & Coaching' : 'Fitness & Coaching'}
+            {language === 'it' ? 'Benessere Fisico' : 'Wellness'}
           </h1>
           <p className="text-sm text-[#7a6f63] mt-1">
             {language === 'it'

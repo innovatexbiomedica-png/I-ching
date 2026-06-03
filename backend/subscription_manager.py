@@ -177,8 +177,8 @@ SUBSCRIPTION_PRICES = {
         "plan": "fitness_coaching",
         "duration_days": 30,
         "stripe_price_id": "price_fitness_monthly",
-        "label_it": "Fitness Coaching — Mensile",
-        "label_en": "Fitness Coaching — Monthly",
+        "label_it": "Benessere Fisico — Mensile",
+        "label_en": "Wellness — Monthly",
     },
     "fitness_yearly": {
         "price": 191.90,
@@ -188,8 +188,8 @@ SUBSCRIPTION_PRICES = {
         "stripe_price_id": "price_fitness_yearly",
         "savings": "20%",
         "monthly_equivalent": 15.99,
-        "label_it": "Fitness Coaching — Annuale (−20%)",
-        "label_en": "Fitness Coaching — Yearly (−20%)",
+        "label_it": "Benessere Fisico — Annuale (−20%)",
+        "label_en": "Wellness — Yearly (−20%)",
     },
     # GETTONE PROVA — €1,99 one-shot, 3 consultazioni con tutto sbloccato
     "trial_pack": {

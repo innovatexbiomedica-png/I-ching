@@ -200,7 +200,7 @@ const Layout = ({ children }) => {
                       data-testid="profile-fitness-btn"
                     >
                       <Sparkles className="w-4 h-4 mr-2 text-[#C44D38]" />
-                      {language === 'it' ? 'Fitness & Coaching' : 'Fitness & Coaching'}
+                      {language === 'it' ? 'Benessere Fisico' : 'Wellness'}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-[#D1CDC7]" />
                     <DropdownMenuItem
@@ -315,7 +315,7 @@ const Layout = ({ children }) => {
                   </Link>
                   <Link to="/fitness" className="flex items-center space-x-2 py-2 text-[#2C2C2C]" onClick={() => setMobileMenuOpen(false)}>
                     <Sparkles className="w-4 h-4 text-[#C44D38]" />
-                    <span>{language === 'it' ? 'Fitness & Coaching' : 'Fitness & Coaching'}</span>
+                    <span>{language === 'it' ? 'Benessere Fisico' : 'Wellness'}</span>
                   </Link>
                   <Link to="/subscription" className="flex items-center space-x-2 py-2 text-[#2C2C2C]" onClick={() => setMobileMenuOpen(false)}>
                     <Crown className="w-4 h-4 text-amber-500" />

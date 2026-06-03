@@ -175,7 +175,7 @@ const Subscription = () => {
     },
     fitness: {
       key: 'fitness_coaching',
-      title: language === 'it' ? 'Fitness Coaching' : 'Fitness Coaching',
+      title: language === 'it' ? 'Benessere Fisico' : 'Wellness',
       priceMonthly: 19.99,
       priceYearly: 191.90,
       monthlyEquivalentYearly: 15.99,

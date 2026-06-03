@@ -1694,7 +1694,7 @@ def _require_fitness_plan(user: dict):
     if not limits.get("can_fitness_coaching"):
         raise HTTPException(
             status_code=403,
-            detail="Il programma Fitness & Coaching è disponibile solo nel piano Fitness Coaching."
+            detail="Il programma Benessere Fisico è disponibile solo nel piano dedicato."
         )
 
 
