@@ -856,7 +856,28 @@ Genera un'interpretazione RICCA, PROFONDA e DETTAGLIATA (600-900 parole) che:
 
 CRITICO: Le tue interpretazioni devono essere FEDELI al testo Wilhelm sopra riportato.
 Quando citi Sentenza, Immagine o linee mutevoli, USA LE PAROLE ESATTE di Wilhelm.
-Scrivi come un antico maestro taoista, con poesia, profondità e compassione, ma sempre ANCORATO alla tradizione autentica."""
+Scrivi come un antico maestro taoista, con poesia, profondità e compassione, ma sempre ANCORATO alla tradizione autentica.
+
+==========================================================
+DOPO l'interpretazione, aggiungi SEMPRE (anche se la domanda è breve) due
+riassunti, esattamente in questo formato, con i marcatori in maiuscolo
+identici a quelli qui sotto (sono parsati dal frontend, NON modificarli,
+NON tradurli, NON aggiungere caratteri attorno):
+
+===RIASSUNTO_RAPIDO===
+[2-3 frasi, max 60 parole, che catturano l'essenza della risposta per il
+consultante: cosa sta succedendo e cosa fare. Tono diretto e umano,
+nessuna citazione classica.]
+===RIASSUNTO_APPROFONDITO===
+• Situazione attuale: [una frase ancorata all'esagramma principale]
+• Insegnamento centrale: [una frase, citando in corsivo una parola-chiave
+  della Sentenza Wilhelm]
+• Linee mutevoli: [una frase sul significato cumulativo; "nessuna" se assenti]
+• Azione consigliata: [una frase di consiglio applicabile oggi]
+• Pericolo da evitare: [una frase chiara]
+• Prospettiva: [una frase sull'esagramma derivato; "stabilità del primario"
+  se non c'è derivato]
+===FINE_RIASSUNTO==="""
     else:
         user_prompt = f"""The querent's question is: "{question}"
 {conversation_context}
@@ -886,7 +907,26 @@ Generate a RICH, PROFOUND and DETAILED interpretation (600-900 words) that:
 5. IF THERE IS A DERIVED HEXAGRAM: explain the transformation and what it indicates for the future
 6. Conclude with practical wisdom and applicable advice
 
-Write as an ancient Taoist master, with poetry, depth, and compassion."""
+Write as an ancient Taoist master, with poetry, depth, and compassion.
+
+==========================================================
+AFTER the interpretation, ALWAYS append two summary blocks, in EXACTLY
+this format. Keep the markers UPPERCASE and IDENTICAL to the ones below
+— the frontend parses them, DO NOT translate or alter them:
+
+===RIASSUNTO_RAPIDO===
+[2-3 sentences, max 60 words, capturing the essence of the answer for the
+querent: what is happening and what to do. Direct, human tone, no classical
+citations.]
+===RIASSUNTO_APPROFONDITO===
+• Current situation: [one sentence anchored to the primary hexagram]
+• Core teaching: [one sentence, italicizing one keyword from the Judgment]
+• Moving lines: [one sentence on cumulative meaning; "none" if absent]
+• Recommended action: [one sentence of applicable advice for today]
+• Pitfall to avoid: [one clear sentence]
+• Outlook: [one sentence on the derived hexagram; "stability of the primary"
+  if there is no derived]
+===FINE_RIASSUNTO==="""
 
     text = await _gemini_generate(
         system_instruction=system_prompt,
@@ -1057,7 +1097,20 @@ Genera un'interpretazione DIRETTA e D'IMPATTO (300-400 parole) che risponda chia
 USA il testo Wilhelm sopra come riferimento autorevole per il significato dell'esagramma e delle linee.
 Quando rilevante, cita brevemente la Sentenza Wilhelm o la formula tradizionale di una linea mutevole.
 Vai dritto al punto. Di' al consultante quello che ha bisogno di sapere — ancorato alla tradizione, non inventato.
-{"Collega questa risposta alle domande precedenti nella conversazione." if conversation_context else ""}"""
+{"Collega questa risposta alle domande precedenti nella conversazione." if conversation_context else ""}
+
+DOPO l'interpretazione, aggiungi SEMPRE due riassunti con questi marcatori
+ESATTI (in maiuscolo, sono parsati dal frontend, NON tradurli):
+
+===RIASSUNTO_RAPIDO===
+[1-2 frasi, max 40 parole: l'essenza della risposta. Nessuna citazione classica.]
+===RIASSUNTO_APPROFONDITO===
+• Situazione: [una frase ancorata all'esagramma]
+• Insegnamento: [una frase chiave]
+• Azione consigliata: [una frase concreta per oggi]
+• Pericolo: [una frase chiara]
+• Prospettiva: [una frase; "stabilità" se non c'è derivato]
+===FINE_RIASSUNTO==="""
     else:
         user_prompt = f"""Querent's question: "{question}"
 {conversation_context}
@@ -1068,7 +1121,20 @@ Judgment: "{giudizio}"
 
 Generate a DIRECT and IMPACTFUL interpretation (300-400 words) that clearly answers the question.
 Get straight to the point. Tell the querent what they need to know.
-{"Connect this response to the previous questions in the conversation." if conversation_context else ""}"""
+{"Connect this response to the previous questions in the conversation." if conversation_context else ""}
+
+AFTER the interpretation, ALWAYS append two summary blocks with these
+EXACT markers (uppercase, parsed by the frontend, DO NOT translate):
+
+===RIASSUNTO_RAPIDO===
+[1-2 sentences, max 40 words: the essence of the answer. No classical citations.]
+===RIASSUNTO_APPROFONDITO===
+• Situation: [one sentence anchored to the hexagram]
+• Teaching: [one key sentence]
+• Recommended action: [one concrete sentence for today]
+• Pitfall: [one clear sentence]
+• Outlook: [one sentence; "stability" if no derived]
+===FINE_RIASSUNTO==="""
 
     text = await _gemini_generate(
         system_instruction=system_prompt,

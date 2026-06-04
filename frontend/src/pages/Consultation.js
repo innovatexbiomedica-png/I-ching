@@ -15,6 +15,31 @@ import InteractiveCoinToss from '../components/InteractiveCoinToss';
 
 const API = `${(process.env.REACT_APP_BACKEND_URL || "https://iching-backend-ac3n.onrender.com")}/api`;
 
+// I prompt backend chiedono al modello di chiudere la risposta con due
+// blocchi marcati: ===RIASSUNTO_RAPIDO=== e ===RIASSUNTO_APPROFONDITO===
+// (terminati da ===FINE_RIASSUNTO===). Qui scomponiamo la stringa in
+// {body, quick, deep}; se i marcatori mancano restituiamo solo body così
+// le vecchie consultazioni e i fallback non si rompono.
+function splitInterpretation(raw) {
+  const out = { body: raw || '', quick: '', deep: '' };
+  if (!raw || typeof raw !== 'string') return out;
+  const reQuick = /===\s*RIASSUNTO_RAPIDO\s*===/i;
+  const reDeep = /===\s*RIASSUNTO_APPROFONDITO\s*===/i;
+  const reEnd = /===\s*FINE_RIASSUNTO\s*===/i;
+  const idxQuick = raw.search(reQuick);
+  if (idxQuick < 0) return out;
+  out.body = raw.slice(0, idxQuick).trim();
+  const tail = raw.slice(idxQuick).replace(reQuick, '').trim();
+  const idxDeep = tail.search(reDeep);
+  if (idxDeep < 0) {
+    out.quick = tail.replace(reEnd, '').trim();
+    return out;
+  }
+  out.quick = tail.slice(0, idxDeep).trim();
+  out.deep = tail.slice(idxDeep).replace(reDeep, '').replace(reEnd, '').trim();
+  return out;
+}
+
 const Consultation = () => {
   const { language, getToken, hasSubscription } = useAuth();
   const t = useTranslation(language);
@@ -270,11 +295,62 @@ const Consultation = () => {
                 </p>
               </div>
             </div>
-            <div className="zen-card border-l-4 border-[#C44D38]" data-testid="result-interpretation">
-              <div className="interpretation-text text-[#2C2C2C] whitespace-pre-wrap leading-relaxed">
-                {result.interpretation}
-              </div>
-            </div>
+            {(() => {
+              const { body, quick, deep } = splitInterpretation(result.interpretation);
+              return (
+                <>
+                  <div className="zen-card border-l-4 border-[#C44D38]" data-testid="result-interpretation">
+                    <div className="interpretation-text text-[#2C2C2C] whitespace-pre-wrap leading-relaxed">
+                      {body}
+                    </div>
+                  </div>
+
+                  {(quick || deep) && (
+                    <div className="mt-8" data-testid="result-summary">
+                      <div className="flex items-center mb-4">
+                        <div className="w-8 h-8 rounded-full bg-[#C44D38]/10 flex items-center justify-center mr-3">
+                          <BookOpen className="w-4 h-4 text-[#C44D38]" />
+                        </div>
+                        <h3 className="font-serif text-xl text-[#2C2C2C]">
+                          {language === 'it' ? 'Riassunto della stesa' : 'Reading summary'}
+                        </h3>
+                      </div>
+
+                      {quick && (
+                        <div className="zen-card border border-[#8A9A5B]/40 bg-[#8A9A5B]/5 mb-4" data-testid="summary-quick">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Zap className="w-4 h-4 text-[#6B7A40]" />
+                            <span className="text-xs uppercase tracking-wider text-[#6B7A40] font-medium">
+                              {language === 'it' ? 'Versione veloce' : 'Quick version'}
+                            </span>
+                          </div>
+                          <p className="text-[#2C2C2C] leading-relaxed whitespace-pre-wrap">
+                            {quick}
+                          </p>
+                        </div>
+                      )}
+
+                      {deep && (
+                        <details className="zen-card border border-[#C44D38]/40 bg-[#C44D38]/5 group" data-testid="summary-deep">
+                          <summary className="cursor-pointer flex items-center justify-between list-none">
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="w-4 h-4 text-[#C44D38]" />
+                              <span className="text-xs uppercase tracking-wider text-[#C44D38] font-medium">
+                                {language === 'it' ? 'Versione approfondita' : 'Deep version'}
+                              </span>
+                            </div>
+                            <ArrowRight className="w-4 h-4 text-[#C44D38] transition-transform group-open:rotate-90" />
+                          </summary>
+                          <div className="mt-3 pt-3 border-t border-[#C44D38]/20 text-[#2C2C2C] leading-relaxed whitespace-pre-wrap">
+                            {deep}
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           {/* Continue Consultation Button */}
