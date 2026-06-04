@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../lib/translations';
@@ -16,6 +16,7 @@ import {
 import { Loader2, Mail, Lock, User, Globe, Phone, Eye, EyeOff } from 'lucide-react';
 import Logo from '../components/Logo';
 import GoogleSignIn from '../components/GoogleSignIn';
+import { warmupBackend } from '../lib/warmup';
 
 const Register = () => {
   const { register, language: currentLang } = useAuth();
@@ -33,6 +34,10 @@ const Register = () => {
   // GDPR consent state — privacy is required, marketing is optional
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [acceptedMarketing, setAcceptedMarketing] = useState(false);
+
+  // Sveglia il backend Render mentre l'utente compila il form, così
+  // il POST a /api/auth/register parte già su processo caldo.
+  useEffect(() => { warmupBackend(); }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

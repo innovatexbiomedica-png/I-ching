@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../lib/translations';
@@ -9,6 +9,7 @@ import { Label } from '../components/ui/label';
 import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import Logo from '../components/Logo';
 import GoogleSignIn from '../components/GoogleSignIn';
+import { warmupBackend } from '../lib/warmup';
 
 // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
 
@@ -16,12 +17,17 @@ const Login = () => {
   const { login, language } = useAuth();
   const t = useTranslation(language);
   const navigate = useNavigate();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Sveglia il backend Render mentre l'utente digita: il primo POST a
+  // /api/auth/login a freddo richiede 30-50s, con questo ping in
+  // parallelo arriva quasi sempre caldo.
+  useEffect(() => { warmupBackend(); }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

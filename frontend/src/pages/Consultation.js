@@ -12,8 +12,61 @@ import ShareButton from '../components/ShareButton';
 import HexagramDisplay from '../components/HexagramDisplay';
 import TraditionalReading from '../components/TraditionalReading';
 import InteractiveCoinToss from '../components/InteractiveCoinToss';
+import { warmupBackend } from '../lib/warmup';
 
 const API = `${(process.env.REACT_APP_BACKEND_URL || "https://iching-backend-ac3n.onrender.com")}/api`;
+
+// Overlay narrativo durante l'attesa della risposta AI. La consultazione
+// può richiedere 5-15s (Gemini); con frasi che si avvicendano l'utente
+// percepisce il tempo molto più breve invece di guardare uno spinner muto.
+function ConsultingOverlay({ language, hasMovingLines }) {
+  const phasesIt = [
+    { delayMs: 0,     text: 'Lancio finale delle monete…' },
+    { delayMs: 1500,  text: 'Consulto il Libro dei Mutamenti di Richard Wilhelm…' },
+    { delayMs: 4500,  text: hasMovingLines ? 'Interpreto le linee mutevoli…' : 'Studio l\'esagramma e i suoi trigrammi…' },
+    { delayMs: 8000,  text: 'Compongo l\'interpretazione personalizzata…' },
+    { delayMs: 13000, text: 'Distillo il riassunto della stesa…' },
+    { delayMs: 18000, text: 'Quasi pronto — l\'oracolo sta scegliendo le parole giuste…' },
+  ];
+  const phasesEn = [
+    { delayMs: 0,     text: 'Final coin toss…' },
+    { delayMs: 1500,  text: 'Consulting Richard Wilhelm\'s Book of Changes…' },
+    { delayMs: 4500,  text: hasMovingLines ? 'Reading the moving lines…' : 'Studying the hexagram and its trigrams…' },
+    { delayMs: 8000,  text: 'Composing your interpretation…' },
+    { delayMs: 13000, text: 'Distilling the reading summary…' },
+    { delayMs: 18000, text: 'Almost done — the oracle is choosing its words…' },
+  ];
+  const phases = language === 'en' ? phasesEn : phasesIt;
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const timers = phases.map((p, i) =>
+      i === 0 ? null : setTimeout(() => setIdx(i), p.delayMs)
+    ).filter(Boolean);
+    return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#F9F7F2]/85 backdrop-blur-sm animate-fade-in" data-testid="consulting-overlay">
+      <div className="text-center px-6 max-w-md">
+        <div className="w-20 h-20 mx-auto mb-6 relative">
+          <div className="absolute inset-0 rounded-full border-2 border-[#C44D38]/20" />
+          <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[#C44D38] animate-spin" />
+          <div className="absolute inset-3 rounded-full bg-[#C44D38]/10 flex items-center justify-center">
+            <span className="text-[#C44D38] text-2xl">☯</span>
+          </div>
+        </div>
+        <p className="font-serif text-xl text-[#2C2C2C] mb-2 transition-opacity duration-500">
+          {phases[idx].text}
+        </p>
+        <p className="text-sm text-[#7a6f63]">
+          {language === 'en'
+            ? 'A few seconds of patience — like the real ritual.'
+            : 'Qualche secondo di pazienza — come nel rituale dal vivo.'}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 // I prompt backend chiedono al modello di chiudere la risposta con due
 // blocchi marcati: ===RIASSUNTO_RAPIDO=== e ===RIASSUNTO_APPROFONDITO===
@@ -71,6 +124,11 @@ const Consultation = () => {
   // Conversation continuation states
   const [parentConsultation, setParentConsultation] = useState(null);
   const [continuationMode, setContinuationMode] = useState(false);
+
+  // Sveglia il backend al mount: il POST /api/consultations innesca una
+  // chiamata Gemini lunga (5-15s), e se il processo Render è in sleep
+  // l'utente sommava cold-start + AI = 40+ secondi. Pingiamo subito.
+  useEffect(() => { warmupBackend(); }, []);
 
   // Fetch path info if in path mode
   useEffect(() => {
@@ -453,8 +511,15 @@ const Consultation = () => {
   //   );
   // }
 
+  // Quante linee mutevoli stanno per essere processate? Serve all'overlay
+  // narrativo per decidere che frase mostrare durante l'attesa AI.
+  const movingLinesCount = Object.values(lines).filter(v => v === '6' || v === '9').length;
+
   return (
     <div className="section-zen" data-testid="consultation-page">
+      {loading && !result && (
+        <ConsultingOverlay language={language} hasMovingLines={movingLinesCount > 0} />
+      )}
       <div className="container-zen max-w-2xl">
         {/* Path Mode Header */}
         {isPathMode && pathInfo && (

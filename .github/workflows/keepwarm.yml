@@ -1,0 +1,26 @@
+name: Keep backend warm
+
+# Render free tier mette il processo in sleep dopo 15 minuti di inattività.
+# Una richiesta cold-start impiega 30-50 secondi, peggiorando login e prima
+# consultazione. Questo workflow fa un GET ogni 10 minuti per tenere caldo
+# il container.
+#
+# Costo: ~5 sec × 144 esecuzioni/giorno × 30 = 360 min/mese.
+# Quota GitHub Actions free per repo public: 2000 min/mese → ampiamente OK.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # ogni 10 minuti
+  workflow_dispatch:          # consente esecuzione manuale dal tab Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend /ping
+        run: |
+          # -f fa fallire lo step su HTTP >=400 così se Render restituisce
+          # 502/503 vedo il fallimento nelle Actions e posso indagare.
+          curl --fail --silent --show-error --max-time 60 \
+            https://iching-backend-ac3n.onrender.com/ping
+          echo " ✓ backend warm"
