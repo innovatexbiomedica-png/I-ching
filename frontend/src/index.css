@@ -428,3 +428,48 @@ body::before {
     display: contents !important;
   }
 }
+
+/* ──────────────────────────────────────────────────────────────
+   TYPOGRAPHIC SCALE — leggibilità sitewide
+   ──────────────────────────────────────────────────────────────
+   - html font-size 16 → 16.5px: scala il 3% TUTTO ciò che è in `rem`
+     (text-*, padding p-*, gap, w-* numerici), senza spostare il layout.
+   - body line-height più ariosa per le interpretazioni I Ching che
+     possono essere molto lunghe.
+   - text-xs e text-sm (i due tagli più cramped di Tailwind) ricevono un
+     bump esplicito perché in interfaccia restavano sotto i 13-14px e
+     stancavano la vista — soprattutto su mobile.
+   - mobile (≤640px): ulteriore bump perché il viewport stretto + la
+     distanza occhio-dito li facevano sembrare ancora più piccoli.
+   ────────────────────────────────────────────────────────────── */
+html {
+  font-size: 16.5px;
+}
+body {
+  line-height: 1.65;
+}
+
+.text-xs {
+  font-size: 0.8125rem;   /* ≈13.4px */
+  line-height: 1.5;
+}
+.text-sm {
+  font-size: 0.94rem;     /* ≈15.5px */
+  line-height: 1.55;
+}
+.text-base {
+  line-height: 1.65;
+}
+.text-lg {
+  line-height: 1.6;
+}
+
+/* Smartphone: leggera maggiorazione dei tagli piccoli */
+@media (max-width: 640px) {
+  .text-xs { font-size: 0.85rem; }     /* ≈14px */
+  .text-sm { font-size: 1rem;     }    /* ≈16.5px */
+  /* labels e tag piccoli ottengono una linea un filo più alta */
+  .text-xs, .text-sm { line-height: 1.55; }
+}
+
+/* Tablet e oltre — restano i valori di base sopra */
