@@ -4388,6 +4388,80 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(GZipMiddleware, minimum_size=500, compresslevel=6)
 
 
+# ──────────────────────────────────────────────────────────────────────
+# Security headers — aggiunti su OGNI risposta HTTP.
+# ──────────────────────────────────────────────────────────────────────
+#   HSTS                        forza HTTPS sui prossimi 6 mesi
+#   X-Content-Type-Options      blocca MIME sniffing
+#   X-Frame-Options             impedisce clickjacking via iframe
+#   Referrer-Policy             non leakkare URL/query a terzi
+#   Permissions-Policy          disabilita feature pericolose non usate
+#   Cross-Origin-Opener-Policy  isola da popup malevoli (Google Sign-In)
+#
+# CSP non e' aggiunta dal backend perche' il frontend statico e' servito
+# da Vercel — la mettiamo come <meta http-equiv> in index.html.
+@app.middleware("http")
+async def _security_headers(request: Request, call_next):
+    response = await call_next(request)
+    # HSTS solo se la richiesta arriva via HTTPS (in dev locale non vogliamo
+    # forzare HTTPS che farebbe rompere localhost). Render espone X-Forwarded-Proto.
+    proto = request.headers.get("X-Forwarded-Proto") or request.url.scheme
+    if proto == "https":
+        response.headers.setdefault(
+            "Strict-Transport-Security",
+            "max-age=15552000; includeSubDomains"  # 180 giorni
+        )
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault(
+        "Permissions-Policy",
+        "geolocation=(), microphone=(), camera=(), payment=(), usb=(), "
+        "accelerometer=(), gyroscope=()"
+    )
+    response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
+    # Server fingerprinting: nascondiamo la versione FastAPI/Uvicorn
+    if response.headers.get("server"):
+        response.headers["server"] = "iching"
+    return response
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Sentry monitoring — opt-in via SENTRY_DSN env var.
+# ──────────────────────────────────────────────────────────────────────
+# Se SENTRY_DSN non e' settato, Sentry resta no-op (zero costo runtime).
+# Quando l'utente lo configura su Render → ogni eccezione 5xx, errore
+# Gemini, errore Stripe, slow query, etc. arriva nella dashboard in
+# tempo reale invece di restare sepolto nei log Render (visibili 7 gg).
+_sentry_dsn = os.environ.get('SENTRY_DSN')
+if _sentry_dsn:
+    try:
+        import sentry_sdk  # type: ignore
+        from sentry_sdk.integrations.fastapi import FastApiIntegration  # type: ignore
+        from sentry_sdk.integrations.starlette import StarletteIntegration  # type: ignore
+        sentry_sdk.init(
+            dsn=_sentry_dsn,
+            traces_sample_rate=float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', '0.1')),
+            profiles_sample_rate=float(os.environ.get('SENTRY_PROFILES_SAMPLE_RATE', '0.0')),
+            environment=os.environ.get('SENTRY_ENVIRONMENT', 'production'),
+            release=os.environ.get('RENDER_GIT_COMMIT', 'unknown')[:7],
+            send_default_pii=False,  # GDPR: no PII (email, IP) di default
+            integrations=[
+                FastApiIntegration(transaction_style='endpoint'),
+                StarletteIntegration(transaction_style='endpoint'),
+            ],
+            ignore_errors=[
+                'HTTPException',          # 4xx attesi
+                'RateLimitExceeded',      # generati apposta
+            ],
+        )
+        logger.info("✅ Sentry inizializzato (release=%s)", os.environ.get('RENDER_GIT_COMMIT', 'unknown')[:7])
+    except ImportError:
+        logger.warning("SENTRY_DSN settato ma sentry_sdk non installato — eseguire pip install sentry-sdk[fastapi]")
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Inizializzazione Sentry fallita: %s", e)
+
+
 # Endpoints whose payload never changes per-user (truly static catalog data).
 # We let the browser cache them for an hour — huge speedup for repeated visits
 # to the library and for the consultation flow that reads hex data.

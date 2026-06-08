@@ -13,14 +13,20 @@ services:
       - key: DB_NAME
         value: iching_db
       - key: JWT_SECRET
-        sync: false
+        sync: false                # genera con: openssl rand -base64 48
+      - key: ADMIN_SECRET
+        sync: false                # genera con: openssl rand -hex 32
       - key: GEMINI_API_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
-        sync: false
+        sync: false                # whsec_… del webhook Stripe LIVE
       - key: STRIPE_API_KEY
-        sync: false
+        sync: false                # sk_live_… per produzione, sk_test_… per staging
       - key: GOOGLE_CLIENT_ID
         sync: false
+      - key: CORS_ORIGINS
+        sync: false                # opzionale, default whitelist OK
+      - key: SENTRY_DSN
+        sync: false                # opzionale: attiva error tracking
       - key: PYTHON_VERSION
         value: 3.11.0

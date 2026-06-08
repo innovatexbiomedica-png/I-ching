@@ -4,6 +4,12 @@ import "@/index.css";
 import App from "@/App";
 import { register as registerServiceWorker } from "@/serviceWorkerRegistration";
 import { initCapacitorBridge } from "@/lib/capacitor-bridge";
+import { initSentry } from "@/lib/sentry";
+
+// Sentry deve partire PRIMA di renderizzare React per catturare anche
+// eventuali errori nel primo render. Se REACT_APP_SENTRY_DSN non e'
+// settato a build-time, e' completamente no-op.
+initSentry();
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(

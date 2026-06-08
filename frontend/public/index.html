@@ -5,6 +5,57 @@
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#1a1a2e" />
         <meta name="description" content="I Ching del Benessere - L'antica saggezza cinese per il benessere moderno" />
+
+        <!--
+          Content Security Policy
+          =======================
+          Whitelist esplicita dei domini da cui il browser puo' caricare risorse.
+          Restringe enormemente l'impatto di un eventuale XSS: anche se un
+          attaccante riesce a iniettare uno <script>, il browser si rifiuta di
+          eseguirlo da domini non whitelisted.
+
+          script-src: bundle proprio + Google Sign-In + Stripe.js (carta).
+          connect-src: API backend + Google + Stripe + Sentry (se configurato).
+          frame-src: Stripe (3DS) + Google Sign-In iframe.
+          img-src: tutto via https + data: URI (icone inline).
+          style-src: 'unsafe-inline' perche' Radix UI e Tailwind JIT generano
+            stili inline; sarebbe il vettore CSP piu' forte, ma rimuoverlo
+            richiede refactor consistente — accettiamo questo trade-off.
+        -->
+        <meta http-equiv="Content-Security-Policy" content="
+          default-src 'self';
+          script-src 'self' 'unsafe-inline' 'unsafe-eval'
+            https://accounts.google.com
+            https://apis.google.com
+            https://js.stripe.com
+            https://*.sentry.io;
+          style-src 'self' 'unsafe-inline'
+            https://fonts.googleapis.com;
+          font-src 'self' data:
+            https://fonts.gstatic.com;
+          img-src 'self' data: blob:
+            https: ;
+          connect-src 'self'
+            https://iching-backend-ac3n.onrender.com
+            https://accounts.google.com
+            https://oauth2.googleapis.com
+            https://api.stripe.com
+            https://*.ingest.sentry.io
+            https://*.ingest.de.sentry.io
+            https://*.ingest.us.sentry.io;
+          frame-src 'self'
+            https://accounts.google.com
+            https://js.stripe.com
+            https://hooks.stripe.com;
+          object-src 'none';
+          base-uri 'self';
+          form-action 'self';
+          frame-ancestors 'none';
+          upgrade-insecure-requests;
+        " />
+
+        <!-- Referrer policy: niente URL/query a domini terzi -->
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
         <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
         <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
