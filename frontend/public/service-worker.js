@@ -1,13 +1,20 @@
-// I Ching del Benessere - Service Worker v2.0
-const CACHE_NAME = 'iching-benessere-v2';
-const DYNAMIC_CACHE = 'iching-dynamic-v2';
-const API_CACHE = 'iching-api-v2';
+// I Ching del Benessere - Service Worker v3.0
+//
+// Bump cache version a ogni modifica significativa per forzare gli
+// utenti PWA a scaricare i nuovi asset (il vecchio bundle resterebbe
+// servito dalla cache altrimenti).
+const CACHE_NAME = 'iching-benessere-v3';
+const DYNAMIC_CACHE = 'iching-dynamic-v3';
+const API_CACHE = 'iching-api-v3';
 
-// Assets to cache on install
+// Assets to cache on install. /offline.html è essenziale: il fetch
+// handler lo serve come fallback per le navigazioni offline e se non è
+// in cache il fallback non funziona.
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/offline.html',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
   '/logo-iching.svg',
@@ -24,7 +31,7 @@ const API_ROUTES = [
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Service Worker v2...');
+  console.log('[SW] Installing Service Worker v3...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[SW] Caching static assets');
