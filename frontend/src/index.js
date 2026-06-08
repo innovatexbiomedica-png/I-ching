@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import "@/index.css";
 import App from "@/App";
 import { register as registerServiceWorker } from "@/serviceWorkerRegistration";
+import { initCapacitorBridge } from "@/lib/capacitor-bridge";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
@@ -18,3 +19,8 @@ root.render(
 // In dev viene comunque registrato ma il dev server CRA non serve
 // /service-worker.js, quindi il modulo gestisce graceful fallback.
 registerServiceWorker();
+
+// Inizializza i plugin nativi quando l'app gira dentro Capacitor (iOS/Android).
+// Sul sito web è un no-op: i moduli @capacitor/* sono import dinamici e
+// nemmeno entrano nel bundle se non richiesti.
+initCapacitorBridge();

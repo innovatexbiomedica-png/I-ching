@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { hapticImpact } from '../lib/capacitor-bridge';
 
 /*
  * InteractiveCoinToss
@@ -115,6 +116,7 @@ export default function InteractiveCoinToss({
   const tossSingle = useCallback(async (idx) => {
     if (disabled || tossingIdx !== -1) return;
     setTossingIdx(idx);
+    hapticImpact(); // vibrazione fisica al lancio (no-op su web)
 
     // Numero di re-disegni durante l'animazione. ~60 fps × 1.4s ≈ 84 frame:
     // a ogni frame estraiamo NUOVI 3 bit dall'entropia crittografica.

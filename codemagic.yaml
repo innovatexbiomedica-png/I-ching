@@ -1,0 +1,149 @@
+workflows:
+  # ────────────────────────────────────────────────────────────────────────
+  # iOS build → TestFlight
+  # ────────────────────────────────────────────────────────────────────────
+  # Tier free di Codemagic: 500 min macOS/mese. Una build iOS prende ~15 min,
+  # quindi puoi fare ~33 build/mese gratis. Ampiamente sufficiente.
+  #
+  # Servono questi gruppi di variabili configurati in app.codemagic.io:
+  #   appstore_credentials:
+  #     APP_STORE_CONNECT_PRIVATE_KEY   (chiave .p8 di App Store Connect)
+  #     APP_STORE_CONNECT_KEY_IDENTIFIER
+  #     APP_STORE_CONNECT_ISSUER_ID
+  #     CERTIFICATE_PRIVATE_KEY         (per Codemagic-managed signing)
+  ios-build:
+    name: I Ching iOS → TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: I Ching App Store Connect
+    environment:
+      groups:
+        - appstore_credentials
+      vars:
+        XCODE_WORKSPACE: "frontend/ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+        BUNDLE_ID: "com.ichingbenessere.app"
+        APP_STORE_APP_ID: TBD  # Setta l'ID dopo aver creato il record su App Store Connect
+      node: 20.10.0
+      xcode: 15.4
+      cocoapods: default
+    cache:
+      cache_paths:
+        - ~/Library/Caches/CocoaPods
+        - ~/.npm
+        - frontend/node_modules
+    scripts:
+      - name: Install yarn deps
+        script: |
+          cd frontend
+          yarn install --frozen-lockfile
+      - name: Build React bundle
+        script: |
+          cd frontend
+          NODE_OPTIONS='--openssl-legacy-provider' yarn build
+      - name: Sync Capacitor iOS
+        script: |
+          cd frontend
+          npx cap sync ios
+      - name: Set CFBundleVersion to build number
+        script: |
+          cd frontend/ios/App
+          agvtool new-version -all $(($BUILD_NUMBER + 1))
+      - name: Pod install
+        script: |
+          cd frontend/ios/App
+          pod install
+      - name: Code signing setup (Codemagic-managed)
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Build IPA
+        script: |
+          cd frontend/ios/App
+          xcode-project build-ipa --workspace "App.xcworkspace" --scheme "App"
+    artifacts:
+      - frontend/ios/App/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Tester interni
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Android build → Play Console (Internal track)
+  # ────────────────────────────────────────────────────────────────────────
+  # Su Ubuntu runner (più veloce e più quota mensile rispetto a macOS).
+  # Tier free: 500 min/mese Linux + 500 macOS.
+  #
+  # Servono questi gruppi:
+  #   keystore_credentials:
+  #     CM_KEYSTORE                 (file .keystore upload)
+  #     CM_KEYSTORE_PASSWORD
+  #     CM_KEY_ALIAS
+  #     CM_KEY_PASSWORD
+  #   google_play:
+  #     GCLOUD_SERVICE_ACCOUNT_CREDENTIALS  (JSON di un Service Account
+  #     con accesso Play Console)
+  android-build:
+    name: I Ching Android → Play Console internal
+    instance_type: linux_x2
+    max_build_duration: 60
+    environment:
+      groups:
+        - keystore_credentials
+        - google_play
+      vars:
+        PACKAGE_NAME: "com.ichingbenessere.app"
+      node: 20.10.0
+      java: 17
+    cache:
+      cache_paths:
+        - ~/.gradle/caches
+        - ~/.npm
+        - frontend/node_modules
+    scripts:
+      - name: Install yarn deps
+        script: |
+          cd frontend
+          yarn install --frozen-lockfile
+      - name: Build React bundle
+        script: |
+          cd frontend
+          NODE_OPTIONS='--openssl-legacy-provider' yarn build
+      - name: Sync Capacitor Android
+        script: |
+          cd frontend
+          npx cap sync android
+      - name: Decode keystore
+        script: |
+          echo $CM_KEYSTORE | base64 --decode > frontend/android/app/release.keystore
+      - name: Configure signing
+        script: |
+          cat >> frontend/android/key.properties <<EOF
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=release.keystore
+          EOF
+      - name: Bump versionCode
+        script: |
+          cd frontend/android
+          # Codemagic espone $BUILD_NUMBER; lo usiamo come versionCode
+          sed -i "s/versionCode [0-9]\+/versionCode $BUILD_NUMBER/" app/build.gradle
+      - name: Build AAB (release)
+        script: |
+          cd frontend/android
+          ./gradlew bundleRelease
+    artifacts:
+      - frontend/android/app/build/outputs/**/*.aab
+      - frontend/android/app/build/outputs/**/mapping.txt
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        in_app_update_priority: 0

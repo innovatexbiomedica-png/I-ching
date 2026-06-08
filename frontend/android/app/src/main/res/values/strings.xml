@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">I Ching del Benessere</string>
+    <string name="title_activity_main">I Ching del Benessere</string>
+    <string name="package_name">com.ichingbenessere.app</string>
+    <string name="custom_url_scheme">com.ichingbenessere.app</string>
+</resources>
