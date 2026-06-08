@@ -132,3 +132,4 @@ httpx
 reportlab
 cairosvg
 python-docx
+slowapi==0.1.9

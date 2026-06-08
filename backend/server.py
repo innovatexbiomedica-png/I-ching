@@ -282,7 +282,25 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # Config
-JWT_SECRET = os.environ.get('JWT_SECRET', 'iching-secret')
+# JWT_SECRET deve essere settato come env var in produzione. Se l'env
+# var manca: usiamo un default *solo* in sviluppo (e logghiamo warning
+# forte). In produzione (Render espone RENDER=true) rifiutiamo di
+# avviarci — meglio un crash chiaro che token forgiabili.
+_JWT_DEFAULT = 'iching-secret-DEV-ONLY-not-for-production'
+JWT_SECRET = os.environ.get('JWT_SECRET') or _JWT_DEFAULT
+if JWT_SECRET == _JWT_DEFAULT:
+    if os.environ.get('RENDER') or os.environ.get('ENV') == 'production':
+        raise RuntimeError(
+            "JWT_SECRET non configurato in produzione! "
+            "Imposta la variabile su Render → Environment prima di riavviare. "
+            "Senza JWT_SECRET unico e segreto, qualsiasi attaccante puo' "
+            "forgiare token validi."
+        )
+    import logging as _log
+    _log.warning(
+        "⚠️  JWT_SECRET non configurato — sto usando un default DI SVILUPPO. "
+        "Non usare in produzione."
+    )
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
@@ -509,10 +527,29 @@ class NoteUpdate(BaseModel):
 # ============== AUTH HELPERS ==============
 import random
 import string
+import secrets
+
+# Rate limiting per endpoint sensibili (brute-force, abuso AI, DoS).
+# Vedi requirements.txt: slowapi==0.1.9
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+limiter = Limiter(key_func=get_remote_address)
 
 def generate_reset_code():
-    """Genera un codice di reset a 6 cifre"""
-    return ''.join(random.choices(string.digits, k=6))
+    """
+    Genera un codice di reset a 8 cifre con un CSPRNG (secrets.choice),
+    non con random.choices(). Motivo:
+      - random.choices usa il Mersenne Twister, predicibile osservando
+        abbastanza output → un attaccante che chiede molti reset puo'
+        prevedere i futuri codici.
+      - 6 cifre = 10^6 combinazioni → bruteforciabile in pochi minuti
+        senza rate-limiting. 8 cifre = 10^8 → 100x piu' costoso.
+    L'uso di hmac.compare_digest in verify_reset_code() chiude il
+    timing channel.
+    """
+    return ''.join(secrets.choice(string.digits) for _ in range(8))
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
@@ -1151,6 +1188,7 @@ EXACT markers (uppercase, parsed by the frontend, DO NOT translate):
 
 # ============== AUTH ROUTES ==============
 @api_router.post("/auth/register", response_model=UserResponse)
+@limiter.limit("10/hour")  # max 10 registrazioni/ora per IP → blocca creation spam
 async def register(user_data: UserCreate, request: Request):
     # GDPR art. 6.1.a + art. 7: a valid legal basis requires the data subject
     # to have given consent BEFORE the data is processed. We refuse to create
@@ -1203,7 +1241,8 @@ async def register(user_data: UserCreate, request: Request):
     )
 
 @api_router.post("/auth/login")
-async def login(credentials: UserLogin):
+@limiter.limit("20/minute")  # max 20 login/min per IP → ferma brute-force password
+async def login(request: Request, credentials: UserLogin):
     user = await db.users.find_one({"email": credentials.email}, {"_id": 0})
     if not user or not verify_password(credentials.password, user["password"]):
         raise HTTPException(status_code=401, detail="Credenziali non valide")
@@ -1482,7 +1521,8 @@ async def export_user_data(user: dict = Depends(get_current_user)):
     }
 
 @api_router.post("/auth/request-reset")
-async def request_password_reset(data: PasswordResetRequest):
+@limiter.limit("5/hour")  # max 5 richieste reset/ora per IP → niente spam email
+async def request_password_reset(request: Request, data: PasswordResetRequest):
     """
     Richiede il reset della password.
     Genera un codice temporaneo e lo salva per verifica admin.
@@ -1528,7 +1568,8 @@ async def request_password_reset(data: PasswordResetRequest):
     }
 
 @api_router.post("/auth/verify-reset")
-async def verify_reset_code(data: PasswordResetVerify):
+@limiter.limit("10/hour")  # max 10 tentativi/ora per IP → ferma bruteforce codice
+async def verify_reset_code(request: Request, data: PasswordResetVerify):
     """
     Verifica il codice di reset e imposta la nuova password.
     """
@@ -1940,11 +1981,15 @@ async def fitness_get_stats(user: dict = Depends(get_current_user)):
 # ADMIN
 # ═══════════════════════════════════════════════════════════════════════
 @api_router.get("/admin/reset-requests")
-async def get_reset_requests():
+async def get_reset_requests(request: Request):
     """
     Endpoint admin per vedere le richieste di reset pendenti.
-    In produzione questo dovrebbe essere protetto.
+
+    AUTH: X-Admin-Secret header DEVE corrispondere a ADMIN_SECRET env var.
+    Prima dell'aggiunta di questa verifica l'endpoint era pubblico ed
+    esponeva codici reset password in chiaro — CVE interna.
     """
+    _verify_admin(request.headers.get("X-Admin-Secret"))
     requests = await db.password_resets.find(
         {"used": False},
         {"_id": 0}
@@ -2032,7 +2077,8 @@ async def admin_users_overview(request: Request):
 
 # ============== I CHING CONSULTATION ROUTES ==============
 @api_router.post("/consultations", response_model=ConsultationResponse)
-async def create_consultation(data: ConsultationCreate, user: dict = Depends(get_current_user)):
+@limiter.limit("30/hour")  # max 30 stese/ora per IP → blocca abuso AI (€$$ Gemini)
+async def create_consultation(request: Request, data: ConsultationCreate, user: dict = Depends(get_current_user)):
     # Check consultation limits
     limit_check = await check_consultation_limit(db, user)
     if not limit_check["allowed"]:
@@ -2469,7 +2515,10 @@ async def create_share_link(consultation_id: str, user: dict = Depends(get_curre
     # Generate share token if not exists
     share_token = consultation.get("share_token")
     if not share_token:
-        share_token = str(uuid.uuid4())[:12]
+        # Token di condivisione consultazione: 32 caratteri url-safe = 192 bit
+        # di entropia (vs 48 bit del vecchio uuid[:12]). I bruteforce su
+        # questo token diventano computazionalmente impossibili.
+        share_token = secrets.token_urlsafe(24)
         await db.consultations.update_one(
             {"id": consultation_id},
             {"$set": {"share_token": share_token, "is_public": True}}
@@ -2734,17 +2783,43 @@ async def stripe_webhook(request: Request):
     body = await request.body()
     sig_header = request.headers.get("Stripe-Signature", "")
     
+    # SICUREZZA: il webhook DEVE verificare la firma Stripe. Senza
+    # verifica un attaccante puo' fingere `checkout.session.completed`
+    # con metadata.user_id arbitrario e ottenere Premium gratis per
+    # qualsiasi utente.
+    #
+    # Vecchio codice: if STRIPE_WEBHOOK_SECRET and sig_header: verify
+    #                 else: accept-without-verify  ← bypass se config rotta
+    #
+    # Nuovo: rifiutiamo TUTTO se non possiamo verificare. L'unica
+    # eccezione è il flag di sviluppo STRIPE_WEBHOOK_INSECURE=1, usato
+    # solo per test locali col Stripe CLI listen.
+    is_dev_insecure = os.environ.get('STRIPE_WEBHOOK_INSECURE') == '1'
+    if not STRIPE_WEBHOOK_SECRET and not is_dev_insecure:
+        logger.error("Webhook Stripe ricevuto ma STRIPE_WEBHOOK_SECRET non configurato — rifiuto.")
+        raise HTTPException(status_code=503, detail="Webhook non configurato.")
+    if not sig_header and not is_dev_insecure:
+        raise HTTPException(status_code=400, detail="Stripe-Signature mancante.")
+
     try:
         stripe_lib.api_key = STRIPE_API_KEY
         if STRIPE_WEBHOOK_SECRET and sig_header:
-            event = stripe_lib.Webhook.construct_event(body, sig_header, STRIPE_WEBHOOK_SECRET)
-        else:
+            try:
+                event = stripe_lib.Webhook.construct_event(body, sig_header, STRIPE_WEBHOOK_SECRET)
+            except stripe_lib.error.SignatureVerificationError:
+                logger.warning("Webhook Stripe con firma INVALIDA — rifiuto.")
+                raise HTTPException(status_code=400, detail="Firma webhook non valida.")
+        elif is_dev_insecure:
+            # Solo in dev: bypassa verifica firma per testing locale
+            logger.warning("⚠️  STRIPE_WEBHOOK_INSECURE=1 attivo — la firma NON verra' verificata. Mai usare in produzione!")
             event = stripe_lib.Event.construct_from(
                 stripe_lib.util.convert_to_stripe_object(
                     stripe_lib.util.json.loads(body)
                 ),
                 stripe_lib.api_key
             )
+        else:
+            raise HTTPException(status_code=400, detail="Webhook non verificabile.")
 
         if event["type"] == "checkout.session.completed":
             session = event["data"]["object"]
@@ -4275,13 +4350,38 @@ async def geocode_city(city: str):
 # Include the router
 app.include_router(api_router)
 
+# CORS: `allow_origins=['*']` combinato con `allow_credentials=True` e'
+# vietato dalla spec CORS (alcuni browser rifiutano, ma e' anche un
+# CSRF/credential-leak). Default a una whitelist concreta, override via
+# env var CORS_ORIGINS per ambienti staging.
+_DEFAULT_ORIGINS = (
+    "https://chingbenessere.it,"
+    "https://www.chingbenessere.it,"
+    "http://localhost:3000,"
+    "http://localhost:3001,"
+    "capacitor://localhost,"          # iOS Capacitor
+    "http://localhost,"               # Android Capacitor
+    "https://localhost"               # Android Capacitor https scheme
+)
+_origins = [o.strip() for o in os.environ.get('CORS_ORIGINS', _DEFAULT_ORIGINS).split(',') if o.strip()]
+if '*' in _origins:
+    # Se davvero serve wildcard, allora `allow_credentials` deve essere False.
+    logger.warning("CORS_ORIGINS='*' → disabilito allow_credentials per conformita' alla spec CORS")
+    _allow_credentials = False
+else:
+    _allow_credentials = True
+
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=_allow_credentials,
+    allow_origins=_origins,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Admin-Secret", "Stripe-Signature"],
 )
+
+# Aggancia il rate limiter all'app per gli endpoint marcati con @limiter.limit
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Gzip everything > 500 bytes. Backend payloads (hexagrams.json, library)
 # go from ~30KB to ~6KB. Browser supports gzip out of the box.
