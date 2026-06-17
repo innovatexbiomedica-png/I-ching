@@ -75,6 +75,8 @@ const Privacy = () => {
           ['Vercel', 'Hosting frontend statico', 'Edge CDN globale', 'Possibile: SCC + supplementary measures'],
           ['Google Gemini API', 'Domande in transito', 'Server Google globali', 'Sì: SCC + Data Processing Addendum Google'],
           ['Stripe', 'Dati di pagamento', 'Irlanda (UE) + USA', 'Sì: SCC + DPF (Data Privacy Framework)'],
+          ['Resend', 'Invio email transazionali (reset password, benvenuto, ricevute, conferme recesso)', 'USA', 'Sì: SCC + DPF (Data Privacy Framework)'],
+          ['Sentry (se attivo)', 'Telemetria errori applicazione', 'Germania (UE) o USA', 'Sì: SCC + DPF, send_default_pii=false (no email/IP)'],
         ]} />
         <p className="mt-2 text-sm">
           I trasferimenti extra-UE avvengono esclusivamente verso paesi con decisione di adeguatezza

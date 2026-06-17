@@ -134,3 +134,4 @@ cairosvg
 python-docx
 slowapi==0.1.9
 sentry-sdk[fastapi]==2.20.0
+resend==2.4.0

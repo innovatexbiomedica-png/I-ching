@@ -255,6 +255,7 @@ from subscription_manager import (
     grant_trial_pack, consume_trial_credit_if_applicable,
     PLAN_LIMITS, SUBSCRIPTION_PRICES, USER_LEVELS, BADGES, GUIDED_PATHS
 )
+import email_service as mailer
 from personalized_advice import (
     generate_personalized_advice, get_chinese_day_energy, get_chinese_year_animal,
     get_user_notification_preferences, update_user_notification_preferences
@@ -1231,6 +1232,13 @@ async def register(user_data: UserCreate, request: Request):
     }
     await db.users.insert_one(user_doc)
 
+    # Email di benvenuto — no-op se Resend non configurato. Non blocca
+    # la registrazione anche se l'invio fallisce.
+    try:
+        mailer.send_welcome(to=user_data.email, user_name=user_data.name or "")
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Welcome email failed for %s: %s", user_data.email, e)
+
     return UserResponse(
         id=user_id,
         email=user_data.email,
@@ -1241,12 +1249,60 @@ async def register(user_data: UserCreate, request: Request):
     )
 
 @api_router.post("/auth/login")
-@limiter.limit("20/minute")  # max 20 login/min per IP → ferma brute-force password
+@limiter.limit("10/minute")  # max 10 login/min per IP → brute-force ridotto
 async def login(request: Request, credentials: UserLogin):
+    # Lockout per email: 5 fallimenti consecutivi entro 15 minuti -> blocco
+    # 30 minuti, indipendente dall'IP (un attaccante che ruota IP residuali
+    # non sfugge al lockout perche' lo applichiamo per identita').
+    now = datetime.now(timezone.utc)
+    lockout_window = timedelta(minutes=15)
+    lockout_duration = timedelta(minutes=30)
     user = await db.users.find_one({"email": credentials.email}, {"_id": 0})
+    if user:
+        fails = user.get("failed_login_attempts") or []
+        # Mantieni solo i timestamp recenti
+        recent_fails = []
+        for ts in fails:
+            try:
+                t = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+                if now - t < lockout_window:
+                    recent_fails.append(t)
+            except Exception:
+                continue
+        # Se siamo in lockout, rifiuta direttamente
+        locked_until = user.get("locked_until")
+        if locked_until:
+            try:
+                lu = datetime.fromisoformat(str(locked_until).replace("Z", "+00:00"))
+                if lu > now:
+                    raise HTTPException(
+                        status_code=429,
+                        detail=f"Troppi tentativi falliti. Riprova tra {int((lu - now).total_seconds() / 60) + 1} minuti."
+                    )
+            except HTTPException:
+                raise
+            except Exception:
+                pass
+
     if not user or not verify_password(credentials.password, user["password"]):
+        # Registra il fallimento. Se l'utente NON esiste non lo facciamo (non
+        # vogliamo creare record fantasma per enumerazione).
+        if user:
+            fails = (user.get("failed_login_attempts") or [])[-9:]  # cap 10
+            fails.append(now.isoformat())
+            update = {"failed_login_attempts": fails}
+            if len([t for t in recent_fails] + [now]) >= 5:
+                update["locked_until"] = (now + lockout_duration).isoformat()
+            await db.users.update_one({"id": user["id"]}, {"$set": update})
         raise HTTPException(status_code=401, detail="Credenziali non valide")
-    
+
+    # Login OK: pulisci storico fallimenti
+    if user.get("failed_login_attempts") or user.get("locked_until"):
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {"failed_login_attempts": [], "locked_until": None}},
+        )
+
     token = create_token(user["id"], user["email"])
 
     admin = is_admin_email(user.get("email"))
@@ -1549,22 +1605,33 @@ async def request_password_reset(request: Request, data: PasswordResetRequest):
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.password_resets.insert_one(reset_request)
-    
-    # Log per l'admin (in produzione questo sarebbe una notifica)
-    logger.info(f"🔐 RICHIESTA RESET PASSWORD")
-    logger.info(f"   Email: {data.email}")
-    logger.info(f"   Telefono: {data.phone or user.get('phone', 'Non fornito')}")
-    logger.info(f"   Nome: {user['name']}")
-    logger.info(f"   Codice: {reset_code}")
-    logger.info(f"   Scade: {expires_at.isoformat()}")
-    
-    # MODALITÀ TEST: restituisce il codice direttamente
-    # In produzione, rimuovere reset_code dalla risposta e inviare via SMS/Email
+
+    # ────────── INVIO EMAIL VERA via Resend ──────────
+    # Se Resend non e' configurato (RESEND_API_KEY mancante), il codice viene
+    # comunque salvato e loggato per l'admin — l'utente vede solo il messaggio
+    # generico, MAI il codice in chiaro nella risposta JSON (era un leak).
+    email_sent = mailer.send_password_reset(
+        to=data.email,
+        user_name=user.get("name") or "",
+        code=reset_code,
+        expires_minutes=60,
+    )
+    if not email_sent:
+        # Resend off o errore: log per l'admin con codice (visibile solo nei log Render)
+        logger.warning(
+            "🔐 RESET PASSWORD (email NON inviata, recupero manuale richiesto) "
+            "email=%s nome=%s codice=%s scade=%s",
+            data.email, user.get("name"), reset_code, expires_at.isoformat()
+        )
+
+    # Risposta SEMPRE generica — non riveliamo ne' l'esistenza dell'email,
+    # ne' il codice, ne' lo stato dell'invio. Questo previene:
+    #   1. enumerazione utenti (chi non esiste vede stesso messaggio)
+    #   2. account takeover via leak del codice nella response
     return {
-        "message": "Richiesta ricevuta. L'amministratore ti contatterà con il codice di reset.",
-        "contact_phone": data.phone or user.get("phone", ""),
-        "reset_code": reset_code,  # SOLO PER TEST - rimuovere in produzione!
-        "test_mode": True
+        "message": "Se l'email risulta registrata, riceverai a breve un'email "
+                   "con un codice di 8 cifre per reimpostare la password. "
+                   "Controlla anche la cartella spam."
     }
 
 @api_router.post("/auth/verify-reset")
@@ -2663,6 +2730,16 @@ async def cancel_subscription(user: dict = Depends(get_current_user)):
         }}
     )
     sub_end = user.get("subscription_end")
+
+    # Email di conferma disdetta — best effort
+    try:
+        mailer.send_subscription_cancelled(
+            to=user.get("email") or "",
+            user_name=user.get("name") or "",
+            active_until=sub_end,
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Cancellation email failed for %s: %s", user.get("email"), e)
     return {
         "message": "Abbonamento disdetto. Continuerai ad avere accesso Premium fino alla scadenza.",
         "active_until": sub_end,
@@ -2728,6 +2805,16 @@ async def withdraw_subscription(user: dict = Depends(get_current_user)):
         "status": "pending",
         "purchase_date": last_paid["created_at"],
     })
+
+    # Email conferma recesso — best effort
+    try:
+        mailer.send_withdrawal_confirmed(
+            to=user.get("email") or "",
+            user_name=user.get("name") or "",
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Withdrawal email failed for %s: %s", user.get("email"), e)
+
     return {
         "message": "Recesso esercitato. Il rimborso verrà processato entro 14 giorni lavorativi.",
         "withdrawn_at": now_iso,
@@ -2844,14 +2931,19 @@ async def stripe_webhook(request: Request):
                             {"session_id": session["id"]}, {"_id": 0}
                         )
                         plan_name = (txn or {}).get("plan") or "base"
-                        if plan_name == "trial_pack" or (txn or {}).get("is_trial"):
+                        plan_type = (txn or {}).get("plan_type") or ""
+                        amount = float((txn or {}).get("amount") or 0)
+                        is_trial = plan_name == "trial_pack" or bool((txn or {}).get("is_trial"))
+                        days_credited = 0
+                        trial_credits_credited = 0
+                        if is_trial:
                             # GETTONE PROVA: accredita N consultazioni, niente
                             # subscription_active. Funziona a crediti.
-                            credits = int((txn or {}).get("trial_credits") or 3)
-                            await grant_trial_pack(db, user_id, credits=credits)
+                            trial_credits_credited = int((txn or {}).get("trial_credits") or 3)
+                            await grant_trial_pack(db, user_id, credits=trial_credits_credited)
                         else:
-                            days = (txn or {}).get("duration_days") or 30
-                            subscription_end = datetime.now(timezone.utc) + timedelta(days=int(days))
+                            days_credited = int((txn or {}).get("duration_days") or 30)
+                            subscription_end = datetime.now(timezone.utc) + timedelta(days=days_credited)
                             await db.users.update_one(
                                 {"id": user_id},
                                 {"$set": {
@@ -2860,6 +2952,32 @@ async def stripe_webhook(request: Request):
                                     "subscription_plan": plan_name,
                                 }}
                             )
+
+                        # Email ricevuta — best effort, non blocca. Etichetta
+                        # leggibile per Stripe Checkout + email l'abbiamo da txn metadata
+                        # oppure dal record utente.
+                        try:
+                            target_user = await db.users.find_one({"id": user_id}, {"_id": 0, "email": 1, "name": 1})
+                            if target_user and target_user.get("email"):
+                                plan_label_map = {
+                                    "trial_pack": "Gettone Prova — 3 consultazioni",
+                                    "base_monthly": "Base — Mensile",
+                                    "base_yearly": "Base — Annuale",
+                                    "fitness_monthly": "Benessere Fisico — Mensile",
+                                    "fitness_yearly": "Benessere Fisico — Annuale",
+                                }
+                                plan_label = plan_label_map.get(plan_type, plan_type or "Abbonamento")
+                                mailer.send_payment_receipt(
+                                    to=target_user["email"],
+                                    user_name=target_user.get("name") or "",
+                                    plan_label=plan_label,
+                                    amount_eur=amount,
+                                    is_trial=is_trial,
+                                    duration_days=days_credited,
+                                    trial_credits=trial_credits_credited,
+                                )
+                        except Exception as e:  # noqa: BLE001
+                            logger.warning("Receipt email failed for user %s: %s", user_id, e)
 
         return {"received": True}
     except Exception as e:

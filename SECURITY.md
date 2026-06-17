@@ -20,6 +20,9 @@ endpoint sensibili rispondono 503):
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` | Stripe → Webhooks → endpoint → Signing secret |
 | `GEMINI_API_KEY` | `AIza…` | [console.cloud.google.com](https://console.cloud.google.com) |
 | `GOOGLE_CLIENT_ID` | `…apps.googleusercontent.com` | Google Cloud Console → OAuth |
+| `RESEND_API_KEY` | `re_…` | [resend.com](https://resend.com) → API Keys (free 3K email/mese) |
+| `RESEND_FROM_EMAIL` | `"I Ching del Benessere <noreply@chingbenessere.it>"` | Dominio verificato SPF+DKIM su Resend |
+| `APP_URL` | `https://www.chingbenessere.it` | URL pubblico per link nelle email |
 
 ## 2. Environment variables opzionali
 
@@ -110,15 +113,43 @@ Se sospetti che un segreto sia stato esposto:
 
 ## 8. Checklist pre-go-live (in ordine di blocco)
 
+### CRITICO (senza questi il sito non funziona davvero)
 - [ ] Su Render: settare `JWT_SECRET` e `ADMIN_SECRET` con valori generati da `openssl rand`
 - [ ] Su Render: `STRIPE_API_KEY` = sk_live_… (non sk_test_…)
 - [ ] Su Render: `STRIPE_WEBHOOK_SECRET` = whsec_… del webhook **live**
-- [ ] Su Stripe: creare webhook **live** che punta a `/api/webhook/stripe`
-- [ ] Su Render: rimuovere `STRIPE_WEBHOOK_INSECURE` se mai settato
+- [ ] Su Stripe: creare webhook **live** che punta a `/api/webhook/stripe` con evento `checkout.session.completed`
+- [ ] Su Render: assicurarsi che `STRIPE_WEBHOOK_INSECURE` **NON** sia presente
+- [ ] **Email transazionale**:
+  - [ ] Iscriversi a [resend.com](https://resend.com)
+  - [ ] Verificare il dominio `chingbenessere.it` (DNS Aruba: aggiungere record SPF, DKIM, DMARC che Resend ti mostra)
+  - [ ] Generare API key, settarla su Render come `RESEND_API_KEY`
+  - [ ] Test: triggera `/auth/request-reset` e verifica che arrivi un'email vera
+
+### IMPORTANTE
 - [ ] Su Vercel: `REACT_APP_SENTRY_DSN` per attivare monitoring (opzionale ma raccomandato)
 - [ ] Su Sentry: creare progetto React + progetto Python
-- [ ] Test: registrazione → login → consultazione → acquisto trial €1,99 con carta vera (poi rimborso dal dashboard Stripe)
-- [ ] Test: tentativo `/admin/reset-requests` senza header → deve restituire 403/503
+- [ ] Su MongoDB Atlas: verificare backup snapshot attivi (Free M0 non li ha — valutare upgrade M10 o `mongodump` schedulato)
+- [ ] Test end-to-end: registrazione → ricevuta benvenuto → login → consultazione → acquisto trial €1,99 con carta vera → ricevuta email → recesso entro 14 gg → conferma email
+- [ ] Test sicurezza: tentativo `/admin/reset-requests` senza header → deve restituire 403/503
+- [ ] Test sicurezza: 6 login falliti consecutivi → 7° tentativo deve dare 429 "Troppi tentativi"
+
+## 9. Email transazionali — flussi configurati
+
+Tutti i flussi sono no-op (loggano warning) se `RESEND_API_KEY` non e' settato.
+
+| Flusso | Trigger | Da | Cosa contiene |
+|---|---|---|---|
+| **Reset password** | POST `/auth/request-reset` | `RESEND_FROM_EMAIL` | Codice 8 cifre, scadenza 1h, link `/forgot-password?email=…` |
+| **Benvenuto** | POST `/auth/register` | idem | Link dashboard, lista feature, mention del Gettone Prova |
+| **Ricevuta pagamento** | Webhook `checkout.session.completed` | idem | Prodotto, importo, durata/crediti, link dashboard, mention recesso 14gg |
+| **Conferma disdetta** | POST `/subscription/cancel` | idem | Data fine accesso, no auto-renewal |
+| **Conferma recesso** | POST `/subscription/withdraw` | idem | Accesso revocato, rimborso in 14 gg lavorativi |
+
+**Importante per la sicurezza**: il vecchio comportamento del reset password
+restituiva il `reset_code` in chiaro nella response JSON con `test_mode: true`.
+Ora la response e' sempre generica ("Se l'email risulta registrata...") e il
+codice arriva SOLO via email. Questo previene sia il leak diretto che
+l'enumerazione utenti.
 
 ---
 

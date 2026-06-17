@@ -28,5 +28,11 @@ services:
         sync: false                # opzionale, default whitelist OK
       - key: SENTRY_DSN
         sync: false                # opzionale: attiva error tracking
+      - key: RESEND_API_KEY
+        sync: false                # re_xxx... (Dashboard Resend → API Keys)
+      - key: RESEND_FROM_EMAIL
+        value: "I Ching del Benessere <noreply@chingbenessere.it>"
+      - key: APP_URL
+        value: https://www.chingbenessere.it
       - key: PYTHON_VERSION
         value: 3.11.0
