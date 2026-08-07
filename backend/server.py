@@ -529,6 +529,7 @@ class NoteUpdate(BaseModel):
 import random
 import string
 import secrets
+import hmac
 
 # Rate limiting per endpoint sensibili (brute-force, abuso AI, DoS).
 # Vedi requirements.txt: slowapi==0.1.9
@@ -536,7 +537,32 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-limiter = Limiter(key_func=get_remote_address)
+
+def _client_ip(request) -> str:
+    """
+    Estrae l'IP client reale, non l'IP del proxy Render/Vercel/Cloudflare.
+    Senza questo, `get_remote_address` restituisce sempre l'IP del reverse
+    proxy Render — cosi' il bucket rate-limit e' UNICO PER TUTTO IL MONDO:
+    un utente che fa login triggera il limite anche per gli altri, e un
+    attaccante non viene mai davvero bloccato.
+
+    Priorita': X-Forwarded-For (primo IP della catena) -> X-Real-IP ->
+    request.client.host. Il primo IP di XFF e' il client originale, gli
+    altri sono i proxy intermedi.
+    """
+    xff = request.headers.get("x-forwarded-for", "")
+    if xff:
+        # "client, proxy1, proxy2" -> "client"
+        first = xff.split(",")[0].strip()
+        if first:
+            return first
+    xri = request.headers.get("x-real-ip", "")
+    if xri:
+        return xri.strip()
+    return get_remote_address(request)
+
+
+limiter = Limiter(key_func=_client_ip)
 
 def generate_reset_code():
     """
@@ -1537,20 +1563,64 @@ async def delete_account(user: dict = Depends(get_current_user)):
     purposes that don't allow re-identification.
     """
     uid = user["id"]
+    email = user.get("email", "")
+
     # Anonymize past consultations (keep only the I Ching content, drop link to user)
     await db.consultations.update_many(
         {"user_id": uid},
         {"$set": {"user_id": None, "anonymized": True, "anonymized_at": datetime.now(timezone.utc).isoformat()},
          "$unset": {"question": ""}}  # question may contain personal info -> drop
     )
-    # Delete user-private collections completely
-    await db.notes.delete_many({"user_id": uid})
-    await db.user_paths.delete_many({"user_id": uid})
-    await db.notification_preferences.delete_many({"user_id": uid})
-    await db.payment_transactions.delete_many({"user_id": uid})
-    await db.completed_paths.delete_many({"user_id": uid})
+
+    # Delete user-private collections completely (per user_id)
+    # Aggiunte le collezioni che il vecchio codice DIMENTICAVA e che sono
+    # emerse dall'audit: fitness_*, notifications, notification_reads,
+    # coin_toss_sessions, badges assegnati.
+    for coll in (
+        "notes",
+        "user_paths",
+        "notification_preferences",
+        "payment_transactions",
+        "completed_paths",
+        "fitness_profiles",
+        "fitness_programs",
+        "fitness_completed",
+        "notifications",
+        "notification_reads",
+        "coin_toss_sessions",
+        "user_badges",
+        "user_level_progress",
+    ):
+        try:
+            await db[coll].delete_many({"user_id": uid})
+        except Exception as e:  # noqa: BLE001
+            logger.warning("delete_account: skip collection %s: %s", coll, e)
+
+    # Collezioni indicizzate per email (non user_id): password reset requests
+    # e refund requests. Le eliminiamo esplicitamente.
+    if email:
+        for coll in ("password_resets", "refund_requests"):
+            try:
+                await db[coll].delete_many({"email": email})
+            except Exception as e:  # noqa: BLE001
+                logger.warning("delete_account: skip email-coll %s: %s", coll, e)
+
     # Finally remove the user record itself
     await db.users.delete_one({"id": uid})
+
+    # Audit trail — teniamo solo un record minimo per adempiere all'obbligo
+    # di dimostrare l'avvenuta cancellazione (GDPR art. 5.2 accountability).
+    # Zero PII: solo hash SHA-256 dell'email + timestamp.
+    import hashlib
+    email_hash = hashlib.sha256((email or "").lower().encode()).hexdigest()[:16] if email else None
+    try:
+        await db.deletion_log.insert_one({
+            "email_hash": email_hash,
+            "deleted_at": datetime.now(timezone.utc).isoformat(),
+        })
+    except Exception:
+        pass  # log opzionale, non blocchiamo
+
     return {"message": "Account eliminato. Tutti i dati personali sono stati cancellati."}
 
 
@@ -1581,12 +1651,26 @@ async def export_user_data(user: dict = Depends(get_current_user)):
 async def request_password_reset(request: Request, data: PasswordResetRequest):
     """
     Richiede il reset della password.
-    Genera un codice temporaneo e lo salva per verifica admin.
+    Genera un codice temporaneo, lo salva su DB e lo invia via email.
+    Risposta SEMPRE identica per evitare user enumeration.
     """
+    # Il messaggio finale è IDENTICO per utente esistente e non esistente
+    # (prima erano diversi -> permetteva enumeration via response body length).
+    GENERIC_MSG = (
+        "Se l'email risulta registrata, riceverai a breve un'email "
+        "con un codice di 8 cifre per reimpostare la password. "
+        "Controlla anche la cartella spam."
+    )
+
     user = await db.users.find_one({"email": data.email}, {"_id": 0})
     if not user:
-        # Per sicurezza non riveliamo se l'email esiste o meno
-        return {"message": "Se l'email esiste, riceverai istruzioni per il reset."}
+        # Aggiungiamo delay pseudo-casuale per equalizzare i tempi con il
+        # ramo "utente esiste" che fa insert Mongo + chiamata Resend
+        # (~150-400ms). Senza questo, un attaccante puo' misurare i tempi
+        # per capire quali email esistono.
+        import asyncio, random as _rnd
+        await asyncio.sleep(_rnd.uniform(0.15, 0.4))
+        return {"message": GENERIC_MSG}
     
     # Genera codice di reset
     reset_code = generate_reset_code()
@@ -1624,30 +1708,33 @@ async def request_password_reset(request: Request, data: PasswordResetRequest):
             data.email, user.get("name"), reset_code, expires_at.isoformat()
         )
 
-    # Risposta SEMPRE generica — non riveliamo ne' l'esistenza dell'email,
-    # ne' il codice, ne' lo stato dell'invio. Questo previene:
-    #   1. enumerazione utenti (chi non esiste vede stesso messaggio)
-    #   2. account takeover via leak del codice nella response
-    return {
-        "message": "Se l'email risulta registrata, riceverai a breve un'email "
-                   "con un codice di 8 cifre per reimpostare la password. "
-                   "Controlla anche la cartella spam."
-    }
+    # Stessa stringa identica al ramo "utente non esiste" (definita in cima
+    # alla funzione come GENERIC_MSG) per non trapelare informazioni.
+    return {"message": GENERIC_MSG}
 
 @api_router.post("/auth/verify-reset")
 @limiter.limit("10/hour")  # max 10 tentativi/ora per IP → ferma bruteforce codice
 async def verify_reset_code(request: Request, data: PasswordResetVerify):
     """
     Verifica il codice di reset e imposta la nuova password.
+    Confronto del codice in tempo costante (hmac.compare_digest) per non
+    aprire un timing channel su codici parzialmente indovinati.
     """
-    # Trova la richiesta di reset
-    reset_request = await db.password_resets.find_one({
-        "email": data.email,
-        "code": data.code,
-        "used": False
-    }, {"_id": 0})
-    
+    # 1. Recupera l'unico record NON usato piu' recente per questa email
+    reset_request = await db.password_resets.find_one(
+        {"email": data.email, "used": False},
+        {"_id": 0},
+        sort=[("created_at", -1)],
+    )
     if not reset_request:
+        raise HTTPException(status_code=400, detail="Codice non valido o già utilizzato")
+
+    # 2. Confronto costante del codice (previene timing side-channel).
+    #    hmac.compare_digest richiede stringhe della stessa lunghezza:
+    #    normalizziamo a str e usiamo il segno hmac su bytes.
+    stored_code = str(reset_request.get("code", ""))
+    supplied_code = str(data.code or "")
+    if not hmac.compare_digest(stored_code, supplied_code):
         raise HTTPException(status_code=400, detail="Codice non valido o già utilizzato")
     
     # Verifica scadenza
@@ -2652,8 +2739,27 @@ async def create_checkout(data: CheckoutRequest, request: Request, user: dict = 
 
     stripe_lib.api_key = STRIPE_API_KEY
 
-    success_url = f"{data.origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{data.origin_url}/subscription"
+    # SICUREZZA: `origin_url` arriva dal client, quindi non ci fidiamo. Un
+    # attaccante puo' sostituirlo con "https://phishing.evil" e reindirizzare
+    # l'utente dopo il pagamento verso un sito controllato. Whitelist:
+    # accettiamo solo origini che matchano APP_URL o localhost dev.
+    from urllib.parse import urlparse
+    _allowed_hosts = {
+        urlparse(os.environ.get("APP_URL", "https://www.chingbenessere.it")).netloc,
+        "www.chingbenessere.it",
+        "chingbenessere.it",
+        "localhost:3000",
+        "localhost:3001",
+    }
+    parsed = urlparse(data.origin_url or "")
+    if parsed.scheme not in ("http", "https") or parsed.netloc not in _allowed_hosts:
+        # Fallback silente all'origine ufficiale: non blocchiamo l'acquisto,
+        # ma redirigiamo alla home canonica dopo il pagamento.
+        base = os.environ.get("APP_URL", "https://www.chingbenessere.it").rstrip("/")
+    else:
+        base = f"{parsed.scheme}://{parsed.netloc}"
+    success_url = f"{base}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{base}/subscription"
 
     session = stripe_lib.checkout.Session.create(
         payment_method_types=["card"],
@@ -2768,11 +2874,16 @@ async def withdraw_subscription(user: dict = Depends(get_current_user)):
     if not last_paid:
         raise HTTPException(status_code=400, detail="Nessun pagamento da rimborsare.")
 
-    # 14-day window check
+    # 14-day window check. Se la data acquisto non e' parsabile RIFIUTIAMO
+    # invece di assumere "oggi" (vecchio bug: fallback a datetime.now()
+    # rendeva il recesso SEMPRE valido anche per acquisti vecchi).
     try:
-        purchase_dt = datetime.fromisoformat(last_paid["created_at"].replace("Z", "+00:00"))
+        purchase_dt = datetime.fromisoformat(str(last_paid.get("created_at", "")).replace("Z", "+00:00"))
     except Exception:
-        purchase_dt = datetime.now(timezone.utc)
+        raise HTTPException(
+            status_code=400,
+            detail="Data di acquisto non leggibile. Contatta l'assistenza per il recesso.",
+        )
     elapsed_days = (datetime.now(timezone.utc) - purchase_dt).days
     if elapsed_days > 14:
         raise HTTPException(
@@ -2980,8 +3091,17 @@ async def stripe_webhook(request: Request):
                             logger.warning("Receipt email failed for user %s: %s", user_id, e)
 
         return {"received": True}
+    except HTTPException:
+        # Propaga i 4xx/5xx generati esplicitamente (firma invalida, secret
+        # mancante). Prima del fix un `except Exception` piatto ingoiava
+        # anche gli HTTPException e ritornava 200 - un attaccante poteva
+        # inviare webhook fasulli e ottenere Premium gratis.
+        raise
     except Exception as e:
         logger.error(f"Webhook error: {e}")
+        # Errori "interni" (parse, DB down) -> 200 per non far ritentare
+        # Stripe in loop. Se necessario riprocessiamo manualmente da
+        # Stripe dashboard.
         return {"received": True}
 
 # ============== HEXAGRAM INFO ROUTE ==============
@@ -3005,8 +3125,11 @@ async def get_subscription_status(request: Request):
     plan = get_user_plan(user)
     limits = get_plan_limits(plan)
     
-    # Get consultation count this month
-    start_of_month = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    # Get consultation count this month.
+    # created_at e' salvato come stringa ISO su insert (server.py:2235), quindi
+    # il confronto con datetime non matcha per BSON type ordering: usare
+    # sempre .isoformat() per allineare i tipi.
+    start_of_month = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
     monthly_count = await db.consultations.count_documents({
         "user_id": user["id"],
         "created_at": {"$gte": start_of_month}
@@ -3101,10 +3224,10 @@ async def get_daily_hexagram(request: Request):
         f"{hex_data.get(name_key)} accompanies you on this day. What does it want to teach you?",
     ]
     
-    import random
-    random.seed(int(datetime.now(timezone.utc).strftime("%Y%m%d")))
-    message = random.choice(daily_messages_it if lang == "it" else daily_messages_en)
-    random.seed()
+    import random as _rnd
+    # Istanza locale (non random.seed globale) per evitare race con altre coroutine
+    _daily_rng = _rnd.Random(int(datetime.now(timezone.utc).strftime("%Y%m%d")))
+    message = _daily_rng.choice(daily_messages_it if lang == "it" else daily_messages_en)
     
     return {
         "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
@@ -3999,7 +4122,7 @@ async def get_user_profile(request: Request):
             )
             response["astrological_profile"] = astro_profile
         except Exception as e:
-            print(f"Error calculating astrological profile: {e}")
+            logger.warning(f"Error calculating astrological profile: {e}")
     
     return response
 

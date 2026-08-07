@@ -26,8 +26,16 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false                # opzionale, default whitelist OK
+      - key: ADMIN_EMAILS
+        sync: false                # CSV di email admin (whitelist premium)
       - key: SENTRY_DSN
         sync: false                # opzionale: attiva error tracking
+      - key: SENTRY_ENVIRONMENT
+        value: production
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: "0.1"
+      - key: RESEND_REPLY_TO
+        sync: false                # opzionale: reply-to header sulle email
       - key: RESEND_API_KEY
         sync: false                # re_xxx... (Dashboard Resend → API Keys)
       - key: RESEND_FROM_EMAIL

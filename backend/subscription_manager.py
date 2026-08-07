@@ -292,8 +292,12 @@ async def check_consultation_limit(db, user: dict) -> Dict:
             "message": "Consultazioni illimitate"
         }
     
-    # Conta consultazioni del mese corrente
-    start_of_month = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    # Conta consultazioni del mese corrente.
+    # BUG FIX (paywall aggirabile): `created_at` viene salvato come stringa ISO
+    # (server.py insert_one usa .isoformat()), quindi il confronto BSON
+    # {$gte: datetime} vs stringa NON matcha mai per BSON type ordering.
+    # Risultato prima del fix: count sempre 0 -> free user senza limite.
+    start_of_month = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
     count = await db.consultations.count_documents({
         "user_id": user["id"],
         "created_at": {"$gte": start_of_month}
@@ -377,12 +381,13 @@ def get_daily_hexagram_number(date: datetime = None) -> int:
     if date is None:
         date = datetime.now(timezone.utc)
     
-    # Usa la data come seed per generare lo stesso numero per tutti
+    # Usa la data come seed per generare lo stesso numero per tutti.
+    # Istanza LOCALE di Random (non `random.seed` globale) per non racere
+    # con altre coroutine che usano `random` — sotto carico due chiamate
+    # concorrenti potrebbero altrimenti interleavare seed.
     seed = int(date.strftime("%Y%m%d"))
-    random.seed(seed)
-    hexagram = random.randint(1, 64)
-    random.seed()  # Reset seed
-    return hexagram
+    rng = random.Random(seed)
+    return rng.randint(1, 64)
 
 
 def get_lunar_phase(date: datetime = None) -> Dict:

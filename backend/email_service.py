@@ -157,7 +157,7 @@ def send_password_reset(to: str, user_name: str, code: str, expires_minutes: int
         <span class="code">{code}</span>
       </p>
       <p style="text-align:center;">
-        <a class="btn" href="{_APP_URL}/forgot-password?email={to}">Apri la pagina di reset</a>
+        <a class="btn" href="{_APP_URL}/forgot-password">Apri la pagina di reset</a>
       </p>
       <hr class="divider">
       <p class="muted">Se non hai richiesto tu il reset, ignora questa email. Nessuna modifica al tuo account avviene finche' non usi il codice.</p>
@@ -170,7 +170,7 @@ Codice di reset: {code}
 Scadenza: {expires_minutes} minuti.
 
 Apri la pagina di reset:
-{_APP_URL}/forgot-password?email={to}
+{_APP_URL}/forgot-password
 
 Se non hai richiesto tu il reset, ignora questa email.
 I Ching del Benessere
