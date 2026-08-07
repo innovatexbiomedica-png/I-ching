@@ -1,26 +1,74 @@
 name: Keep backend warm
 
-# Render free tier mette il processo in sleep dopo 15 minuti di inattività.
-# Una richiesta cold-start impiega 30-50 secondi, peggiorando login e prima
-# consultazione. Questo workflow fa un GET ogni 10 minuti per tenere caldo
+# Render free tier mette il processo in sleep dopo 15 minuti di inattivita'.
+# Una richiesta cold-start puo' impiegare 30-90 secondi, peggiorando login e
+# prima consultazione. Questo workflow fa un GET periodico per tenere caldo
 # il container.
 #
-# Costo: ~5 sec × 144 esecuzioni/giorno × 30 = 360 min/mese.
-# Quota GitHub Actions free per repo public: 2000 min/mese → ampiamente OK.
+# Note operative importanti:
+#   • cron ogni 12 minuti (era 10) per lasciare margine ma restare sotto il
+#     limite di 15 minuti oltre cui Render addormenta il servizio;
+#   • timeout per singolo tentativo esteso a 120s (il cold-start peggiore
+#     osservato su Render free e' ~90s);
+#   • retry 3 volte con backoff: se il primo tentativo va in timeout perche'
+#     ha svegliato il container, il secondo trova il servizio caldo e passa.
+#     Cosi' non generiamo notifiche di failure ogni volta che c'e' un
+#     cold-start "naturale";
+#   • se dopo 3 retry ancora fallisce -> vera anomalia (Render down, deploy
+#     rotto, ecc.) -> notifica giustificata.
+#
+# Costo indicativo: ~20 sec media × 120 esecuzioni/giorno × 30 = ~1200 min/mese.
+# Quota GitHub Actions free repo pubblico: illimitata. Repo privato: 2000
+# min/mese (comunque abbondanti).
 
 on:
   schedule:
-    - cron: '*/10 * * * *'   # ogni 10 minuti
-  workflow_dispatch:          # consente esecuzione manuale dal tab Actions
+    - cron: '*/12 * * * *'   # ogni 12 minuti
+  workflow_dispatch:          # esecuzione manuale dal tab Actions
+
+# Se un run precedente e' ancora in coda quando parte il prossimo, cancellalo
+# per non accumulare backlog quando ci sono blip di rete.
+concurrency:
+  group: keepwarm
+  cancel-in-progress: true
 
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
-      - name: Ping backend /ping
+      - name: Ping backend /ping con retry
         run: |
-          # -f fa fallire lo step su HTTP >=400 così se Render restituisce
-          # 502/503 vedo il fallimento nelle Actions e posso indagare.
-          curl --fail --silent --show-error --max-time 60 \
-            https://iching-backend-ac3n.onrender.com/ping
-          echo " ✓ backend warm"
+          set -o pipefail
+          URL="https://iching-backend-ac3n.onrender.com/ping"
+          MAX_ATTEMPTS=3
+
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "── Tentativo $attempt/$MAX_ATTEMPTS ──"
+            start=$(date +%s)
+            # --max-time 120 assorbe cold-start peggiori (Render free ~90s max).
+            # --fail: HTTP >=400 fa fallire lo step (segnale genuino).
+            # --retry-connrefused: se il conn e' rifiutato (Render in restart),
+            # riprova la connessione stessa.
+            if curl \
+                 --fail --silent --show-error \
+                 --max-time 120 \
+                 --retry-connrefused \
+                 --retry 2 \
+                 --retry-delay 5 \
+                 --write-out '\n status=%{http_code} totale=%{time_total}s\n' \
+                 "$URL"; then
+              elapsed=$(( $(date +%s) - start ))
+              echo "✓ backend warm dopo ${elapsed}s (tentativo $attempt)"
+              exit 0
+            fi
+            elapsed=$(( $(date +%s) - start ))
+            echo "✗ tentativo $attempt fallito dopo ${elapsed}s"
+            if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
+              echo "Attendo 15s prima del prossimo tentativo…"
+              sleep 15
+            fi
+          done
+
+          echo "❌ Tutti i $MAX_ATTEMPTS tentativi falliti — anomalia reale."
+          exit 1
