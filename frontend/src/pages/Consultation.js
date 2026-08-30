@@ -241,8 +241,19 @@ const Consultation = () => {
         requestData.parent_consultation_id = parentConsultation.id;
       }
 
+      // Warmup pre-POST: sveglia il backend Render prima di inviare la
+      // richiesta pesante (Gemini interpretation puo' prendere 10-30s;
+      // se in cima ci aggiungi un cold-start di 40-60s Render, l'axios
+      // default rischia di andare in timeout. Con warmup preventivo la
+      // POST parte sempre su un container gia' caldo).
+      try {
+        await axios.get(`${API.replace(/\/api$/, '')}/ping`, { timeout: 90000 });
+      } catch (_) { /* non blocca — l'errore vero lo dara' la POST sotto */ }
+
       const response = await axios.post(`${API}/consultations`, requestData, {
-        headers: { Authorization: `Bearer ${getToken()}` }
+        headers: { Authorization: `Bearer ${getToken()}` },
+        // 180s = cold start Render (60) + Gemini deep (up to 30) + margine.
+        timeout: 180000,
       });
       
       setResult(response.data);
@@ -254,12 +265,30 @@ const Consultation = () => {
       
       toast.success(language === 'it' ? 'Consultazione completata!' : 'Consultation complete!');
     } catch (error) {
-      if (error.response?.status === 403) {
+      // Diagnostica dettagliata per l'utente
+      const isTimeout = error.code === 'ECONNABORTED' || /timeout/i.test(error.message || '');
+      const isNetwork = !error.response && !isTimeout;
+      const status = error.response?.status;
+
+      if (status === 403) {
         toast.error(t.consultation.subscribeMessage);
         navigate('/pricing');
+      } else if (status === 429) {
+        toast.error(language === 'it'
+          ? 'Troppe richieste. Riprova tra qualche minuto.'
+          : 'Too many requests. Retry in a few minutes.');
+      } else if (isTimeout) {
+        toast.error(language === 'it'
+          ? 'Il servizio sta impiegando piu\' del solito (primo accesso della giornata). Riprova adesso: al secondo tentativo dovrebbe rispondere subito.'
+          : 'The service is taking longer than usual (first request of the day). Please retry — the second attempt should respond quickly.');
+      } else if (isNetwork) {
+        toast.error(language === 'it'
+          ? 'Impossibile raggiungere il server. Controlla la connessione e riprova.'
+          : 'Cannot reach the server. Check your connection and retry.');
       } else {
         toast.error(error.response?.data?.detail || t.common.error);
       }
+      console.error('[consultation] error', { status, code: error.code, message: error.message });
     } finally {
       setLoading(false);
     }

@@ -121,17 +121,19 @@ watchfiles==1.1.1
 websockets==15.0.1
 yarl==1.22.0
 zipp==3.23.0
-# Astrology + PDF/DOCX + audio + email — pinnate per stabilita' build.
-# Le versioni "unpinned" precedenti creavano duplicati con quelle pinnate
-# in cima al file (aiohttp, httpx, pytz, google-generativeai) e vincevano
-# risolvendo alla latest — regressioni silenziose in prod.
-kerykeion==4.26.2
-timezonefinder==6.5.9
-h3==4.2.2
-pyswisseph==2.10.3.2
-reportlab==4.2.5
-cairosvg==2.7.1
-python-docx==1.1.2
+# Astrology + PDF/DOCX + email
+# Le deps astrology (kerykeion, pyswisseph) richiedono compilazione C
+# lunga su Render free. Le lascio unpinned per prendere la latest wheel
+# precompilata (evita build 10+ min). Il vero bug era il DUPLICATO
+# pin+unpin che risolveva sempre alla latest ignorando il pin — quello
+# e' stato rimosso (aiohttp, httpx, google-generativeai in cima al file).
+kerykeion
+timezonefinder
+h3
+pyswisseph
+reportlab
+cairosvg
+python-docx
 slowapi==0.1.9
 sentry-sdk[fastapi]==2.20.0
 resend==2.4.0
